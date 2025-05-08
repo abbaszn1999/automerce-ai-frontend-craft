@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 221 83% 53%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -30,63 +31,9 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 221 83% 53%;
 
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --radius: 4px;
   }
 }
 
@@ -96,6 +43,211 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-gray-50 text-foreground;
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .app-header {
+    @apply bg-white shadow-sm sticky top-0 z-30 w-full border-b border-gray-200;
+  }
+  
+  .solution-selector {
+    @apply bg-white shadow-sm sticky top-16 z-20 w-full border-b border-gray-200;
+  }
+
+  .solution-tab {
+    @apply relative px-4 py-3 text-gray-700 hover:text-primary hover:bg-gray-50 transition-colors text-sm font-medium;
+  }
+  
+  .solution-tab.active {
+    @apply text-primary border-b-2 border-primary;
+  }
+
+  .main-content {
+    @apply w-full max-w-[1400px] mx-auto p-4 md:p-6 min-h-[calc(100vh-8rem)];
+  }
+
+  .card {
+    @apply bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-4;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors 
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 
+    disabled:opacity-50 disabled:pointer-events-none ring-offset-background px-4 py-2;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  }
+
+  .btn-success {
+    @apply bg-green-600 text-white hover:bg-green-700;
+  }
+
+  .btn-outline {
+    @apply border border-input hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-ghost {
+    @apply hover:bg-accent hover:text-accent-foreground;
+  }
+
+  .btn-link {
+    @apply text-primary underline-offset-4 hover:underline;
+  }
+
+  .btn-sm {
+    @apply h-8 px-3 text-xs;
+  }
+
+  .btn-lg {
+    @apply h-12 px-6 text-base;
+  }
+
+  .btn-icon {
+    @apply h-9 w-9 p-0;
+  }
+
+  .project-list {
+    @apply divide-y divide-gray-200;
+  }
+
+  .project-list-item {
+    @apply flex items-center justify-between py-3;
+  }
+
+  .project-view-area, .tool-view-area {
+    @apply animate-fade-in;
+  }
+
+  .tool-view-header {
+    @apply mb-6 pb-4 border-b;
+  }
+
+  .back-link {
+    @apply text-sm text-primary hover:underline flex items-center gap-1;
+  }
+  
+  .tab-content {
+    @apply animate-fade-in;
+  }
+
+  .progress-bar {
+    @apply h-2 bg-gray-200 rounded-full overflow-hidden;
+  }
+
+  .progress-bar-fill {
+    @apply h-full bg-primary transition-all duration-300 ease-out;
+  }
+
+  .log-display {
+    @apply bg-gray-50 border border-gray-200 rounded p-3 max-h-[300px] overflow-y-auto text-xs font-mono text-gray-700;
+  }
+
+  .attribute-block {
+    @apply border border-gray-200 rounded-md p-3 mb-3;
+  }
+  
+  .value-tag {
+    @apply inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-xs text-gray-700 mr-1 mb-1;
+  }
+
+  .stage-item {
+    @apply relative flex items-center;
+  }
+
+  .stage-number {
+    @apply w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2;
+  }
+
+  .stage-pending .stage-number {
+    @apply bg-gray-200 text-gray-600;
+  }
+
+  .stage-active .stage-number {
+    @apply bg-primary text-white;
+  }
+
+  .stage-completed .stage-number {
+    @apply bg-green-500 text-white;
+  }
+
+  .stage-label {
+    @apply text-sm;
+  }
+
+  .stage-pending .stage-label {
+    @apply text-gray-500;
+  }
+
+  .stage-active .stage-label {
+    @apply text-primary font-medium;
+  }
+
+  .stage-completed .stage-label {
+    @apply text-green-700;
+  }
+  
+  .stage-line {
+    @apply absolute left-3 w-0.5 bg-gray-200 h-8 -bottom-8;
+  }
+
+  .stage-completed .stage-line {
+    @apply bg-green-500;
+  }
+
+  .data-table {
+    @apply w-full text-sm text-left text-gray-700;
+  }
+  
+  .data-table th {
+    @apply px-3 py-2 bg-gray-50 font-medium text-gray-600;
+  }
+  
+  .data-table td {
+    @apply px-3 py-2 border-t border-gray-200;
+  }
+
+  .file-upload-area {
+    @apply border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center;
+  }
+
+  .status-indicator {
+    @apply px-2 py-0.5 text-xs font-medium rounded-full;
+  }
+
+  .status-pending {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+
+  .status-uploaded {
+    @apply bg-green-100 text-green-800;
+  }
+
+  .sub-tab {
+    @apply px-4 py-2 font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent;
+  }
+
+  .sub-tab.active {
+    @apply text-primary border-b-2 border-primary;
+  }
+
+  .split-view {
+    @apply flex flex-col md:flex-row gap-4;
+  }
+  
+  .split-view > div {
+    @apply w-full md:w-1/2;
+  }
+
+  .results-grid {
+    @apply grid gap-4 md:grid-cols-2 lg:grid-cols-3;
   }
 }
