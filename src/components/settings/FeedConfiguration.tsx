@@ -84,12 +84,12 @@ const FeedConfiguration: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <FileUpload
-              onFileUpload={handleFileUpload}
-              acceptedFileTypes={[".csv", ".xlsx"]}
-              maxFileSizeMB={10}
+              id="feed-upload"
+              acceptedTypes={[".csv", ".xlsx"]}
+              onFileChange={handleFileUpload}
               label={`Upload your ${selectedFeedMode === "plp" ? "PLP" : "Product"} feed file`}
-              description="Accepted formats: CSV, XLSX (max 10MB)"
-              icon={<FileText className="h-8 w-8 text-gray-400" />}
+              requiredColumns={targetColumns}
+              downloadTemplateLink="#"
             />
           </CardContent>
         </Card>

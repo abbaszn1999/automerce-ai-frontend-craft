@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const AppSidebar: React.FC = () => {
-  const { currentSolution, setCurrentSolution, setCurrentView, currentView, setSettingsCurrentTab } = useAppContext();
+  const { currentSolution, setCurrentSolution, setCurrentView, currentView, settingsCurrentTab, setSettingsCurrentTab } = useAppContext();
   const [showFeedSettings, setShowFeedSettings] = useState(false);
   const [showConfiguration, setShowConfiguration] = useState(false);
   
