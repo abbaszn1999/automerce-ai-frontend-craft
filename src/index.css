@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -14,16 +13,16 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 24 100% 48%; /* Autommerce orange */
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 270 100% 29%; /* Autommerce purple */
+    --secondary-foreground: 210 40% 98%;
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
+    --accent: 273 43% 37%; /* Autommerce light purple */
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
@@ -31,53 +30,19 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 24 100% 48%; /* Autommerce orange */
 
-    --radius: 0.5rem;
-    
-    /* Autommerce Custom Colors */
-    --autommerce-orange: 24 100% 50%;
-    --autommerce-orange-hover: 24 100% 45%;
-    --autommerce-dark: 220 17% 17%;
-    --autommerce-dark-hover: 220 17% 12%;
-    
-    /* Sidebar Colors */
-    --sidebar: 220 17% 17%;
+    /* Sidebar specific colors */
+    --sidebar-background: 223 47% 23%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-border: 215 13% 34%;
-    --sidebar-accent: 216 12% 27%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-ring: 216 12% 47% / 0.3;
-  }
+    --sidebar-primary: 24 100% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 273 43% 37%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 223 30% 30%;
+    --sidebar-ring: 24 100% 48%;
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --radius: 4px;
   }
 }
 
@@ -85,47 +50,28 @@
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-gray-50 text-foreground;
+    min-height: 100vh;
   }
 }
 
-/* Autommerce Extensions */
 @layer components {
-  .bg-autommerce-orange {
-    @apply bg-[#FF8C00];
+  .app-header {
+    @apply bg-white shadow-sm sticky top-0 z-30 w-full border-b border-gray-200;
   }
   
-  .hover\:bg-autommerce-orange\/90:hover {
-    @apply bg-[#E67E00];
+  .solution-selector {
+    @apply bg-white shadow-sm sticky top-16 z-20 w-full border-b border-gray-200;
+  }
+
+  .solution-tab {
+    @apply relative px-4 py-3 text-gray-700 hover:text-primary hover:bg-gray-50 transition-colors text-sm font-medium;
   }
   
-  .text-autommerce-orange {
-    @apply text-[#FF8C00];
-  }
-  
-  .border-autommerce-orange {
-    @apply border-[#FF8C00];
-  }
-  
-  .bg-sidebar {
-    @apply bg-[#1A1F2C];
-  }
-  
-  .text-sidebar-foreground {
-    @apply text-white;
-  }
-  
-  .btn {
-    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
-  }
-  
-  .btn-outline {
-    @apply border border-gray-300 bg-white hover:bg-gray-50 text-gray-700;
-  }
-  
-  .btn-primary {
-    @apply bg-autommerce-orange hover:bg-autommerce-orange/90 text-white;
+  .solution-tab.active {
+    @apply text-primary border-b-2 border-primary;
   }
 
   .main-content {
@@ -133,154 +79,223 @@
   }
 
   .card {
-    @apply bg-white shadow-sm rounded-lg p-6;
+    @apply bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-4;
   }
 
-  .card-header {
-    @apply flex justify-between items-center mb-4;
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors 
+    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 
+    disabled:opacity-50 disabled:pointer-events-none ring-offset-background px-4 py-2;
   }
-  
-  .card-title {
-    @apply text-lg font-medium;
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
   }
-  
-  .card-subtitle {
-    @apply text-sm text-gray-500;
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
   }
-  
-  .card-content {
-    @apply space-y-4;
+
+  .btn-success {
+    @apply bg-green-600 text-white hover:bg-green-700;
   }
-  
-  .card-footer {
-    @apply flex justify-end mt-6;
+
+  .btn-outline {
+    @apply border border-input hover:bg-accent hover:text-accent-foreground;
   }
-  
-  .field-label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+
+  .btn-ghost {
+    @apply hover:bg-accent hover:text-accent-foreground;
   }
-  
-  .field-input {
-    @apply block w-full border-gray-300 rounded-md shadow-sm focus:ring-autommerce-orange focus:border-autommerce-orange sm:text-sm;
+
+  .btn-link {
+    @apply text-primary underline-offset-4 hover:underline;
   }
-  
-  /* Forms and Controls */
-  .form-group {
-    @apply mb-4;
+
+  .btn-sm {
+    @apply h-8 px-3 text-xs;
   }
-  
-  .form-field {
-    @apply mb-4;
+
+  .btn-lg {
+    @apply h-12 px-6 text-base;
   }
-  
-  .checkbox-group {
-    @apply space-y-2;
+
+  .btn-icon {
+    @apply h-9 w-9 p-0;
   }
-  
-  .checkbox-item {
-    @apply flex items-center;
+
+  .project-list {
+    @apply divide-y divide-gray-200;
   }
-  
-  .checkbox-label {
-    @apply ml-2 text-sm text-gray-700;
+
+  .project-list-item {
+    @apply flex items-center justify-between py-3;
   }
-  
-  .select-input {
-    @apply block w-full mt-1 rounded-md border-gray-300 shadow-sm focus:border-autommerce-orange focus:ring-autommerce-orange sm:text-sm;
+
+  .project-view-area, .tool-view-area {
+    @apply animate-fade-in;
   }
-  
-  /* Status Indicators */
-  .status-indicator {
-    @apply px-2 py-1 text-xs font-medium rounded-full;
+
+  .tool-view-header {
+    @apply mb-6 pb-4 border-b;
   }
-  
-  .status-pending {
-    @apply bg-yellow-100 text-yellow-800;
-  }
-  
-  .status-success {
-    @apply bg-green-100 text-green-800;
-  }
-  
-  .status-error {
-    @apply bg-red-100 text-red-800;
-  }
-  
-  .status-warning {
-    @apply bg-orange-100 text-orange-800;
-  }
-  
-  .status-info {
-    @apply bg-blue-100 text-blue-800;
-  }
-  
-  .status-uploaded {
-    @apply bg-green-100 text-green-800;
-  }
-  
-  /* File Upload */
-  .file-upload-area {
-    @apply flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-md bg-gray-50;
-  }
-  
-  /* Tabs */
-  .tab-list {
-    @apply flex space-x-4 border-b border-gray-200;
-  }
-  
-  .tab {
-    @apply py-2 px-1 font-medium text-sm border-b-2 border-transparent hover:border-gray-300 hover:text-gray-700 transition-colors;
-  }
-  
-  .tab-active {
-    @apply border-autommerce-orange text-autommerce-orange;
+
+  .back-link {
+    @apply text-sm text-primary hover:underline flex items-center gap-1;
   }
   
   .tab-content {
-    @apply mt-4;
+    @apply animate-fade-in;
+  }
+
+  .progress-bar {
+    @apply h-2 bg-gray-200 rounded-full overflow-hidden;
+  }
+
+  .progress-bar-fill {
+    @apply h-full bg-primary transition-all duration-300 ease-out;
+  }
+
+  .log-display {
+    @apply bg-gray-50 border border-gray-200 rounded p-3 max-h-[300px] overflow-y-auto text-xs font-mono text-gray-700;
+  }
+
+  .attribute-block {
+    @apply border border-gray-200 rounded-md p-3 mb-3;
   }
   
-  /* Field aggregations */
-  .field-with-buttons {
-    @apply flex mt-1;
+  .value-tag {
+    @apply inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-xs text-gray-700 mr-1 mb-1;
+  }
+
+  .stage-item {
+    @apply relative flex items-center;
+  }
+
+  .stage-number {
+    @apply w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2;
+  }
+
+  .stage-pending .stage-number {
+    @apply bg-gray-200 text-gray-600;
+  }
+
+  .stage-active .stage-number {
+    @apply bg-primary text-white;
+  }
+
+  .stage-completed .stage-number {
+    @apply bg-green-500 text-white;
+  }
+
+  .stage-label {
+    @apply text-sm;
+  }
+
+  .stage-pending .stage-label {
+    @apply text-gray-500;
+  }
+
+  .stage-active .stage-label {
+    @apply text-primary font-medium;
+  }
+
+  .stage-completed .stage-label {
+    @apply text-green-700;
   }
   
-  .field-button {
-    @apply inset-y-0 right-0 flex items-center px-3 bg-gray-50 border border-gray-300 text-gray-500 rounded-r-md;
+  .stage-line {
+    @apply absolute left-3 w-0.5 bg-gray-200 h-8 -bottom-8;
+  }
+
+  .stage-completed .stage-line {
+    @apply bg-green-500;
+  }
+
+  .data-table {
+    @apply w-full text-sm text-left text-gray-700;
   }
   
+  .data-table th {
+    @apply px-3 py-2 bg-gray-50 font-medium text-gray-600;
+  }
+  
+  .data-table td {
+    @apply px-3 py-2 border-t border-gray-200;
+  }
+
+  .file-upload-area {
+    @apply border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center;
+  }
+
+  .status-indicator {
+    @apply px-2 py-0.5 text-xs font-medium rounded-full;
+  }
+
+  .status-pending {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+
+  .status-uploaded {
+    @apply bg-green-100 text-green-800;
+  }
+
+  .sub-tab {
+    @apply px-4 py-2 font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent;
+  }
+
+  .sub-tab.active {
+    @apply text-primary border-b-2 border-primary;
+  }
+
+  .split-view {
+    @apply flex flex-col md:flex-row gap-4;
+  }
+  
+  .split-view > div {
+    @apply w-full md:w-1/2;
+  }
+
+  .results-grid {
+    @apply grid gap-4 md:grid-cols-2 lg:grid-cols-3;
+  }
+
   /* New sidebar-specific styles */
   .app-sidebar {
-    @apply bg-[#1A1F2C] h-screen w-64 fixed left-0 top-0 z-40 border-r border-sidebar-border flex flex-col;
+    @apply bg-sidebar h-screen w-64 fixed left-0 top-0 z-40 border-r border-sidebar-border flex flex-col;
     min-width: 16rem;
   }
 
   .sidebar-workspace-selector {
-    @apply bg-[#232836] p-3 border-b border-[#2d3444];
+    @apply bg-sidebar-accent p-3 flex items-center justify-between text-white;
   }
-  
-  .workspace-dropdown {
-    @apply w-56 bg-white border border-gray-200 shadow-lg rounded-md overflow-hidden;
-  }
-  
-  .workspace-item {
-    @apply py-2 px-3 hover:bg-gray-100 cursor-pointer;
-  }
-  
+
   .sidebar-nav-item {
-    @apply flex items-center gap-2 px-3 py-2 my-0.5 rounded-md text-gray-300 hover:text-white hover:bg-[#232836] transition-colors;
+    @apply flex items-center gap-3 px-4 py-3 text-sidebar-foreground hover:bg-sidebar-accent/30 transition-colors;
   }
-  
+
   .sidebar-nav-item.active {
-    @apply bg-[#232836] text-white font-medium;
+    @apply bg-sidebar-accent/40 text-sidebar-primary-foreground border-l-2 border-sidebar-primary;
   }
-  
+
   .sidebar-section {
-    @apply mt-6 px-3 border-t border-[#2d3444] pt-6;
+    @apply mt-6;
   }
-  
+
+  .sidebar-section-title {
+    @apply px-4 py-2 text-sm font-medium text-sidebar-foreground/60;
+  }
+
   .sidebar-dropdown-item {
-    @apply flex justify-between items-center text-gray-300 hover:text-white cursor-pointer px-2 py-2 rounded-md hover:bg-[#232836];
+    @apply flex items-center justify-between px-4 py-2 text-sidebar-foreground/80 hover:text-sidebar-foreground cursor-pointer;
+  }
+
+  .workspace-dropdown {
+    @apply p-3 bg-white rounded shadow-lg min-w-[180px];
+  }
+
+  .workspace-item {
+    @apply px-3 py-2 hover:bg-gray-100 rounded cursor-pointer;
   }
 
   /* New content-specific styles */
@@ -289,10 +304,57 @@
   }
 
   .content-header {
-    @apply sticky top-0 z-10 bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex justify-between;
+    @apply bg-white shadow-sm p-4 flex items-center justify-between;
   }
-  
+
   .content-body {
-    @apply px-6 py-6;
+    @apply p-6;
+  }
+
+  /* Feed settings specific styles */
+  .feed-settings-tabs {
+    @apply flex border-b border-gray-200 mb-6;
+  }
+
+  .feed-tab {
+    @apply px-6 py-3 font-medium border-b-2 -mb-px;
+  }
+
+  .feed-tab.active {
+    @apply text-primary border-primary;
+  }
+
+  .feed-tab:not(.active) {
+    @apply text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300;
+  }
+
+  /* Configuration specific styles */
+  .config-tabs {
+    @apply flex border-b border-gray-200 mb-6;
+  }
+
+  .config-tab {
+    @apply px-6 py-3 font-medium border-b-2 -mb-px;
+  }
+
+  .config-tab.active {
+    @apply text-primary border-primary;
+  }
+
+  .config-tab:not(.active) {
+    @apply text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300;
+  }
+
+  /* Form fields */
+  .form-group {
+    @apply mb-4;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+
+  .form-input {
+    @apply w-full border-gray-300 rounded-md shadow-sm;
   }
 }

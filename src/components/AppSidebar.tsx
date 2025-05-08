@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { useAppContext } from "../context/AppContext";
+import AutommerceLogo from "./AutommerceLogo";
 import { 
   ChevronDown, 
   LayoutDashboard, 
@@ -20,14 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const AppSidebar: React.FC = () => {
-  const { 
-    currentSolution, 
-    setCurrentSolution, 
-    setCurrentView,
-    currentSettingsTab,
-    setCurrentSettingsTab
-  } = useAppContext();
-  
+  const { currentSolution, setCurrentSolution, setCurrentView } = useAppContext();
   const [showFeedSettings, setShowFeedSettings] = useState(false);
   const [showConfiguration, setShowConfiguration] = useState(false);
   
@@ -72,18 +66,6 @@ const AppSidebar: React.FC = () => {
       setCurrentView("project");
     }
   };
-  
-  const handleFeedSettingClick = (tab: "feed-mode" | "feed-configuration" | "feed-list") => {
-    setCurrentSettingsTab(tab);
-    setCurrentSolution("ae"); // Using ae as a placeholder since settings aren't a solution
-    setCurrentView("settings");
-  };
-  
-  const handleConfigurationClick = (tab: "analytics-config" | "javascript-manager") => {
-    setCurrentSettingsTab(tab);
-    setCurrentSolution("ae"); // Using ae as a placeholder since settings aren't a solution
-    setCurrentView("settings");
-  };
 
   const isActive = (solutionId: string) => {
     if (solutionId === "dashboard") return false; // Dashboard not implemented yet
@@ -100,8 +82,8 @@ const AppSidebar: React.FC = () => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <div className="flex items-center justify-between w-full cursor-pointer">
-              <span className="font-medium text-gray-100">Demo en-GB</span>
-              <ChevronDown size={16} className="text-gray-300" />
+              <span className="font-medium">Demo en-GB</span>
+              <ChevronDown size={16} />
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="workspace-dropdown">
@@ -114,10 +96,7 @@ const AppSidebar: React.FC = () => {
       
       {/* Autommerce Logo */}
       <div className="p-4 flex justify-center">
-        <div className="text-white">
-          <h2 className="text-xl font-bold">Autommerce</h2>
-          <p className="text-sm text-gray-300">E-commerce with AI Excellence</p>
-        </div>
+        <AutommerceLogo variant="white" />
       </div>
       
       {/* Navigation Items */}
@@ -203,25 +182,13 @@ const AppSidebar: React.FC = () => {
           
           {showFeedSettings && (
             <div className="ml-8 mt-1 flex flex-col space-y-2">
-              <a 
-                href="#" 
-                className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm"
-                onClick={() => handleFeedSettingClick("feed-mode")}
-              >
+              <a href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm">
                 Feed Mode
               </a>
-              <a 
-                href="#" 
-                className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm"
-                onClick={() => handleFeedSettingClick("feed-configuration")}
-              >
+              <a href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm">
                 Feed Configuration
               </a>
-              <a 
-                href="#" 
-                className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm"
-                onClick={() => handleFeedSettingClick("feed-list")}
-              >
+              <a href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm">
                 Feed List
               </a>
             </div>
@@ -243,18 +210,10 @@ const AppSidebar: React.FC = () => {
           
           {showConfiguration && (
             <div className="ml-8 mt-1 flex flex-col space-y-2">
-              <a 
-                href="#" 
-                className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm"
-                onClick={() => handleConfigurationClick("analytics-config")}
-              >
+              <a href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm">
                 Analytics Config
               </a>
-              <a 
-                href="#" 
-                className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm"
-                onClick={() => handleConfigurationClick("javascript-manager")}
-              >
+              <a href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm">
                 Javascript Manager
               </a>
             </div>
