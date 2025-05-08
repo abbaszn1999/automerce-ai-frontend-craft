@@ -1,7 +1,6 @@
 
 import React, { useState } from "react";
 import { useAppContext } from "../context/AppContext";
-import AutommerceLogo from "./AutommerceLogo";
 import { 
   ChevronDown, 
   LayoutDashboard, 

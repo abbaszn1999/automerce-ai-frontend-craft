@@ -23,7 +23,7 @@ const FeedMode: React.FC = () => {
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
         <RadioGroup 
           value={selectedMode} 
-          onValueChange={(value) => setSelectedMode(value as "plp" | "product")} 
+          onValueChange={(value: string) => setSelectedMode(value as "plp" | "product")} 
           className="space-y-4"
         >
           <div className="flex items-center space-x-2 border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
