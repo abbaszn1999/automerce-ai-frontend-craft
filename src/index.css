@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -76,7 +75,7 @@
   }
 
   .main-content {
-    @apply w-full max-w-[1400px] mx-auto p-4 md:p-6 min-h-[calc(100vh-8rem)];
+    @apply w-full mx-auto min-h-[calc(100vh-8rem)];
   }
 
   .card {
@@ -263,7 +262,8 @@
 
   /* New sidebar-specific styles */
   .app-sidebar {
-    @apply bg-sidebar min-h-screen w-64 fixed left-0 top-0 z-40 border-r border-sidebar-border;
+    @apply bg-sidebar h-screen w-64 fixed left-0 top-0 z-40 border-r border-sidebar-border flex flex-col;
+    min-width: 16rem;
   }
 
   .sidebar-workspace-selector {
@@ -300,7 +300,7 @@
 
   /* New content-specific styles */
   .content-wrapper {
-    @apply ml-64 min-h-screen bg-gray-50;
+    @apply flex-1 min-w-0;
   }
 
   .content-header {
