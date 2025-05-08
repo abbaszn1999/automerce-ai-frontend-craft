@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useAppContext } from "../context/AppContext";
 
@@ -38,3 +37,4 @@ const SolutionSelector: React.FC = () => {
 };
 
 export default SolutionSelector;
+

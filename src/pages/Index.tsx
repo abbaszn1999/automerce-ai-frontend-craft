@@ -10,6 +10,19 @@ import LowHangingFruits from "../components/solutions/lhf/LowHangingFruits";
 import InternalLinks from "../components/solutions/il/InternalLinks";
 import OnPageBoosting from "../components/solutions/opb/OnPageBoosting";
 
+// Helper function to map solution IDs to friendly names
+const getSolutionName = (id: string): string => {
+  switch (id) {
+    case "ae": return "AI Attribute Enrichment";
+    case "cb": return "AI Collection Builder";
+    case "ho": return "Website Restructure";
+    case "lhf": return "Low-Hanging Fruits";
+    case "il": return "Link Boosting";
+    case "opb": return "On-Page Boosting";
+    default: return id.toUpperCase();
+  }
+};
+
 const Index: React.FC = () => {
   const { currentSolution, currentView } = useAppContext();
 
@@ -22,7 +35,7 @@ const Index: React.FC = () => {
           return (
             <ProjectView 
               solutionPrefix="ae" 
-              solutionName="Attribute Extraction"
+              solutionName="AI Attribute Enrichment"
               solutionDescription="Extract and organize product attributes using AI to enhance your product data quality and improve filtering options."
             />
           );
@@ -30,7 +43,7 @@ const Index: React.FC = () => {
           return (
             <ProjectView 
               solutionPrefix="cb" 
-              solutionName="Collection Builder"
+              solutionName="AI Collection Builder"
               solutionDescription="Create optimized product collections based on data analysis to improve navigation and conversion rates."
             />
           );
@@ -38,7 +51,7 @@ const Index: React.FC = () => {
           return (
             <ProjectView 
               solutionPrefix="ho" 
-              solutionName="Header Optimization"
+              solutionName="Website Restructure"
               solutionDescription="Optimize your site's navigation structure for improved user experience and SEO performance."
             />
           );
@@ -46,7 +59,7 @@ const Index: React.FC = () => {
           return (
             <ProjectView 
               solutionPrefix="lhf" 
-              solutionName="Low Hanging Fruits"
+              solutionName="Low-Hanging Fruits"
               solutionDescription="Identify quick wins for SEO improvements based on your existing product and category pages."
             />
           );
@@ -54,7 +67,7 @@ const Index: React.FC = () => {
           return (
             <ProjectView 
               solutionPrefix="il" 
-              solutionName="Internal Links"
+              solutionName="Link Boosting"
               solutionDescription="Enhance your site's internal linking structure to improve SEO and user navigation between pages."
             />
           );
@@ -92,6 +105,9 @@ const Index: React.FC = () => {
 
   return (
     <AppLayout>
+      <h1 className="text-2xl font-bold mb-4">
+        {getSolutionName(currentSolution)}
+      </h1>
       {renderContent()}
     </AppLayout>
   );

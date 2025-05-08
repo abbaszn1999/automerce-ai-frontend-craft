@@ -1,7 +1,7 @@
 
 import React from "react";
 import AppHeader from "./AppHeader";
-import SolutionSelector from "./SolutionSelector";
+import AppSidebar from "./AppSidebar";
 import AppFooter from "./AppFooter";
 
 interface AppLayoutProps {
@@ -10,13 +10,15 @@ interface AppLayoutProps {
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen flex flex-col">
-      <AppHeader />
-      <SolutionSelector />
-      <main className="main-content flex-1">
-        {children}
-      </main>
-      <AppFooter />
+    <div className="flex min-h-screen bg-gray-50">
+      <AppSidebar />
+      <div className="content-wrapper">
+        <AppHeader />
+        <main className="content-body">
+          {children}
+        </main>
+        <AppFooter />
+      </div>
     </div>
   );
 };

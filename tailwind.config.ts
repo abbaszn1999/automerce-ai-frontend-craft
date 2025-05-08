@@ -62,6 +62,17 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Autommerce brand colors
+				autommerce: {
+					orange: '#F76D01',
+					red: '#C40000',
+					purple: {
+						DEFAULT: '#400095',
+						light: '#6B35BD',
+						lighter: '#C8ABD2'
+					},
+					burgundy: '#790B1D',
 				}
 			},
 			borderRadius: {

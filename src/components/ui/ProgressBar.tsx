@@ -13,9 +13,9 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   height = "h-2"
 }) => {
   return (
-    <div className={`progress-bar ${height}`} id={id}>
+    <div className={`progress-bar ${height} bg-gray-200 rounded-full`} id={id}>
       <div 
-        className="progress-bar-fill" 
+        className="progress-bar-fill bg-autommerce-orange" 
         style={{ width: `${progress}%` }}
       ></div>
     </div>

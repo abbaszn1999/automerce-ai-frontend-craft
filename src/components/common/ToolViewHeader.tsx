@@ -8,6 +8,19 @@ interface ToolViewHeaderProps {
   solutionName: string;
 }
 
+// Function to map solution prefix to friendly name
+const getSolutionFriendlyName = (prefix: string): string => {
+  switch (prefix) {
+    case "ae": return "AI Attribute Enrichment";
+    case "cb": return "AI Collection Builder";
+    case "ho": return "Website Restructure";
+    case "lhf": return "Low-Hanging Fruits";
+    case "il": return "Link Boosting";
+    case "opb": return "On-Page Boosting";
+    default: return prefix.toUpperCase();
+  }
+};
+
 const ToolViewHeader: React.FC<ToolViewHeaderProps> = ({ solutionPrefix, solutionName }) => {
   const { selectedProjectName, setSelectedProjectName, setCurrentView } = useAppContext();
 
@@ -15,6 +28,8 @@ const ToolViewHeader: React.FC<ToolViewHeaderProps> = ({ solutionPrefix, solutio
     setSelectedProjectName(null);
     setCurrentView("project");
   };
+  
+  const friendlyName = getSolutionFriendlyName(solutionPrefix);
 
   return (
     <div className="tool-view-header">
@@ -28,7 +43,7 @@ const ToolViewHeader: React.FC<ToolViewHeaderProps> = ({ solutionPrefix, solutio
           }}
         >
           <ArrowLeft size={16} />
-          <span>Back to {solutionPrefix.toUpperCase()} Projects</span>
+          <span>Back to {friendlyName} Projects</span>
         </a>
         
         <h1 className="text-2xl font-bold">
