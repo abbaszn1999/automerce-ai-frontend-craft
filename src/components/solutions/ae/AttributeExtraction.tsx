@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../../context/AppContext";
 import ToolViewHeader from "../../common/ToolViewHeader";
@@ -12,7 +11,7 @@ import { simulateProcessing } from "../../../utils/utils";
 import { toast } from "@/components/ui/sonner";
 
 const AttributeExtraction: React.FC = () => {
-  const { aeCurrentTab, setAeCurrentTab, aeAttributes } = useAppContext();
+  const { aeCurrentTab, setAeCurrentTab, aeAttributes, setCurrentView, setSelectedProjectName } = useAppContext();
   
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
