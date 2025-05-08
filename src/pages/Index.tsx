@@ -9,6 +9,7 @@ import HeaderOptimization from "../components/solutions/ho/HeaderOptimization";
 import LowHangingFruits from "../components/solutions/lhf/LowHangingFruits";
 import InternalLinks from "../components/solutions/il/InternalLinks";
 import OnPageBoosting from "../components/solutions/opb/OnPageBoosting";
+import Settings from "../components/settings/Settings";
 
 // Helper function to map solution IDs to friendly names
 const getSolutionName = (id: string): string => {
@@ -28,7 +29,9 @@ const Index: React.FC = () => {
 
   // Determine which view to show based on solution and view type
   const renderContent = () => {
-    if (currentView === "project") {
+    if (currentView === "settings") {
+      return <Settings />;
+    } else if (currentView === "project") {
       // Show Project View for the current solution
       switch (currentSolution) {
         case "ae":
@@ -105,9 +108,11 @@ const Index: React.FC = () => {
 
   return (
     <AppLayout>
-      <h1 className="text-2xl font-bold mb-4">
-        {getSolutionName(currentSolution)}
-      </h1>
+      {currentView !== "settings" && (
+        <h1 className="text-2xl font-bold mb-4">
+          {getSolutionName(currentSolution)}
+        </h1>
+      )}
       {renderContent()}
     </AppLayout>
   );

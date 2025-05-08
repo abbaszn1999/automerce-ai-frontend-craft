@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const AppSidebar: React.FC = () => {
-  const { currentSolution, setCurrentSolution, setCurrentView } = useAppContext();
+  const { currentSolution, setCurrentSolution, setCurrentView, currentView, setSettingsCurrentTab } = useAppContext();
   const [showFeedSettings, setShowFeedSettings] = useState(false);
   const [showConfiguration, setShowConfiguration] = useState(false);
   
@@ -73,6 +73,16 @@ const AppSidebar: React.FC = () => {
     // Map current solution ID to new names for comparison
     const currentMapped = Object.entries(solutionMapping).find(([key, _]) => key === currentSolution)?.[1];
     return currentMapped === solutionId;
+  };
+
+  const handleFeedSettingsClick = (tabName: "feed-mode" | "feed-config" | "feed-list") => {
+    setSettingsCurrentTab(tabName);
+    setCurrentView("settings");
+  };
+
+  const handleConfigClick = (tabName: "analytics-config" | "js-manager") => {
+    setSettingsCurrentTab(tabName);
+    setCurrentView("settings");
   };
 
   return (
@@ -182,13 +192,31 @@ const AppSidebar: React.FC = () => {
           
           {showFeedSettings && (
             <div className="ml-8 mt-1 flex flex-col space-y-2">
-              <a href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm">
+              <a 
+                href="#" 
+                className={`text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm ${
+                  currentView === "settings" && settingsCurrentTab === "feed-mode" ? "text-sidebar-primary" : ""
+                }`}
+                onClick={() => handleFeedSettingsClick("feed-mode")}
+              >
                 Feed Mode
               </a>
-              <a href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm">
+              <a 
+                href="#" 
+                className={`text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm ${
+                  currentView === "settings" && settingsCurrentTab === "feed-config" ? "text-sidebar-primary" : ""
+                }`}
+                onClick={() => handleFeedSettingsClick("feed-config")}
+              >
                 Feed Configuration
               </a>
-              <a href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm">
+              <a 
+                href="#" 
+                className={`text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm ${
+                  currentView === "settings" && settingsCurrentTab === "feed-list" ? "text-sidebar-primary" : ""
+                }`}
+                onClick={() => handleFeedSettingsClick("feed-list")}
+              >
                 Feed List
               </a>
             </div>
@@ -210,10 +238,22 @@ const AppSidebar: React.FC = () => {
           
           {showConfiguration && (
             <div className="ml-8 mt-1 flex flex-col space-y-2">
-              <a href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm">
+              <a 
+                href="#" 
+                className={`text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm ${
+                  currentView === "settings" && settingsCurrentTab === "analytics-config" ? "text-sidebar-primary" : ""
+                }`}
+                onClick={() => handleConfigClick("analytics-config")}
+              >
                 Analytics Config
               </a>
-              <a href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm">
+              <a 
+                href="#" 
+                className={`text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm ${
+                  currentView === "settings" && settingsCurrentTab === "js-manager" ? "text-sidebar-primary" : ""
+                }`}
+                onClick={() => handleConfigClick("js-manager")}
+              >
                 Javascript Manager
               </a>
             </div>

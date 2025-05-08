@@ -2,7 +2,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 type SolutionType = "ae" | "cb" | "ho" | "lhf" | "il" | "opb";
-type ViewType = "project" | "tool";
+type ViewType = "project" | "tool" | "settings";
+type FeedModeType = "plp" | "product";
 
 interface AppContextType {
   // Global state
@@ -23,6 +24,14 @@ interface AppContextType {
   // OPB specific state
   opbCurrentSubTab: "pop" | "plop";
   
+  // Settings state
+  settingsCurrentTab: "feed-mode" | "feed-config" | "feed-list" | "analytics-config" | "js-manager";
+  
+  // Feed settings state
+  selectedFeedMode: FeedModeType;
+  feedMappingColumns: Array<{sourceColumn: string; targetColumn: string}>;
+  feedList: Array<{id: string; name: string; type: FeedModeType; status: string; lastUpdated: string}>;
+  
   // Methods
   setCurrentSolution: (solution: SolutionType) => void;
   setCurrentView: (view: ViewType) => void;
@@ -31,6 +40,12 @@ interface AppContextType {
   setCbCurrentStage: (stage: number) => void;
   setIlCurrentSubTab: (tab: "plp" | "product") => void;
   setOpbCurrentSubTab: (tab: "pop" | "plop") => void;
+  setSettingsCurrentTab: (tab: "feed-mode" | "feed-config" | "feed-list" | "analytics-config" | "js-manager") => void;
+  
+  // Feed settings methods
+  setSelectedFeedMode: (mode: FeedModeType) => void;
+  setFeedMappingColumns: (columns: Array<{sourceColumn: string; targetColumn: string}>) => void;
+  addFeedToList: (name: string, type: FeedModeType) => void;
   
   // AE methods
   addAttribute: (name: string, values: string[]) => void;
@@ -61,6 +76,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   // OPB specific state
   const [opbCurrentSubTab, setOpbCurrentSubTab] = useState<"pop" | "plop">("pop");
+  
+  // Settings state
+  const [settingsCurrentTab, setSettingsCurrentTab] = useState<"feed-mode" | "feed-config" | "feed-list" | "analytics-config" | "js-manager">("feed-mode");
+  
+  // Feed settings state
+  const [selectedFeedMode, setSelectedFeedMode] = useState<FeedModeType>("plp");
+  const [feedMappingColumns, setFeedMappingColumns] = useState<Array<{sourceColumn: string; targetColumn: string}>>([]);
+  const [feedList, setFeedList] = useState<Array<{id: string; name: string; type: FeedModeType; status: string; lastUpdated: string}>>([]);
 
   // Update document title when solution changes
   useEffect(() => {
@@ -96,6 +119,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteAttribute = (id: string) => {
     setAeAttributes(prev => prev.filter(attr => attr.id !== id));
   };
+  
+  // Feed list methods
+  const addFeedToList = (name: string, type: FeedModeType) => {
+    const newFeed = {
+      id: `feed-${Date.now()}`,
+      name,
+      type,
+      status: "Active",
+      lastUpdated: new Date().toISOString()
+    };
+    
+    setFeedList(prev => [...prev, newFeed]);
+  };
 
   const value = {
     currentSolution,
@@ -106,6 +142,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     cbCurrentStage,
     ilCurrentSubTab,
     opbCurrentSubTab,
+    settingsCurrentTab,
+    selectedFeedMode,
+    feedMappingColumns,
+    feedList,
     setCurrentSolution,
     setCurrentView,
     setSelectedProjectName,
@@ -113,6 +153,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCbCurrentStage,
     setIlCurrentSubTab,
     setOpbCurrentSubTab,
+    setSettingsCurrentTab,
+    setSelectedFeedMode,
+    setFeedMappingColumns,
+    addFeedToList,
     addAttribute,
     updateAttribute,
     deleteAttribute
