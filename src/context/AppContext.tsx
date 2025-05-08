@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 type SolutionType = "ae" | "cb" | "ho" | "lhf" | "il" | "opb";
-type ViewType = "project" | "tool";
+type ViewType = "project" | "tool" | "settings";
 type FeedModeType = "plp" | "product";
 type SettingsTabType = "feed-mode" | "feed-configuration" | "feed-list" | "analytics-config" | "javascript-manager";
 

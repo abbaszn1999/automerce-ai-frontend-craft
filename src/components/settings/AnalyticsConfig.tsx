@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { Google, Wordpress, Shopify } from "lucide-react";
+import { Search, Settings, Globe } from "lucide-react";
 
 const AnalyticsConfig: React.FC = () => {
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -28,7 +28,7 @@ const AnalyticsConfig: React.FC = () => {
       {/* Google Search Console Connection */}
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
         <h2 className="text-lg font-medium mb-4 flex items-center">
-          <Google className="mr-2" size={24} /> Google Search Console
+          <Search className="mr-2" size={24} /> Google Search Console
         </h2>
         <p className="text-gray-600 mb-4">
           Connect to Google Search Console to sync performance data
@@ -83,7 +83,7 @@ const AnalyticsConfig: React.FC = () => {
             onClick={() => handleCMSConnect("wordpress")}
           >
             <div className="flex flex-col items-center text-center">
-              <Wordpress size={32} className="mb-2" />
+              <Globe size={32} className="mb-2" />
               <h3 className="font-medium">WordPress</h3>
               <p className="text-sm text-gray-600 mt-2">
                 {cmsConnected === "wordpress" ? "Connected" : "Connect WordPress site"}
@@ -99,7 +99,7 @@ const AnalyticsConfig: React.FC = () => {
             onClick={() => handleCMSConnect("shopify")}
           >
             <div className="flex flex-col items-center text-center">
-              <Shopify size={32} className="mb-2" />
+              <Globe size={32} className="mb-2" />
               <h3 className="font-medium">Shopify</h3>
               <p className="text-sm text-gray-600 mt-2">
                 {cmsConnected === "shopify" ? "Connected" : "Connect Shopify store"}

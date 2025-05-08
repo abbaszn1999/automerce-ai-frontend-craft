@@ -1,3 +1,4 @@
+
 import React from "react";
 import AppLayout from "../components/AppLayout";
 import { useAppContext } from "../context/AppContext";
@@ -88,7 +89,7 @@ const Index: React.FC = () => {
         default:
           return <div>Invalid solution selected</div>;
       }
-    } else {
+    } else if (currentView === "tool") {
       // Show Tool View for the current solution
       switch (currentSolution) {
         case "ae":
@@ -106,6 +107,9 @@ const Index: React.FC = () => {
         default:
           return <div>Invalid solution selected</div>;
       }
+    } else {
+      // Fallback case
+      return <div>Invalid view type</div>;
     }
   };
 
