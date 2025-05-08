@@ -15,6 +15,11 @@ const Settings: React.FC = () => {
   
   return (
     <div className="settings">
+      {/* Feed Settings Title */}
+      <div className="mb-4 px-6">
+        <h2 className="text-sm font-medium text-gray-500">Feed Settings</h2>
+      </div>
+
       <Tabs 
         value={currentSettingsTab} 
         onValueChange={(value) => setCurrentSettingsTab(value as any)}
@@ -22,52 +27,51 @@ const Settings: React.FC = () => {
         <div className="border-b border-gray-200">
           <div className="px-6">
             <TabsList className="mt-1 bg-transparent space-x-8">
-              <div className="border-b border-gray-200 mb-[-1px]">
-                <h2 className="text-sm font-medium text-gray-500 mb-4">Feed Settings</h2>
-                <div className="flex space-x-6">
-                  <TabsTrigger 
-                    value="feed-mode"
-                    className="pb-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-autommerce-orange data-[state=active]:text-autommerce-orange"
-                  >
-                    Feed Mode
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="feed-configuration"
-                    className="pb-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-autommerce-orange data-[state=active]:text-autommerce-orange"
-                  >
-                    Feed Configuration
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="feed-list"
-                    className="pb-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-autommerce-orange data-[state=active]:text-autommerce-orange"
-                  >
-                    Feed List
-                  </TabsTrigger>
-                </div>
+              <div className="flex space-x-6">
+                <TabsTrigger 
+                  value="feed-mode"
+                  className="pb-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-autommerce-orange data-[state=active]:text-autommerce-orange"
+                >
+                  Feed Mode
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="feed-configuration"
+                  className="pb-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-autommerce-orange data-[state=active]:text-autommerce-orange"
+                >
+                  Feed Configuration
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="feed-list"
+                  className="pb-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-autommerce-orange data-[state=active]:text-autommerce-orange"
+                >
+                  Feed List
+                </TabsTrigger>
               </div>
             </TabsList>
           </div>
         </div>
         
-        <div className="border-b border-gray-200 mt-8">
+        {/* Configuration Title */}
+        <div className="mb-4 px-6 mt-8">
+          <h2 className="text-sm font-medium text-gray-500">Configuration</h2>
+        </div>
+        
+        <div className="border-b border-gray-200">
           <div className="px-6">
             <TabsList className="mt-1 bg-transparent space-x-8">
-              <div className="border-b border-gray-200 mb-[-1px]">
-                <h2 className="text-sm font-medium text-gray-500 mb-4">Configuration</h2>
-                <div className="flex space-x-6">
-                  <TabsTrigger 
-                    value="analytics-config"
-                    className="pb-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-autommerce-orange data-[state=active]:text-autommerce-orange"
-                  >
-                    Analytics Config
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="javascript-manager"
-                    className="pb-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-autommerce-orange data-[state=active]:text-autommerce-orange"
-                  >
-                    Javascript Manager
-                  </TabsTrigger>
-                </div>
+              <div className="flex space-x-6">
+                <TabsTrigger 
+                  value="analytics-config"
+                  className="pb-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-autommerce-orange data-[state=active]:text-autommerce-orange"
+                >
+                  Analytics Config
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="javascript-manager"
+                  className="pb-4 text-sm font-medium border-b-2 border-transparent data-[state=active]:border-autommerce-orange data-[state=active]:text-autommerce-orange"
+                >
+                  Javascript Manager
+                </TabsTrigger>
               </div>
             </TabsList>
           </div>

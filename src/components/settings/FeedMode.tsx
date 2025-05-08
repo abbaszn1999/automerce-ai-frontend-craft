@@ -21,7 +21,11 @@ const FeedMode: React.FC = () => {
       </p>
       
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <RadioGroup value={selectedMode} onValueChange={(value: "plp" | "product") => setSelectedMode(value)} className="space-y-4">
+        <RadioGroup 
+          value={selectedMode} 
+          onValueChange={(value) => setSelectedMode(value as "plp" | "product")} 
+          className="space-y-4"
+        >
           <div className="flex items-center space-x-2 border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
             <RadioGroupItem value="plp" id="plp" />
             <Label htmlFor="plp" className="flex flex-col cursor-pointer">

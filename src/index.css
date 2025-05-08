@@ -251,12 +251,12 @@
   
   /* New sidebar-specific styles */
   .app-sidebar {
-    @apply bg-sidebar h-screen w-64 fixed left-0 top-0 z-40 border-r border-sidebar-border flex flex-col;
+    @apply bg-[#1A1F2C] h-screen w-64 fixed left-0 top-0 z-40 border-r border-sidebar-border flex flex-col;
     min-width: 16rem;
   }
 
   .sidebar-workspace-selector {
-    @apply bg-sidebar-accent p-3 border-b border-sidebar-border;
+    @apply bg-[#232836] p-3 border-b border-[#2d3444];
   }
   
   .workspace-dropdown {
@@ -268,19 +268,19 @@
   }
   
   .sidebar-nav-item {
-    @apply flex items-center gap-2 px-3 py-2 my-0.5 rounded-md text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors;
+    @apply flex items-center gap-2 px-3 py-2 my-0.5 rounded-md text-gray-300 hover:text-white hover:bg-[#232836] transition-colors;
   }
   
   .sidebar-nav-item.active {
-    @apply bg-sidebar-accent text-sidebar-foreground font-medium;
+    @apply bg-[#232836] text-white font-medium;
   }
   
   .sidebar-section {
-    @apply mt-6 px-3 border-t border-sidebar-border pt-6;
+    @apply mt-6 px-3 border-t border-[#2d3444] pt-6;
   }
   
   .sidebar-dropdown-item {
-    @apply flex justify-between items-center text-sidebar-foreground/70 hover:text-sidebar-foreground cursor-pointer px-2 py-2 rounded-md hover:bg-sidebar-accent;
+    @apply flex justify-between items-center text-gray-300 hover:text-white cursor-pointer px-2 py-2 rounded-md hover:bg-[#232836];
   }
 
   /* New content-specific styles */

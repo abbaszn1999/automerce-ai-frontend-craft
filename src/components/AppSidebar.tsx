@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useAppContext } from "../context/AppContext";
 import AutommerceLogo from "./AutommerceLogo";
@@ -100,8 +101,8 @@ const AppSidebar: React.FC = () => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <div className="flex items-center justify-between w-full cursor-pointer">
-              <span className="font-medium">Demo en-GB</span>
-              <ChevronDown size={16} />
+              <span className="font-medium text-gray-100">Demo en-GB</span>
+              <ChevronDown size={16} className="text-gray-300" />
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="workspace-dropdown">
@@ -114,7 +115,10 @@ const AppSidebar: React.FC = () => {
       
       {/* Autommerce Logo */}
       <div className="p-4 flex justify-center">
-        <AutommerceLogo variant="white" />
+        <div className="text-white">
+          <h2 className="text-xl font-bold">Autommerce</h2>
+          <p className="text-sm text-gray-300">E-commerce with AI Excellence</p>
+        </div>
       </div>
       
       {/* Navigation Items */}
