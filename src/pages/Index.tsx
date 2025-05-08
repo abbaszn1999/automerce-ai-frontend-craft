@@ -1,4 +1,3 @@
-
 import React from "react";
 import AppLayout from "../components/AppLayout";
 import { useAppContext } from "../context/AppContext";
@@ -9,6 +8,7 @@ import HeaderOptimization from "../components/solutions/ho/HeaderOptimization";
 import LowHangingFruits from "../components/solutions/lhf/LowHangingFruits";
 import InternalLinks from "../components/solutions/il/InternalLinks";
 import OnPageBoosting from "../components/solutions/opb/OnPageBoosting";
+import Settings from "../components/settings/Settings";
 
 // Helper function to map solution IDs to friendly names
 const getSolutionName = (id: string): string => {
@@ -24,10 +24,16 @@ const getSolutionName = (id: string): string => {
 };
 
 const Index: React.FC = () => {
-  const { currentSolution, currentView } = useAppContext();
+  const { currentSolution, currentView, currentSettingsTab } = useAppContext();
 
   // Determine which view to show based on solution and view type
   const renderContent = () => {
+    // Show Settings View if currentView is settings
+    if (currentView === "settings") {
+      return <Settings />;
+    }
+    
+    // Otherwise, show Project View or Tool View based on currentView
     if (currentView === "project") {
       // Show Project View for the current solution
       switch (currentSolution) {
@@ -103,10 +109,26 @@ const Index: React.FC = () => {
     }
   };
 
+  // Determine the page title based on current view
+  const getPageTitle = () => {
+    if (currentView === "settings") {
+      switch (currentSettingsTab) {
+        case "feed-mode": return "Feed Mode";
+        case "feed-configuration": return "Feed Configuration";
+        case "feed-list": return "Feed List";
+        case "analytics-config": return "Analytics Configuration";
+        case "javascript-manager": return "JavaScript Manager";
+        default: return "Settings";
+      }
+    } else {
+      return getSolutionName(currentSolution);
+    }
+  };
+
   return (
     <AppLayout>
       <h1 className="text-2xl font-bold mb-4">
-        {getSolutionName(currentSolution)}
+        {getPageTitle()}
       </h1>
       {renderContent()}
     </AppLayout>

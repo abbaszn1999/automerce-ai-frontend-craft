@@ -21,7 +21,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const AppSidebar: React.FC = () => {
-  const { currentSolution, setCurrentSolution, setCurrentView } = useAppContext();
+  const { 
+    currentSolution, 
+    setCurrentSolution, 
+    setCurrentView,
+    currentSettingsTab,
+    setCurrentSettingsTab
+  } = useAppContext();
+  
   const [showFeedSettings, setShowFeedSettings] = useState(false);
   const [showConfiguration, setShowConfiguration] = useState(false);
   
@@ -65,6 +72,18 @@ const AppSidebar: React.FC = () => {
       setCurrentSolution(originalId);
       setCurrentView("project");
     }
+  };
+  
+  const handleFeedSettingClick = (tab: "feed-mode" | "feed-configuration" | "feed-list") => {
+    setCurrentSettingsTab(tab);
+    setCurrentSolution("ae"); // Using ae as a placeholder since settings aren't a solution
+    setCurrentView("settings");
+  };
+  
+  const handleConfigurationClick = (tab: "analytics-config" | "javascript-manager") => {
+    setCurrentSettingsTab(tab);
+    setCurrentSolution("ae"); // Using ae as a placeholder since settings aren't a solution
+    setCurrentView("settings");
   };
 
   const isActive = (solutionId: string) => {
@@ -182,13 +201,25 @@ const AppSidebar: React.FC = () => {
           
           {showFeedSettings && (
             <div className="ml-8 mt-1 flex flex-col space-y-2">
-              <a href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm">
+              <a 
+                href="#" 
+                className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm"
+                onClick={() => handleFeedSettingClick("feed-mode")}
+              >
                 Feed Mode
               </a>
-              <a href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm">
+              <a 
+                href="#" 
+                className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm"
+                onClick={() => handleFeedSettingClick("feed-configuration")}
+              >
                 Feed Configuration
               </a>
-              <a href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm">
+              <a 
+                href="#" 
+                className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm"
+                onClick={() => handleFeedSettingClick("feed-list")}
+              >
                 Feed List
               </a>
             </div>
@@ -210,10 +241,18 @@ const AppSidebar: React.FC = () => {
           
           {showConfiguration && (
             <div className="ml-8 mt-1 flex flex-col space-y-2">
-              <a href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm">
+              <a 
+                href="#" 
+                className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm"
+                onClick={() => handleConfigurationClick("analytics-config")}
+              >
                 Analytics Config
               </a>
-              <a href="#" className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm">
+              <a 
+                href="#" 
+                className="text-sidebar-foreground/80 hover:text-sidebar-foreground py-1 text-sm"
+                onClick={() => handleConfigurationClick("javascript-manager")}
+              >
                 Javascript Manager
               </a>
             </div>
