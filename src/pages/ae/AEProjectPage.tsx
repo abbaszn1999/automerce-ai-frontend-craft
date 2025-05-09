@@ -3,14 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useSupabase } from "@/hooks/useSupabase";
 import { toast } from "@/components/ui/sonner";
 import AESetupTab from "@/components/solutions/ae/tabs/AESetupTab";
 import AEInputTab from "@/components/solutions/ae/tabs/AEInputTab";
 import AEAttributesTab from "@/components/solutions/ae/tabs/AEAttributesTab";
 import AEResultsTab from "@/components/solutions/ae/tabs/AEResultsTab";
-import { Loader2, AlertCircle } from "lucide-react";
-import { useWorkspace } from "@/context/WorkspaceContext";
+import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Define project type
@@ -25,110 +23,41 @@ export interface AEProject {
 const AEProjectPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { getProject } = useSupabase();
-  const { currentWorkspace } = useWorkspace();
   
   const [project, setProject] = useState<AEProject | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("setup");
-  const [fetchAttempts, setFetchAttempts] = useState(0);
 
-  // Fetch project details with retry logic
+  // Simulate fetching project
   useEffect(() => {
     if (!projectId) {
-      setError("No project ID provided");
-      setIsLoading(false);
       return;
     }
     
-    const fetchProject = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        console.log(`Fetching project details for: ${projectId} (Attempt ${fetchAttempts + 1})`);
-        const projectData = await getProject(projectId);
-        
-        // Check for error in the response
-        if (projectData.error) {
-          throw new Error(projectData.error || "Failed to load project");
-        }
-        
-        if (projectData.project) {
-          console.log("Project found:", projectData.project);
-          setProject(projectData.project);
-          setIsLoading(false);
-          return;
-        }
-        
-        // If we get here, no project was found
-        throw new Error("Project not found");
-        
-      } catch (error: any) {
-        console.error("Error fetching project:", error);
-        setError(error.message || "Failed to load project");
-        
-        // If we've had fewer than 3 retries and there's no explicit "not found" message,
-        // we'll try again after a delay
-        if (fetchAttempts < 2 && !error.message?.includes("not found")) {
-          console.log(`Will retry fetching project in ${(fetchAttempts + 1) * 1000}ms`);
-          setTimeout(() => {
-            setFetchAttempts(prev => prev + 1);
-          }, (fetchAttempts + 1) * 1000);
-        } else {
-          toast.error("Failed to load project");
-          setIsLoading(false);
-        }
-      }
+    // Create a mock project for the UI to display
+    const mockProject: AEProject = {
+      id: projectId,
+      name: projectId.startsWith("local-") ? `Project ${projectId.slice(6)}` : `Project ${projectId}`,
+      created_at: new Date().toISOString()
     };
     
-    fetchProject();
-  }, [projectId, getProject, fetchAttempts]);
+    setProject(mockProject);
+  }, [projectId]);
 
-  const handleRetry = () => {
-    setFetchAttempts(0); // Reset attempts counter to trigger a fresh fetch
-  };
-
-  if (isLoading) {
-    return (
-      <div className="p-8 flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-10 w-10 animate-spin mb-4 text-primary" />
-        <p className="text-lg">Loading project...</p>
-        <p className="text-sm text-muted-foreground mt-2">Project ID: {projectId}</p>
-      </div>
-    );
-  }
-
-  if (error || !project) {
+  if (!project) {
     return (
       <div className="p-8 max-w-3xl mx-auto">
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-5 w-5" />
           <AlertTitle>Error loading project</AlertTitle>
           <AlertDescription>
-            {error || "Project not found"}
+            Project not found
           </AlertDescription>
         </Alert>
         
         <div className="flex flex-col gap-4">
-          <Button onClick={handleRetry} className="w-fit">
-            Try Again
-          </Button>
-          
           <Button onClick={() => navigate("/")} variant="outline" className="w-fit">
             Back to Home
           </Button>
-          
-          <div className="mt-4 p-4 bg-muted rounded-md">
-            <h3 className="font-medium mb-2">Troubleshooting Tips:</h3>
-            <ul className="list-disc list-inside space-y-1 text-sm">
-              <li>Check that you're using the correct project ID</li>
-              <li>Verify that you have permission to access this project</li>
-              <li>Make sure the project hasn't been deleted</li>
-              <li>Check your workspace permissions</li>
-            </ul>
-          </div>
         </div>
       </div>
     );
