@@ -2,13 +2,13 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
 import AESetupTab from "@/components/solutions/ae/tabs/AESetupTab";
 import AEInputTab from "@/components/solutions/ae/tabs/AEInputTab";
 import AEAttributesTab from "@/components/solutions/ae/tabs/AEAttributesTab";
 import AEResultsTab from "@/components/solutions/ae/tabs/AEResultsTab";
-import { Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 // Define project type
 export interface AEProject {
@@ -84,16 +84,13 @@ const AEProjectPage = () => {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">{project.name}</h1>
-          <p className="text-muted-foreground">
-            Project ID: {projectId}
-          </p>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">AI Attribute Enrichment</h1>
+        <div className="flex items-center text-primary hover:underline mt-1">
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          <Link to="/">Back to AI Attribute Enrichment Projects</Link>
         </div>
-        <Button onClick={() => navigate("/")}>
-          Back to Dashboard
-        </Button>
+        <h2 className="text-xl font-bold mt-4">Attribute Enrichment Project: {project.name}</h2>
       </div>
 
       <Tabs
@@ -102,23 +99,50 @@ const AEProjectPage = () => {
         onValueChange={setActiveTab}
         className="w-full"
       >
-        <TabsList className="grid grid-cols-4 mb-6">
-          <TabsTrigger value="setup">Setup</TabsTrigger>
-          <TabsTrigger value="attributes">Attributes</TabsTrigger>
-          <TabsTrigger value="input">Input</TabsTrigger>
-          <TabsTrigger value="results">Results</TabsTrigger>
+        <TabsList className="mb-6">
+          <TabsTrigger value="setup" className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs">1</span>
+            Setup
+          </TabsTrigger>
+          <TabsTrigger value="attributes" className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-muted text-muted-foreground text-xs">2</span>
+            Attributes
+          </TabsTrigger>
+          <TabsTrigger value="input" className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-muted text-muted-foreground text-xs">3</span>
+            Input
+          </TabsTrigger>
+          <TabsTrigger value="results" className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-muted text-muted-foreground text-xs">4</span>
+            Results
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="setup">
+          <div className="mb-4">
+            <h3 className="text-xl font-bold">Attribute Enrichment Setup</h3>
+          </div>
           <AESetupTab projectId={projectId!} />
         </TabsContent>
+        
         <TabsContent value="attributes">
+          <div className="mb-4">
+            <h3 className="text-xl font-bold">Attributes</h3>
+          </div>
           <AEAttributesTab projectId={projectId!} />
         </TabsContent>
+        
         <TabsContent value="input">
+          <div className="mb-4">
+            <h3 className="text-xl font-bold">Input Data</h3>
+          </div>
           <AEInputTab projectId={projectId!} onJobCreated={() => setActiveTab("results")} />
         </TabsContent>
+        
         <TabsContent value="results">
+          <div className="mb-4">
+            <h3 className="text-xl font-bold">Results</h3>
+          </div>
           <AEResultsTab projectId={projectId!} />
         </TabsContent>
       </Tabs>
