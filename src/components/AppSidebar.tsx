@@ -1,7 +1,7 @@
-
 import React, { useState } from "react";
 import { useAppContext } from "../context/AppContext";
 import AutommerceLogo from "./AutommerceLogo";
+import WorkspaceSwitcher from "./WorkspaceSwitcher";
 import { 
   ChevronDown, 
   LayoutDashboard, 
@@ -89,19 +89,7 @@ const AppSidebar: React.FC = () => {
     <aside className="app-sidebar">
       {/* Workspace Selector */}
       <div className="sidebar-workspace-selector">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <div className="flex items-center justify-between w-full cursor-pointer">
-              <span className="font-medium">Demo en-GB</span>
-              <ChevronDown size={16} />
-            </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="workspace-dropdown">
-            <DropdownMenuItem className="workspace-item">Demo en-GB</DropdownMenuItem>
-            <DropdownMenuItem className="workspace-item">Demo en-US</DropdownMenuItem>
-            <DropdownMenuItem className="workspace-item">+ Add Workspace</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <WorkspaceSwitcher />
       </div>
       
       {/* Autommerce Logo */}

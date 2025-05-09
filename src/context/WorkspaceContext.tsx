@@ -1,5 +1,6 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useSupabase } from "@/hooks/useSupabase";
+import { useSupabase } from "../hooks/useSupabase";
 import { toast } from "@/components/ui/sonner";
 
 // Define types for workspace and context
