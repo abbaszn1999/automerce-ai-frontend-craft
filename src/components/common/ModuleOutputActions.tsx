@@ -29,7 +29,7 @@ const ModuleOutputActions: React.FC<ModuleOutputActionsProps> = ({
       case "il":
         return "Export Results";
       case "opb":
-        return "Export Results";
+        return `Export Results (CSV)`;
       default:
         return `Export ${outputType === "plp" ? "PLP" : "Product"} ${onExportResults ? " (CSV)" : ""}`;
     }
