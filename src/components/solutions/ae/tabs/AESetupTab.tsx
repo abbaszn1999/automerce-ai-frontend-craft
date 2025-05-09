@@ -3,14 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
-import { useSupabase } from "@/hooks/useSupabase";
 import { toast } from "@/components/ui/sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
 interface AEConfig {
-  id: string;
-  project_id: string;
   openai_api_key: string;
   searchapi_api_key: string;
   scrapingbee_api_key: string;
@@ -34,32 +30,42 @@ interface AESetupTabProps {
 }
 
 const AESetupTab = ({ projectId }: AESetupTabProps) => {
-  const { callEdgeFunction } = useSupabase();
-  const [config, setConfig] = useState<Partial<AEConfig>>({});
+  const [config, setConfig] = useState<Partial<AEConfig>>({
+    embedding_model: "text-embedding-3-small",
+    embedding_dimensions: 256,
+    max_results_filter: 7,
+    results: 10,
+    max_concurrent_requests_1: 5,
+    model_2: "gpt-4o",
+    max_tokens_2: 8000,
+    prompt_2: "Are these two products visually similar? Answer with only yes or no.",
+    batch_size: 100,
+    max_concurrent_requests_2: 5,
+    model_3: "gpt-4o",
+    max_tokens_3: 2000,
+    prompt_3: "Analyze and categorize the extracted product attributes...",
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const fetchConfig = async () => {
+    const loadConfig = () => {
       try {
         setIsLoading(true);
-        const data = await callEdgeFunction("ae-project-config", {
-          query: { projectId }
-        });
-        
-        if (data.config) {
-          setConfig(data.config);
+        const savedConfig = localStorage.getItem(`ae-config-${projectId}`);
+        if (savedConfig) {
+          setConfig(JSON.parse(savedConfig));
         }
       } catch (error) {
-        console.error("Error fetching configuration:", error);
+        console.error("Error loading configuration:", error);
         toast.error("Failed to load project configuration");
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchConfig();
-  }, [projectId, callEdgeFunction]);
+    loadConfig();
+  }, [projectId]);
   
   const handleConfigChange = (key: keyof AEConfig, value: any) => {
     setConfig(prev => ({
@@ -71,12 +77,7 @@ const AESetupTab = ({ projectId }: AESetupTabProps) => {
   const handleSaveConfig = async () => {
     try {
       setIsSaving(true);
-      await callEdgeFunction("ae-project-config", {
-        method: "PUT",
-        query: { projectId },
-        body: config
-      });
-      
+      localStorage.setItem(`ae-config-${projectId}`, JSON.stringify(config));
       toast.success("Configuration saved successfully");
     } catch (error) {
       console.error("Error saving configuration:", error);
@@ -107,12 +108,9 @@ const AESetupTab = ({ projectId }: AESetupTabProps) => {
                 id="openai_api_key"
                 type="password"
                 placeholder="sk-..."
-                value={config.openai_api_key === '••••••••' ? '' : config.openai_api_key || ''}
+                value={config.openai_api_key || ''}
                 onChange={(e) => handleConfigChange('openai_api_key', e.target.value)}
               />
-              {config.openai_api_key === '••••••••' && (
-                <p className="text-xs text-muted-foreground">API key is set (hidden for security)</p>
-              )}
             </div>
             
             <div className="space-y-2">
@@ -121,12 +119,9 @@ const AESetupTab = ({ projectId }: AESetupTabProps) => {
                 id="searchapi_api_key"
                 type="password"
                 placeholder="Enter SearchAPI key"
-                value={config.searchapi_api_key === '••••••••' ? '' : config.searchapi_api_key || ''}
+                value={config.searchapi_api_key || ''}
                 onChange={(e) => handleConfigChange('searchapi_api_key', e.target.value)}
               />
-              {config.searchapi_api_key === '••••••••' && (
-                <p className="text-xs text-muted-foreground">API key is set (hidden for security)</p>
-              )}
             </div>
             
             <div className="space-y-2">
@@ -135,12 +130,9 @@ const AESetupTab = ({ projectId }: AESetupTabProps) => {
                 id="scrapingbee_api_key"
                 type="password"
                 placeholder="Enter ScrapingBee key"
-                value={config.scrapingbee_api_key === '••••••••' ? '' : config.scrapingbee_api_key || ''}
+                value={config.scrapingbee_api_key || ''}
                 onChange={(e) => handleConfigChange('scrapingbee_api_key', e.target.value)}
               />
-              {config.scrapingbee_api_key === '••••••••' && (
-                <p className="text-xs text-muted-foreground">API key is set (hidden for security)</p>
-              )}
             </div>
           </div>
         </CardContent>

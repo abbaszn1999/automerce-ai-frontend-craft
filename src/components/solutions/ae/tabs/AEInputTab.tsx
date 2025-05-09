@@ -1,8 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/ui/FileUpload";
-import { useEffect, useState } from "react";
-import { useSupabase } from "@/hooks/useSupabase";
+import { useState } from "react";
 import { toast } from "@/components/ui/sonner";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
@@ -17,7 +16,6 @@ interface AEInputTabProps {
 }
 
 const AEInputTab = ({ projectId, onJobCreated }: AEInputTabProps) => {
-  const { callEdgeFunction } = useSupabase();
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [jobName, setJobName] = useState("");
@@ -96,29 +94,37 @@ const AEInputTab = ({ projectId, onJobCreated }: AEInputTabProps) => {
     try {
       setIsCreatingJob(true);
       
-      // First create a job
-      const jobData = await callEdgeFunction("ae-jobs", {
-        method: "POST",
-        query: { projectId },
-        body: {
-          name: jobName || `Job ${new Date().toLocaleString()}`
+      // Create a new job with local storage
+      const jobId = `job_${Date.now()}`;
+      const job = {
+        id: jobId,
+        name: jobName || `Job ${new Date().toLocaleString()}`,
+        status: "pending",
+        progress: 0,
+        current_stage: "Initializing",
+        created_at: new Date().toISOString(),
+        projectId: projectId,
+        columnMapping: {
+          recordId: recordIdColumn,
+          title: titleColumn,
+          url: urlColumn,
+          imageUrl: imageUrlColumn,
+          description: descriptionColumn
         }
-      });
+      };
       
-      if (!jobData.job || !jobData.job.id) {
-        throw new Error("Failed to create job");
-      }
+      // Save job to localStorage
+      const jobs = JSON.parse(localStorage.getItem(`ae-jobs-${projectId}`) || "[]");
+      jobs.push(job);
+      localStorage.setItem(`ae-jobs-${projectId}`, JSON.stringify(jobs));
       
-      const jobId = jobData.job.id;
-      
-      // TODO: Next steps would be:
-      // 1. Upload the CSV file to Supabase Storage
-      // 2. Start processing the file on the backend
-      // 3. Update job status as processing begins
+      // Mock file storage (in real app this would be uploaded to a server)
+      // For demo we'll just store the file name
+      localStorage.setItem(`ae-job-file-${jobId}`, file.name);
       
       toast.success("Job created successfully!");
       
-      // For now, we'll just navigate to the job page
+      // Navigate to the results tab or job page
       if (onJobCreated) {
         onJobCreated(jobId);
       } else {

@@ -1,13 +1,11 @@
+
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { useSupabase } from "@/hooks/useSupabase";
 import { toast } from "@/components/ui/sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { ArrowUpDown, Download, ExternalLink } from "lucide-react";
+import { Download, ExternalLink } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import LogDisplay from "@/components/ui/LogDisplay";
-import ProgressBar from "@/components/ui/ProgressBar";
 import { Badge } from "@/components/ui/badge";
 
 interface Job {
@@ -25,22 +23,17 @@ interface AEResultsTabProps {
 }
 
 const AEResultsTab = ({ projectId }: AEResultsTabProps) => {
-  const { callEdgeFunction } = useSupabase();
   const navigate = useNavigate();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    const fetchJobs = async () => {
+    const fetchJobs = () => {
       try {
         setIsLoading(true);
-        const data = await callEdgeFunction("ae-jobs", {
-          query: { projectId }
-        });
-        
-        if (data.jobs) {
-          setJobs(data.jobs);
-        }
+        // Get jobs from localStorage
+        const savedJobs = localStorage.getItem(`ae-jobs-${projectId}`);
+        setJobs(savedJobs ? JSON.parse(savedJobs) : []);
       } catch (error) {
         console.error("Error fetching jobs:", error);
         toast.error("Failed to load jobs");
@@ -51,15 +44,36 @@ const AEResultsTab = ({ projectId }: AEResultsTabProps) => {
     
     fetchJobs();
     
-    // Periodically update job status if there are active jobs
+    // Simulate job progress for active jobs
     const interval = setInterval(() => {
-      if (jobs.some(job => ['pending', 'processing'].includes(job.status))) {
-        fetchJobs();
+      const updatedJobs = JSON.parse(localStorage.getItem(`ae-jobs-${projectId}`) || "[]");
+      const hasActiveJobs = updatedJobs.some((job: Job) => ['pending', 'processing'].includes(job.status));
+      
+      if (hasActiveJobs) {
+        const simulatedJobs = updatedJobs.map((job: Job) => {
+          if (['pending', 'processing'].includes(job.status)) {
+            // Simulate progress
+            const newProgress = Math.min(job.progress + Math.random() * 5, 100);
+            const isComplete = newProgress >= 100;
+            
+            return {
+              ...job,
+              progress: newProgress,
+              status: isComplete ? 'completed' : 'processing',
+              current_stage: isComplete ? 'Completed' : job.current_stage,
+              completed_at: isComplete ? new Date().toISOString() : null
+            };
+          }
+          return job;
+        });
+        
+        localStorage.setItem(`ae-jobs-${projectId}`, JSON.stringify(simulatedJobs));
+        setJobs(simulatedJobs);
       }
-    }, 5000);
+    }, 3000);
     
     return () => clearInterval(interval);
-  }, [projectId, callEdgeFunction]);
+  }, [projectId]);
 
   const handleViewJob = (jobId: string) => {
     navigate(`/ae/job/${jobId}`);
@@ -123,13 +137,7 @@ const AEResultsTab = ({ projectId }: AEResultsTabProps) => {
                         {getJobStatusBadge(job.status)}
                       </TableCell>
                       <TableCell>
-                        {['pending', 'processing'].includes(job.status) ? (
-                          <div className="w-20">
-                            <ProgressBar progress={job.progress} height="h-2" />
-                          </div>
-                        ) : (
-                          <span>{job.progress}%</span>
-                        )}
+                        <span>{Math.round(job.progress)}%</span>
                       </TableCell>
                       <TableCell>{new Date(job.created_at).toLocaleString()}</TableCell>
                       <TableCell>
@@ -149,6 +157,7 @@ const AEResultsTab = ({ projectId }: AEResultsTabProps) => {
                             <Button 
                               variant="ghost" 
                               size="icon"
+                              onClick={() => toast.success("Download started")}
                             >
                               <Download className="h-4 w-4" />
                             </Button>

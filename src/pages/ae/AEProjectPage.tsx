@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useSupabase } from "@/hooks/useSupabase";
 import { toast } from "@/components/ui/sonner";
 import AESetupTab from "@/components/solutions/ae/tabs/AESetupTab";
 import AEInputTab from "@/components/solutions/ae/tabs/AEInputTab";
@@ -16,56 +15,51 @@ export interface AEProject {
   id: string;
   name: string;
   created_at: string;
-  workspace_id?: string;
-  module_type?: string;
 }
 
 const AEProjectPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { getProject, callEdgeFunction } = useSupabase();
   
   const [project, setProject] = useState<AEProject | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("setup");
 
-  // Fetch project details
+  // Mock project data without database connection
   useEffect(() => {
     if (!projectId) {
-      setError("No project ID provided");
       setIsLoading(false);
       return;
     }
     
-    const fetchProject = async () => {
+    // Load project from localStorage or create a default one
+    const loadProject = () => {
       try {
-        setIsLoading(true);
-        setError(null);
-
-        console.log("Fetching project details for:", projectId);
-        
-        // Mock project data for frontend-only version
-        const mockProject = {
-          id: projectId,
-          name: "Attribute Enrichment Project",
-          created_at: new Date().toISOString()
-        };
-        
-        setProject(mockProject);
-        setIsLoading(false);
-        
-      } catch (error: any) {
-        console.error("Error fetching project:", error);
-        setError(error.message || "Failed to load project");
+        const storedProject = localStorage.getItem(`ae-project-${projectId}`);
+        if (storedProject) {
+          setProject(JSON.parse(storedProject));
+        } else {
+          // Create a default project
+          const newProject = {
+            id: projectId,
+            name: "Attribute Enrichment Project",
+            created_at: new Date().toISOString()
+          };
+          
+          // Store in localStorage
+          localStorage.setItem(`ae-project-${projectId}`, JSON.stringify(newProject));
+          setProject(newProject);
+        }
+      } catch (error) {
+        console.error("Error loading project:", error);
         toast.error("Failed to load project");
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchProject();
-  }, [projectId, navigate]);
+    loadProject();
+  }, [projectId]);
 
   if (isLoading) {
     return (
@@ -76,12 +70,12 @@ const AEProjectPage = () => {
     );
   }
 
-  if (error || !project) {
+  if (!project) {
     return (
       <div className="p-8">
-        <h2 className="text-xl font-bold mb-4">Error: {error || "Project not found"}</h2>
+        <h2 className="text-xl font-bold mb-4">Project not found</h2>
         <p className="mb-6 text-muted-foreground">
-          We couldn't load the requested project. It may have been deleted or you might not have access to it.
+          We couldn't load the requested project. It may have been deleted.
         </p>
         <Button onClick={() => navigate("/")}>Back to Home</Button>
       </div>

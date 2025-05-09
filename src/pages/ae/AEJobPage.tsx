@@ -1,6 +1,6 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useSupabase } from "@/hooks/useSupabase";
 import { Button } from "@/components/ui/button";
 import LogDisplay from "@/components/ui/LogDisplay";
 import ProgressBar from "@/components/ui/ProgressBar";
@@ -20,6 +20,7 @@ export interface AEJob {
   updated_at: string;
   completed_at: string | null;
   error: string | null;
+  projectId: string;
 }
 
 // Define log type
@@ -33,31 +34,48 @@ export interface AEJobLog {
 const AEJobPage = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
-  const { callEdgeFunction } = useSupabase();
   
   const [job, setJob] = useState<AEJob | null>(null);
   const [logs, setLogs] = useState<AEJobLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [projectId, setProjectId] = useState<string | null>(null);
   
-  const fetchJobDetails = async () => {
+  const fetchJobDetails = () => {
     if (!jobId) return;
     
     try {
       setIsLoading(true);
-      const data = await callEdgeFunction("ae-jobs", {
-        query: { jobId }
-      });
       
-      if (!data.job) {
+      // Get all jobs from all projects
+      const allJobs: AEJob[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('ae-jobs-')) {
+          const jobsInProject = JSON.parse(localStorage.getItem(key) || "[]");
+          allJobs.push(...jobsInProject);
+        }
+      }
+      
+      // Find the specific job
+      const foundJob = allJobs.find(j => j.id === jobId);
+      
+      if (!foundJob) {
         toast.error("Job not found");
         navigate("/");
         return;
       }
       
-      setJob(data.job);
-      setLogs(data.logs || []);
-      setProjectId(data.job.project_id);
+      // Generate some mock logs
+      const mockLogs: AEJobLog[] = Array(10).fill(0).map((_, i) => ({
+        id: `log_${i}`,
+        message: `Processing step ${i + 1} of extraction workflow...`,
+        level: i % 3 === 0 ? 'info' : i % 7 === 0 ? 'error' : 'debug',
+        created_at: new Date(Date.now() - (i * 60000)).toISOString()
+      }));
+      
+      setJob(foundJob);
+      setLogs(mockLogs);
+      setProjectId(foundJob.projectId);
     } catch (error) {
       console.error("Error fetching job:", error);
       toast.error("Failed to load job details");
@@ -77,22 +95,85 @@ const AEJobPage = () => {
       return;
     }
     
-    const interval = setInterval(fetchJobDetails, 3000);
-    
-    return () => clearInterval(interval);
-  }, [job, fetchJobDetails]);
-  
-  const handleJobAction = async (action: 'pause' | 'resume' | 'cancel') => {
-    if (!jobId || !projectId) return;
-    
-    try {
-      await callEdgeFunction("ae-jobs", {
-        method: "PUT",
-        query: { projectId, jobId },
-        body: { action }
+    // Simulate progress update
+    const interval = setInterval(() => {
+      setJob(prevJob => {
+        if (!prevJob) return null;
+        
+        // Simulate progress
+        const newProgress = Math.min(prevJob.progress + Math.random() * 5, 100);
+        const isComplete = newProgress >= 100;
+        
+        const updatedJob = {
+          ...prevJob,
+          progress: newProgress,
+          status: isComplete ? 'completed' : 'processing',
+          current_stage: isComplete ? 'Completed' : prevJob.current_stage,
+          completed_at: isComplete ? new Date().toISOString() : null
+        };
+        
+        // Update in localStorage
+        if (prevJob.projectId) {
+          const jobs = JSON.parse(localStorage.getItem(`ae-jobs-${prevJob.projectId}`) || "[]");
+          const updatedJobs = jobs.map((j: any) => j.id === prevJob.id ? updatedJob : j);
+          localStorage.setItem(`ae-jobs-${prevJob.projectId}`, JSON.stringify(updatedJobs));
+        }
+        
+        return updatedJob;
       });
       
-      fetchJobDetails();
+      // Add a new log entry
+      setLogs(prevLogs => [
+        {
+          id: `log_${Date.now()}`,
+          message: `Processing products... ${Math.floor(Math.random() * 100)} items processed.`,
+          level: 'info',
+          created_at: new Date().toISOString()
+        },
+        ...prevLogs
+      ]);
+      
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [job]);
+  
+  const handleJobAction = async (action: 'pause' | 'resume' | 'cancel') => {
+    if (!jobId || !projectId || !job) return;
+    
+    try {
+      const jobs = JSON.parse(localStorage.getItem(`ae-jobs-${projectId}`) || "[]");
+      
+      const updatedJobs = jobs.map((j: any) => {
+        if (j.id === jobId) {
+          if (action === 'pause') {
+            return { ...j, is_paused: true };
+          } else if (action === 'resume') {
+            return { ...j, is_paused: false };
+          } else if (action === 'cancel') {
+            return { ...j, status: 'cancelled', completed_at: new Date().toISOString() };
+          }
+        }
+        return j;
+      });
+      
+      localStorage.setItem(`ae-jobs-${projectId}`, JSON.stringify(updatedJobs));
+      
+      // Update UI state
+      setJob(prev => {
+        if (!prev) return null;
+        
+        if (action === 'pause') {
+          return { ...prev, is_paused: true };
+        } else if (action === 'resume') {
+          return { ...prev, is_paused: false };
+        } else if (action === 'cancel') {
+          return { ...prev, status: 'cancelled', completed_at: new Date().toISOString() };
+        }
+        
+        return prev;
+      });
+      
       toast.success(`Job ${action}d successfully`);
     } catch (error) {
       console.error(`Error ${action}ing job:`, error);
@@ -144,11 +225,11 @@ const AEJobPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-card p-4 rounded-lg shadow-sm">
           <h3 className="text-lg font-medium mb-2">Current Stage</h3>
-          <p>{job.current_stage}</p>
+          <p>{job.current_stage || "Initializing"}</p>
         </div>
         <div className="bg-card p-4 rounded-lg shadow-sm">
           <h3 className="text-lg font-medium mb-2">Progress</h3>
-          <p>{job.progress}%</p>
+          <p>{Math.round(job.progress)}%</p>
         </div>
         <div className="bg-card p-4 rounded-lg shadow-sm">
           <h3 className="text-lg font-medium mb-2">Time Remaining</h3>
@@ -187,7 +268,7 @@ const AEJobPage = () => {
 
       {job.status === 'completed' && (
         <div className="flex justify-center">
-          <Button>Download Results</Button>
+          <Button onClick={() => toast.success("Download started")}>Download Results</Button>
         </div>
       )}
 

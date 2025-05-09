@@ -1,17 +1,14 @@
 
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSupabase } from "@/hooks/useSupabase";
 import { toast } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertCircle, ArrowUpRight, Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, ArrowUpRight } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useWorkspace } from "@/context/WorkspaceContext";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Project {
   id: string;
@@ -21,55 +18,38 @@ interface Project {
 
 const AttributeExtraction: React.FC = () => {
   const navigate = useNavigate();
-  const { callEdgeFunction } = useSupabase();
-  const { currentWorkspace, isLoading: isWorkspaceLoading, refreshWorkspaces } = useWorkspace();
   
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [projectFetchError, setProjectFetchError] = useState<string | null>(null);
 
-  const fetchProjects = async () => {
-    if (!currentWorkspace) {
-      console.log("No workspace available, cannot fetch projects");
-      setIsLoading(false);
-      return;
-    }
-    
+  const loadProjects = () => {
     try {
       setIsLoading(true);
-      setProjectFetchError(null);
-      console.log("Fetching AE projects for workspace:", currentWorkspace.id);
       
-      // First, try getting all projects for this workspace from the modern projects endpoint
-      const data = await callEdgeFunction("projects", {
-        query: { 
-          workspaceId: currentWorkspace.id,
-          moduleType: "AI_ATTRIBUTE_ENRICHMENT"
+      // Get all keys in localStorage that start with 'ae-project-'
+      const projectKeys: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('ae-project-')) {
+          projectKeys.push(key);
+        }
+      }
+      
+      // Load all projects from localStorage
+      const loadedProjects: Project[] = [];
+      projectKeys.forEach(key => {
+        const projectData = localStorage.getItem(key);
+        if (projectData) {
+          loadedProjects.push(JSON.parse(projectData));
         }
       });
       
-      if (data && data.projects) {
-        console.log("Projects found:", data.projects);
-        setProjects(data.projects);
-        return;
-      }
-
-      // Fallback to older ae-projects endpoint if needed
-      const legacyData = await callEdgeFunction("ae-projects");
-      
-      if (legacyData && legacyData.projects) {
-        console.log("Legacy projects found:", legacyData.projects);
-        setProjects(legacyData.projects);
-      } else {
-        console.log("No projects found");
-        setProjects([]);
-      }
+      setProjects(loadedProjects);
     } catch (error) {
-      console.error("Error fetching projects:", error);
-      setProjectFetchError("Failed to load projects. Please try again.");
+      console.error("Error loading projects:", error);
       toast.error("Failed to load projects");
     } finally {
       setIsLoading(false);
@@ -77,27 +57,11 @@ const AttributeExtraction: React.FC = () => {
   };
   
   useEffect(() => {
-    // If workspace data has loaded and we have a current workspace, fetch projects
-    if (!isWorkspaceLoading) {
-      if (currentWorkspace) {
-        fetchProjects();
-      } else {
-        console.log("No workspace available yet, attempting to refresh workspaces");
-        refreshWorkspaces().then(() => {
-          console.log("Workspaces refreshed");
-          setIsLoading(false);
-        });
-      }
-    }
-  }, [currentWorkspace, isWorkspaceLoading]);
+    loadProjects();
+  }, []);
   
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!currentWorkspace) {
-      toast.error("No workspace selected");
-      return;
-    }
     
     if (!newProjectName.trim()) {
       toast.error("Project name is required");
@@ -106,60 +70,31 @@ const AttributeExtraction: React.FC = () => {
     
     try {
       setIsCreating(true);
-      console.log("Creating project in workspace:", currentWorkspace.id);
       
-      // Attempt to create using the projects endpoint (preferred)
-      try {
-        const data = await callEdgeFunction("projects", {
-          method: "POST",
-          body: { 
-            name: newProjectName.trim(),
-            workspace_id: currentWorkspace.id,
-            module_type: "AI_ATTRIBUTE_ENRICHMENT"
-          }
-        });
-        
-        if (data && data.project) {
-          toast.success("Project created successfully");
-          setNewProjectName("");
-          setCreateDialogOpen(false);
-          await fetchProjects();
-          
-          // Navigate to the new project
-          navigate(`/ae/project/${data.project.id}`);
-          return;
-        }
-        
-        if (data && data.error) {
-          throw new Error(data.error);
-        }
-      } catch (error: any) {
-        console.error("Error creating project via projects endpoint:", error);
-        // If projects endpoint fails, try legacy endpoint
-      }
+      // Create a new project with a unique ID
+      const projectId = `proj_${Date.now()}`;
+      const newProject: Project = {
+        id: projectId,
+        name: newProjectName.trim(),
+        created_at: new Date().toISOString()
+      };
       
-      // Fallback to legacy endpoint
-      const data = await callEdgeFunction("ae-projects", {
-        method: "POST",
-        body: { name: newProjectName.trim() }
-      });
+      // Save to localStorage
+      localStorage.setItem(`ae-project-${projectId}`, JSON.stringify(newProject));
       
-      if (data && data.project) {
-        toast.success("Project created successfully");
-        setNewProjectName("");
-        setCreateDialogOpen(false);
-        await fetchProjects();
-        
-        // Navigate to the new project
-        navigate(`/ae/project/${data.project.id}`);
-      } else if (data && data.error) {
-        throw new Error(data.error);
-      } else {
-        throw new Error("Failed to create project");
-      }
-    } catch (error: any) {
+      // Add to projects list
+      setProjects([...projects, newProject]);
+      
+      toast.success("Project created successfully");
+      setNewProjectName("");
+      setCreateDialogOpen(false);
+      
+      // Navigate to the new project
+      navigate(`/ae/project/${projectId}`);
+      
+    } catch (error) {
       console.error("Error creating project:", error);
-      toast.error(error.message || "Failed to create project");
+      toast.error("Failed to create project");
     } finally {
       setIsCreating(false);
     }
@@ -168,32 +103,6 @@ const AttributeExtraction: React.FC = () => {
   const handleOpenProject = (projectId: string) => {
     navigate(`/ae/project/${projectId}`);
   };
-
-  if (isWorkspaceLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="ml-2">Loading workspace...</p>
-      </div>
-    );
-  }
-
-  if (!currentWorkspace) {
-    return (
-      <div className="container mx-auto px-4 py-6">
-        <Alert variant="destructive" className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>No workspace available</AlertTitle>
-          <AlertDescription>
-            A workspace is required to manage projects. Please refresh the page or contact support if this issue persists.
-          </AlertDescription>
-        </Alert>
-        <Button onClick={() => refreshWorkspaces()}>
-          Retry Loading Workspace
-        </Button>
-      </div>
-    );
-  }
 
   if (isLoading && projects.length === 0) {
     return (
@@ -239,9 +148,6 @@ const AttributeExtraction: React.FC = () => {
                     onChange={(e) => setNewProjectName(e.target.value)}
                   />
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  This project will be created in workspace: <strong>{currentWorkspace.name}</strong>
-                </div>
               </div>
               
               <DialogFooter>
@@ -261,19 +167,6 @@ const AttributeExtraction: React.FC = () => {
           </DialogContent>
         </Dialog>
       </div>
-
-      {projectFetchError && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
-            {projectFetchError}
-            <Button variant="outline" size="sm" className="mt-2" onClick={fetchProjects}>
-              Try Again
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
 
       <div className="grid grid-cols-1 gap-6">
         {projects.length === 0 ? (

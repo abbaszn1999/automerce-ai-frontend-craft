@@ -9,28 +9,25 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AEProjectPage from "./pages/ae/AEProjectPage";
 import AEJobPage from "./pages/ae/AEJobPage";
-import { WorkspaceProvider } from "./context/WorkspaceContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <WorkspaceProvider>
-        <AppProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/ae/project/:projectId" element={<AEProjectPage />} />
-              <Route path="/ae/job/:jobId" element={<AEJobPage />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </AppProvider>
-      </WorkspaceProvider>
+      <AppProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/ae/project/:projectId" element={<AEProjectPage />} />
+            <Route path="/ae/job/:jobId" element={<AEJobPage />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AppProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
