@@ -21,7 +21,7 @@ interface Project {
 
 const AttributeExtraction: React.FC = () => {
   const navigate = useNavigate();
-  const { callEdgeFunction } = useSupabase();
+  const { getProjects, createProject } = useSupabase();
   const { currentWorkspace, isLoading: isWorkspaceLoading, refreshWorkspaces } = useWorkspace();
   
   const [projects, setProjects] = useState<Project[]>([]);
@@ -43,33 +43,23 @@ const AttributeExtraction: React.FC = () => {
       setProjectFetchError(null);
       console.log("Fetching AE projects for workspace:", currentWorkspace.id);
       
-      // First, try getting all projects for this workspace from the modern projects endpoint
-      const data = await callEdgeFunction("projects", {
-        query: { 
-          workspaceId: currentWorkspace.id,
-          moduleType: "AI_ATTRIBUTE_ENRICHMENT"
-        }
-      });
+      // Get all projects for this workspace with module type AI_ATTRIBUTE_ENRICHMENT
+      const data = await getProjects(currentWorkspace.id, "AI_ATTRIBUTE_ENRICHMENT");
       
-      if (data && data.projects) {
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      if (data.projects) {
         console.log("Projects found:", data.projects);
         setProjects(data.projects);
-        return;
-      }
-
-      // Fallback to older ae-projects endpoint if needed
-      const legacyData = await callEdgeFunction("ae-projects");
-      
-      if (legacyData && legacyData.projects) {
-        console.log("Legacy projects found:", legacyData.projects);
-        setProjects(legacyData.projects);
       } else {
-        console.log("No projects found");
+        console.log("No projects found or invalid response format");
         setProjects([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching projects:", error);
-      setProjectFetchError("Failed to load projects. Please try again.");
+      setProjectFetchError(error.message || "Failed to load projects. Please try again.");
       toast.error("Failed to load projects");
     } finally {
       setIsLoading(false);
@@ -80,6 +70,7 @@ const AttributeExtraction: React.FC = () => {
     // If workspace data has loaded and we have a current workspace, fetch projects
     if (!isWorkspaceLoading) {
       if (currentWorkspace) {
+        console.log("Workspace ready, fetching projects");
         fetchProjects();
       } else {
         console.log("No workspace available yet, attempting to refresh workspaces");
@@ -108,54 +99,27 @@ const AttributeExtraction: React.FC = () => {
       setIsCreating(true);
       console.log("Creating project in workspace:", currentWorkspace.id);
       
-      // Attempt to create using the projects endpoint (preferred)
-      try {
-        const data = await callEdgeFunction("projects", {
-          method: "POST",
-          body: { 
-            name: newProjectName.trim(),
-            workspace_id: currentWorkspace.id,
-            module_type: "AI_ATTRIBUTE_ENRICHMENT"
-          }
-        });
-        
-        if (data && data.project) {
-          toast.success("Project created successfully");
-          setNewProjectName("");
-          setCreateDialogOpen(false);
-          await fetchProjects();
-          
-          // Navigate to the new project
-          navigate(`/ae/project/${data.project.id}`);
-          return;
-        }
-        
-        if (data && data.error) {
-          throw new Error(data.error);
-        }
-      } catch (error: any) {
-        console.error("Error creating project via projects endpoint:", error);
-        // If projects endpoint fails, try legacy endpoint
+      const data = await createProject(
+        newProjectName.trim(),
+        currentWorkspace.id,
+        "AI_ATTRIBUTE_ENRICHMENT"
+      );
+      
+      if (data.error) {
+        throw new Error(data.error);
       }
       
-      // Fallback to legacy endpoint
-      const data = await callEdgeFunction("ae-projects", {
-        method: "POST",
-        body: { name: newProjectName.trim() }
-      });
-      
-      if (data && data.project) {
+      if (data.project) {
         toast.success("Project created successfully");
         setNewProjectName("");
         setCreateDialogOpen(false);
         await fetchProjects();
         
         // Navigate to the new project
+        console.log("Navigating to new project:", data.project.id);
         navigate(`/ae/project/${data.project.id}`);
-      } else if (data && data.error) {
-        throw new Error(data.error);
       } else {
-        throw new Error("Failed to create project");
+        throw new Error("Failed to create project: Invalid response format");
       }
     } catch (error: any) {
       console.error("Error creating project:", error);
@@ -166,6 +130,7 @@ const AttributeExtraction: React.FC = () => {
   };
   
   const handleOpenProject = (projectId: string) => {
+    console.log("Opening project:", projectId);
     navigate(`/ae/project/${projectId}`);
   };
 
@@ -237,6 +202,7 @@ const AttributeExtraction: React.FC = () => {
                     placeholder="Enter project name"
                     value={newProjectName}
                     onChange={(e) => setNewProjectName(e.target.value)}
+                    required
                   />
                 </div>
                 <div className="text-sm text-muted-foreground">
@@ -266,9 +232,9 @@ const AttributeExtraction: React.FC = () => {
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
-          <AlertDescription>
+          <AlertDescription className="flex flex-col gap-2">
             {projectFetchError}
-            <Button variant="outline" size="sm" className="mt-2" onClick={fetchProjects}>
+            <Button variant="outline" size="sm" className="w-fit mt-2" onClick={fetchProjects}>
               Try Again
             </Button>
           </AlertDescription>

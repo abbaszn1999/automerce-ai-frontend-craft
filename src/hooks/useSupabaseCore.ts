@@ -8,10 +8,16 @@ export const useSupabaseCore = () => {
     try {
       const { data, error } = await supabase.auth.getSession();
       if (error) {
-        toast.error("Unable to get authentication token");
-        throw error;
+        console.error("Error getting supabase session:", error);
+        return null;
       }
-      return data.session?.access_token;
+      
+      if (!data.session?.access_token) {
+        console.warn("No access token found in session");
+        return null;
+      }
+      
+      return data.session.access_token;
     } catch (error) {
       console.error("Error getting supabase token:", error);
       return null;
@@ -24,15 +30,18 @@ export const useSupabaseCore = () => {
       method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"; 
       body?: any; 
       query?: Record<string, string>;
+      showErrors?: boolean;
     } = {}
   ) => {
-    const { method = "GET", body, query = {} } = options;
+    const { method = "GET", body, query = {}, showErrors = true } = options;
     
     try {
       const accessToken = await getSupabaseAccessToken();
       if (!accessToken) {
         const error = new Error("Authentication required");
-        toast.error("Authentication required");
+        if (showErrors) {
+          toast.error("Authentication required");
+        }
         throw error;
       }
       
@@ -55,12 +64,18 @@ export const useSupabaseCore = () => {
       
       if (error) {
         console.error(`Error calling ${functionName}:`, error);
-        throw error;
+        if (showErrors) {
+          toast.error(`API error: ${error.message || `Error calling ${functionName}`}`);
+        }
+        return { error: error.message || `Failed to call ${functionName}` };
       }
       
       return data;
     } catch (error: any) {
       console.error(`Error in callEdgeFunction ${functionName}:`, error);
+      if (showErrors) {
+        toast.error(`API error: ${error.message || `Failed to call ${functionName}`}`);
+      }
       return { 
         error: error.message || `Failed to call ${functionName}`
       };
