@@ -1,4 +1,3 @@
-
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCallback, useState, useEffect } from "react";
@@ -25,10 +24,11 @@ export const useSupabaseCore = () => {
         setIsAuthenticated(isAuthed);
         
         if (!isAuthed && !authErrorShown) {
-          toast.error("Authentication required. Please sign in.", {
-            id: "auth-required",
-            duration: 5000
-          });
+          // Don't show error toast anymore - we'll redirect to login
+          // toast.error("Authentication required. Please sign in.", {
+          //   id: "auth-required",
+          //   duration: 5000
+          // });
           setAuthErrorShown(true);
         }
       } catch (err) {
@@ -47,9 +47,6 @@ export const useSupabaseCore = () => {
       
       if (event === 'SIGNED_IN') {
         setAuthErrorShown(false);
-        toast.success("Successfully signed in");
-      } else if (event === 'SIGNED_OUT') {
-        toast.info("Signed out");
       }
     });
     
