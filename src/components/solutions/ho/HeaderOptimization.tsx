@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import ToolViewHeader from "../../common/ToolViewHeader";
 import FileUpload from "../../ui/FileUpload";
@@ -7,6 +6,7 @@ import LogDisplay from "../../ui/LogDisplay";
 import { simulateProcessing } from "../../../utils/utils";
 import { toast } from "@/components/ui/sonner";
 import { Copy, Check } from "lucide-react";
+import ModuleOutputActions from "../../common/ModuleOutputActions";
 
 const HeaderOptimization: React.FC = () => {
   // File upload states
@@ -218,6 +218,12 @@ document.addEventListener('DOMContentLoaded', function() {
     setClusteredCollections("");
   };
 
+  // Export CSV handler
+  const handleExportCSV = () => {
+    toast.success("Exporting CSV...");
+    // Implementation would go here
+  };
+
   return (
     <div>
       <ToolViewHeader 
@@ -336,7 +342,11 @@ document.addEventListener('DOMContentLoaded', function() {
           <div className="card">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-medium">Clustered Collections Sheet</h3>
-              <button className="btn btn-sm btn-outline">Download CSV</button>
+              <ModuleOutputActions
+                moduleType="ho"
+                outputType="plp"
+                onExportCSV={handleExportCSV}
+              />
             </div>
             <div 
               id="ho-clustered-collections-output" 
