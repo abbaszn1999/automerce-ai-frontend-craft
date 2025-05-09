@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useSupabase } from "@/hooks/useSupabase";
 import { toast } from "@/components/ui/sonner";
@@ -33,6 +32,7 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Load workspaces on mount
   const loadWorkspaces = async () => {
@@ -54,13 +54,20 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
       if (workspaces.length === 0) {
         console.log("No workspaces found, creating default workspace");
         try {
-          const { workspace } = await supabase.createWorkspace("My Workspace");
+          const { workspace, error: createError } = await supabase.createWorkspace("My Workspace");
+          
+          if (createError) {
+            throw new Error(createError);
+          }
+          
           setWorkspaces([workspace]);
           setCurrentWorkspace(workspace);
           console.log("Created default workspace:", workspace);
-        } catch (err) {
+        } catch (err: any) {
           console.error("Error creating default workspace:", err);
           toast.error("Failed to create default workspace");
+          // Even if we fail to create a workspace, don't throw an error
+          // We'll just have no current workspace until the user creates one
         }
       } else {
         // Set current workspace to the first one if none is selected
@@ -76,10 +83,22 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
         }
       }
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading workspaces:', err);
-      setError('Failed to load workspaces');
-      toast.error('Failed to load workspaces');
+      setError(err.message || 'Failed to load workspaces');
+      
+      // If we fail to load workspaces but have a current workspace, keep it
+      if (!currentWorkspace && retryCount < 3) {
+        console.log(`Retrying workspace load (attempt ${retryCount + 1})...`);
+        setRetryCount(prev => prev + 1);
+        
+        // Retry after a delay
+        setTimeout(() => {
+          loadWorkspaces();
+        }, 1000 * (retryCount + 1)); 
+      } else if (!currentWorkspace) {
+        toast.error('Failed to load workspaces');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -89,6 +108,30 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
   useEffect(() => {
     loadWorkspaces();
   }, []);
+
+  // Save the current workspace ID to localStorage whenever it changes
+  useEffect(() => {
+    if (currentWorkspace) {
+      localStorage.setItem('currentWorkspaceId', currentWorkspace.id);
+    }
+  }, [currentWorkspace]);
+
+  // Try to restore the workspace from localStorage when the workspaces list changes
+  useEffect(() => {
+    const savedWorkspaceId = localStorage.getItem('currentWorkspaceId');
+    
+    if (savedWorkspaceId && workspaces.length > 0 && !currentWorkspace) {
+      const savedWorkspace = workspaces.find(w => w.id === savedWorkspaceId);
+      
+      if (savedWorkspace) {
+        console.log('Restored workspace from localStorage:', savedWorkspace);
+        setCurrentWorkspace(savedWorkspace);
+      } else if (workspaces.length > 0) {
+        // If the saved workspace is no longer available, use the first one
+        setCurrentWorkspace(workspaces[0]);
+      }
+    }
+  }, [workspaces, currentWorkspace]);
 
   // Create a new workspace
   const handleCreateWorkspace = async (name: string): Promise<Workspace> => {

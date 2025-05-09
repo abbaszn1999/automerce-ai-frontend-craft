@@ -41,9 +41,71 @@ serve(async (req: Request) => {
       });
     }
 
+    const url = new URL(req.url);
+    const projectId = url.searchParams.get('projectId');
+
     // Handle different HTTP methods
     if (req.method === 'GET') {
-      // Get projects for the authenticated user
+      // If projectId is provided, fetch a specific project
+      if (projectId) {
+        // First check if it exists in the modern projects table
+        try {
+          const { data: modernProject, error: modernError } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('id', projectId)
+            .eq('module_type', 'AI_ATTRIBUTE_ENRICHMENT')
+            .maybeSingle();
+
+          if (!modernError && modernProject) {
+            console.log('Found project in modern table:', modernProject);
+            return new Response(JSON.stringify({ projects: [modernProject] }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+        } catch (err) {
+          console.error('Error checking modern projects table:', err);
+        }
+
+        // Fallback to legacy table
+        const { data, error } = await supabase
+          .from('ae_projects')
+          .select('*')
+          .eq('id', projectId);
+
+        if (error) {
+          console.error('Error fetching project:', error);
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        return new Response(JSON.stringify({ projects: data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // First try to get projects from the modern projects table
+      try {
+        const { data: modernProjects, error: modernError } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('module_type', 'AI_ATTRIBUTE_ENRICHMENT')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (!modernError && modernProjects && modernProjects.length > 0) {
+          console.log('Found projects in modern table:', modernProjects.length);
+          return new Response(JSON.stringify({ projects: modernProjects }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      } catch (err) {
+        console.error('Error checking modern projects table:', err);
+      }
+
+      // Fallback to legacy projects table
       const { data, error } = await supabase
         .from('ae_projects')
         .select('*')
@@ -73,6 +135,48 @@ serve(async (req: Request) => {
         });
       }
 
+      // First try to create in the modern projects table if workspace_id is available
+      try {
+        // Get user's default workspace
+        const { data: workspaces, error: workspaceError } = await supabase
+          .from('workspaces')
+          .select('id')
+          .eq('owner_id', user.id)
+          .order('created_at', { ascending: true })
+          .limit(1);
+          
+        if (!workspaceError && workspaces && workspaces.length > 0) {
+          const workspace_id = workspaces[0].id;
+          
+          const { data: project, error: projectError } = await supabase
+            .from('projects')
+            .insert([{ 
+              name, 
+              workspace_id, 
+              module_type: 'AI_ATTRIBUTE_ENRICHMENT' 
+            }])
+            .select()
+            .single();
+
+          if (!projectError) {
+            console.log('Created project in modern table:', project);
+            
+            // Create default settings for the project
+            await supabase
+              .from('ae_project_settings')
+              .insert([{ project_id: project.id }]);
+              
+            return new Response(JSON.stringify({ project }), {
+              status: 201,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Error creating in modern projects table:', err);
+      }
+
+      // Fallback to legacy table
       const { data: project, error: projectError } = await supabase
         .from('ae_projects')
         .insert([{ name, user_id: user.id }])

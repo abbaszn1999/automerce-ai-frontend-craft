@@ -1,23 +1,48 @@
 
 project_id = "vshkxxwocmoomljdfsrk"
 
-[functions.ae-projects]
-verify_jwt = true
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
 
-[functions.ae-project-config]
-verify_jwt = true
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
 
-[functions.ae-attributes]
-verify_jwt = true
+[realtime]
+enabled = true
 
-[functions.ae-jobs]
-verify_jwt = true
+[storage]
+enabled = true
 
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+
+[functions]
 [functions.workspaces]
 verify_jwt = true
 
 [functions.projects]
 verify_jwt = true
 
+[functions.ae-projects]
+verify_jwt = true
+
 [functions.ae-project-settings]
+verify_jwt = true
+
+[functions.ae-attributes]
+verify_jwt = true
+
+[functions.ae-jobs]
 verify_jwt = true

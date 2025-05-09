@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertCircle, ArrowUpRight, Loader2, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowUpRight, Loader2, Plus } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -22,19 +22,25 @@ interface Project {
 const AttributeExtraction: React.FC = () => {
   const navigate = useNavigate();
   const { callEdgeFunction } = useSupabase();
-  const { currentWorkspace, isLoading: isWorkspaceLoading } = useWorkspace();
+  const { currentWorkspace, isLoading: isWorkspaceLoading, refreshWorkspaces } = useWorkspace();
   
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [projectFetchError, setProjectFetchError] = useState<string | null>(null);
 
   const fetchProjects = async () => {
-    if (!currentWorkspace) return;
+    if (!currentWorkspace) {
+      console.log("No workspace available, cannot fetch projects");
+      setIsLoading(false);
+      return;
+    }
     
     try {
       setIsLoading(true);
+      setProjectFetchError(null);
       console.log("Fetching AE projects for workspace:", currentWorkspace.id);
       
       // First, try getting all projects for this workspace from the modern projects endpoint
@@ -63,6 +69,7 @@ const AttributeExtraction: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching projects:", error);
+      setProjectFetchError("Failed to load projects. Please try again.");
       toast.error("Failed to load projects");
     } finally {
       setIsLoading(false);
@@ -70,10 +77,19 @@ const AttributeExtraction: React.FC = () => {
   };
   
   useEffect(() => {
-    if (currentWorkspace) {
-      fetchProjects();
+    // If workspace data has loaded and we have a current workspace, fetch projects
+    if (!isWorkspaceLoading) {
+      if (currentWorkspace) {
+        fetchProjects();
+      } else {
+        console.log("No workspace available yet, attempting to refresh workspaces");
+        refreshWorkspaces().then(() => {
+          console.log("Workspaces refreshed");
+          setIsLoading(false);
+        });
+      }
     }
-  }, [currentWorkspace]);
+  }, [currentWorkspace, isWorkspaceLoading]);
   
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,10 +123,17 @@ const AttributeExtraction: React.FC = () => {
           toast.success("Project created successfully");
           setNewProjectName("");
           setCreateDialogOpen(false);
-          fetchProjects();
+          await fetchProjects();
+          
+          // Navigate to the new project
+          navigate(`/ae/project/${data.project.id}`);
           return;
         }
-      } catch (error) {
+        
+        if (data && data.error) {
+          throw new Error(data.error);
+        }
+      } catch (error: any) {
         console.error("Error creating project via projects endpoint:", error);
         // If projects endpoint fails, try legacy endpoint
       }
@@ -125,13 +148,18 @@ const AttributeExtraction: React.FC = () => {
         toast.success("Project created successfully");
         setNewProjectName("");
         setCreateDialogOpen(false);
-        fetchProjects();
+        await fetchProjects();
+        
+        // Navigate to the new project
+        navigate(`/ae/project/${data.project.id}`);
+      } else if (data && data.error) {
+        throw new Error(data.error);
       } else {
         throw new Error("Failed to create project");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating project:", error);
-      toast.error("Failed to create project");
+      toast.error(error.message || "Failed to create project");
     } finally {
       setIsCreating(false);
     }
@@ -160,6 +188,9 @@ const AttributeExtraction: React.FC = () => {
             A workspace is required to manage projects. Please refresh the page or contact support if this issue persists.
           </AlertDescription>
         </Alert>
+        <Button onClick={() => refreshWorkspaces()}>
+          Retry Loading Workspace
+        </Button>
       </div>
     );
   }
@@ -230,6 +261,19 @@ const AttributeExtraction: React.FC = () => {
           </DialogContent>
         </Dialog>
       </div>
+
+      {projectFetchError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {projectFetchError}
+            <Button variant="outline" size="sm" className="mt-2" onClick={fetchProjects}>
+              Try Again
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 gap-6">
         {projects.length === 0 ? (
