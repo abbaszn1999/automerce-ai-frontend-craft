@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
@@ -9,7 +10,6 @@ import AEInputTab from "@/components/solutions/ae/tabs/AEInputTab";
 import AEAttributesTab from "@/components/solutions/ae/tabs/AEAttributesTab";
 import AEResultsTab from "@/components/solutions/ae/tabs/AEResultsTab";
 import { Loader2 } from "lucide-react";
-import { useWorkspace } from "@/context/WorkspaceContext";
 
 // Define project type
 export interface AEProject {
@@ -24,7 +24,6 @@ const AEProjectPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { getProject, callEdgeFunction } = useSupabase();
-  const { currentWorkspace } = useWorkspace();
   
   const [project, setProject] = useState<AEProject | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,31 +44,16 @@ const AEProjectPage = () => {
         setError(null);
 
         console.log("Fetching project details for:", projectId);
-        // First try to fetch from the projects endpoint using the new hook method
-        const projectData = await getProject(projectId);
         
-        if (projectData.project) {
-          console.log("Project found via projects endpoint:", projectData.project);
-          setProject(projectData.project);
-          setIsLoading(false);
-          return;
-        }
+        // Mock project data for frontend-only version
+        const mockProject = {
+          id: projectId,
+          name: "Attribute Enrichment Project",
+          created_at: new Date().toISOString()
+        };
         
-        // Fallback to the legacy ae-projects endpoint
-        console.log("Trying legacy endpoint for project:", projectId);
-        const legacyData = await callEdgeFunction("ae-projects", {
-          query: { projectId }
-        });
-        
-        if (legacyData.projects && legacyData.projects.length > 0) {
-          console.log("Project found via legacy endpoint:", legacyData.projects[0]);
-          setProject(legacyData.projects[0]);
-          setIsLoading(false);
-          return;
-        }
-        
-        // If we get here, no project was found
-        throw new Error("Project not found");
+        setProject(mockProject);
+        setIsLoading(false);
         
       } catch (error: any) {
         console.error("Error fetching project:", error);
@@ -81,7 +65,7 @@ const AEProjectPage = () => {
     };
     
     fetchProject();
-  }, [projectId, getProject, callEdgeFunction, navigate]);
+  }, [projectId, navigate]);
 
   if (isLoading) {
     return (
