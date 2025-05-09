@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../../context/AppContext";
 import ToolViewHeader from "../../common/ToolViewHeader";
@@ -9,6 +10,7 @@ import DataTable from "../../ui/DataTable";
 import { ArrowLeft, ArrowRight, Pause, Play, XCircle } from "lucide-react";
 import { simulateProcessing } from "../../../utils/utils";
 import { toast } from "@/components/ui/sonner";
+import ModuleOutputActions from "../../common/ModuleOutputActions";
 
 const AttributeExtraction: React.FC = () => {
   const { aeCurrentTab, setAeCurrentTab, aeAttributes, setCurrentView, setSelectedProjectName } = useAppContext();
@@ -194,6 +196,22 @@ const AttributeExtraction: React.FC = () => {
       className: "btn-outline"
     }
   ];
+
+  // Export handlers
+  const handleExportCSV = () => {
+    toast.success("Exporting CSV file");
+    // Implementation would go here
+  };
+
+  const handleExportExcel = () => {
+    toast.success("Exporting Excel file");
+    // Implementation would go here
+  };
+
+  const handlePushToCMS = () => {
+    toast.success("Pushing data to CMS");
+    // Implementation would go here
+  };
 
   return (
     <div>
@@ -564,24 +582,20 @@ const AttributeExtraction: React.FC = () => {
               <div className="flex flex-col sm:flex-row justify-between mb-3 gap-3">
                 <h3 className="text-lg font-medium">Extracted Attributes</h3>
                 
-                <div className="flex flex-wrap gap-2 items-center">
+                <div className="flex items-center gap-2">
                   <input
                     type="text"
                     placeholder="Filter results..."
                     className="border rounded px-3 py-1 text-sm w-full sm:w-auto"
                   />
                   
-                  <div className="flex gap-2">
-                    <button className="btn btn-sm btn-outline">
-                      Export CSV
-                    </button>
-                    <button className="btn btn-sm btn-outline">
-                      Export Excel
-                    </button>
-                    <button className="btn btn-sm btn-primary">
-                      Push to CMS
-                    </button>
-                  </div>
+                  <ModuleOutputActions
+                    moduleType="ae"
+                    outputType="product"
+                    onExportCSV={handleExportCSV}
+                    onExportExcel={handleExportExcel}
+                    onPushToCMS={handlePushToCMS}
+                  />
                 </div>
               </div>
               
