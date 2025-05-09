@@ -72,7 +72,7 @@ const AEResultsTab = ({ projectId }: AEResultsTabProps) => {
       case 'processing':
         return <Badge variant="default">Processing</Badge>;
       case 'completed':
-        return <Badge>Completed</Badge>;
+        return <Badge variant="success">Completed</Badge>;
       case 'failed':
         return <Badge variant="destructive">Failed</Badge>;
       case 'cancelled':

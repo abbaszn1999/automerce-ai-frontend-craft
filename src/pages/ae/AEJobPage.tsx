@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSupabase } from "@/hooks/useSupabase";
@@ -180,12 +179,10 @@ const AEJobPage = () => {
 
       <div className="bg-card p-4 rounded-lg shadow-sm mb-8">
         <h2 className="text-xl font-bold mb-4">Processing Logs</h2>
-        <LogDisplay logs={logs.map(log => ({
-          id: log.id,
-          message: log.message,
-          timestamp: new Date(log.created_at).toLocaleTimeString(),
-          level: log.level
-        }))} />
+        <LogDisplay 
+          logs={logs.map(log => log.message)} 
+          maxHeight="max-h-[400px]" 
+        />
       </div>
 
       {job.status === 'completed' && (
