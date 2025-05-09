@@ -41,9 +41,10 @@ serve(async (req: Request) => {
       });
     }
     
-    // Get projectId from URL
+    // Get parameters from URL
     const url = new URL(req.url);
     const projectId = url.searchParams.get('projectId');
+    const attributeId = url.searchParams.get('attributeId');
     
     if (!projectId) {
       return new Response(JSON.stringify({ error: 'Project ID is required' }), {
@@ -52,136 +53,157 @@ serve(async (req: Request) => {
       });
     }
     
-    // Verify user has access to this project
-    const { data: projectData, error: projectError } = await supabase
-      .from('ae_projects')
-      .select('id')
-      .eq('id', projectId)
-      .eq('user_id', user.id)
-      .single();
+    // Helper function to verify project access
+    async function verifyProjectAccess(projectId: string) {
+      const { data, error } = await supabase
+        .from('projects')
+        .select(`
+          id,
+          module_type,
+          workspace_id,
+          workspaces!inner(owner_id)
+        `)
+        .eq('id', projectId)
+        .eq('workspaces.owner_id', user.id)
+        .single();
       
-    if (projectError || !projectData) {
-      return new Response(JSON.stringify({ error: 'Project not found or access denied' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      if (error || !data) {
+        throw new Error('Project not found or access denied');
+      }
+      
+      if (data.module_type !== 'AI_ATTRIBUTE_ENRICHMENT') {
+        throw new Error('Project is not an Attribute Enrichment project');
+      }
+      
+      return data;
+    }
+
+    // Helper function to verify attribute belongs to project
+    async function verifyAttributeAccess(attributeId: string, projectId: string) {
+      const { data, error } = await supabase
+        .from('ae_managed_attributes')
+        .select('id')
+        .eq('id', attributeId)
+        .eq('project_id', projectId)
+        .single();
+      
+      if (error || !data) {
+        throw new Error('Attribute not found or does not belong to this project');
+      }
+      
+      return data;
     }
 
     // Handle different HTTP methods
     if (req.method === 'GET') {
-      // Get managed attributes for project with their values
-      const { data: attributes, error } = await supabase
-        .from('ae_managed_attributes')
-        .select(`
-          id,
-          name,
-          description,
-          created_at,
-          updated_at,
-          ae_attribute_values (
-            id,
-            value
-          )
-        `)
-        .eq('project_id', projectId)
-        .order('name');
-
-      if (error) {
-        console.error('Error fetching attributes:', error);
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      return new Response(JSON.stringify({ attributes }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    } 
-    else if (req.method === 'POST') {
-      // Create a new attribute
-      const { name, description, predefinedValues = [] } = await req.json();
-      
-      if (!name) {
-        return new Response(JSON.stringify({ error: 'Attribute name is required' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // Start a transaction
-      const { data: attribute, error: attrError } = await supabase
-        .from('ae_managed_attributes')
-        .insert([{ 
-          name, 
-          description, 
-          project_id: projectId 
-        }])
-        .select()
-        .single();
-
-      if (attrError) {
-        console.error('Error creating attribute:', attrError);
-        return new Response(JSON.stringify({ error: attrError.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // Add predefined values if provided
-      if (predefinedValues.length > 0) {
-        const valuesToInsert = predefinedValues.map(value => ({
-          attribute_id: attribute.id,
-          value
-        }));
+      try {
+        // Verify access
+        await verifyProjectAccess(projectId);
         
-        const { error: valuesError } = await supabase
-          .from('ae_attribute_values')
-          .insert(valuesToInsert);
+        // Get attributes for this project, with their values
+        const { data, error } = await supabase
+          .from('ae_managed_attributes')
+          .select(`
+            *,
+            ae_attribute_values(*)
+          `)
+          .eq('project_id', projectId)
+          .order('created_at', { foreignTable: 'ae_attribute_values' });
 
-        if (valuesError) {
-          console.error('Error adding predefined values:', valuesError);
-          return new Response(JSON.stringify({ error: valuesError.message }), {
+        if (error) {
+          console.error('Error fetching attributes:', error);
+          return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
-      }
 
-      // Get complete attribute with values
-      const { data: completeAttribute, error: fetchError } = await supabase
-        .from('ae_managed_attributes')
-        .select(`
-          id,
-          name,
-          description,
-          created_at,
-          updated_at,
-          ae_attribute_values (
-            id,
-            value
-          )
-        `)
-        .eq('id', attribute.id)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching complete attribute:', fetchError);
-        return new Response(JSON.stringify({ error: fetchError.message }), {
-          status: 500,
+        return new Response(JSON.stringify({ attributes: data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+    } 
+    else if (req.method === 'POST') {
+      try {
+        // Verify access
+        await verifyProjectAccess(projectId);
+        
+        const { name, description, values = [] } = await req.json();
+        
+        if (!name) {
+          return new Response(JSON.stringify({ error: 'Attribute name is required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
 
-      return new Response(JSON.stringify({ attribute: completeAttribute }), {
-        status: 201,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+        // Create attribute
+        const { data: attribute, error: attributeError } = await supabase
+          .from('ae_managed_attributes')
+          .insert([{ name, description, project_id: projectId }])
+          .select()
+          .single();
+
+        if (attributeError) {
+          console.error('Error creating attribute:', attributeError);
+          return new Response(JSON.stringify({ error: attributeError.message }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Add attribute values if provided
+        if (values.length > 0) {
+          const attributeValues = values.map((value: string) => ({
+            attribute_id: attribute.id,
+            value
+          }));
+
+          const { error: valuesError } = await supabase
+            .from('ae_attribute_values')
+            .insert(attributeValues);
+
+          if (valuesError) {
+            console.error('Error adding attribute values:', valuesError);
+            // Continue even if values insertion fails
+          }
+        }
+
+        // Fetch the complete attribute with its values
+        const { data: completeAttribute, error: fetchError } = await supabase
+          .from('ae_managed_attributes')
+          .select(`
+            *,
+            ae_attribute_values(*)
+          `)
+          .eq('id', attribute.id)
+          .single();
+
+        if (fetchError) {
+          console.error('Error fetching complete attribute:', fetchError);
+          return new Response(JSON.stringify({ attribute }), {
+            status: 201,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        return new Response(JSON.stringify({ attribute: completeAttribute }), {
+          status: 201,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
-    else if (req.method === 'DELETE') {
-      // Delete an attribute
-      const attributeId = url.searchParams.get('attributeId');
-      
+    else if (req.method === 'PUT') {
       if (!attributeId) {
         return new Response(JSON.stringify({ error: 'Attribute ID is required' }), {
           status: 400,
@@ -189,38 +211,132 @@ serve(async (req: Request) => {
         });
       }
 
-      // Verify attribute belongs to the specified project
-      const { data: attrData, error: attrError } = await supabase
-        .from('ae_managed_attributes')
-        .select('id')
-        .eq('id', attributeId)
-        .eq('project_id', projectId)
-        .single();
+      try {
+        // Verify access
+        await verifyProjectAccess(projectId);
+        await verifyAttributeAccess(attributeId, projectId);
         
-      if (attrError || !attrData) {
-        return new Response(JSON.stringify({ error: 'Attribute not found or access denied' }), {
-          status: 404,
+        const { name, description, values = [] } = await req.json();
+        
+        if (!name) {
+          return new Response(JSON.stringify({ error: 'Attribute name is required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Update attribute
+        const { data: attribute, error: attributeError } = await supabase
+          .from('ae_managed_attributes')
+          .update({ 
+            name, 
+            description,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', attributeId)
+          .select()
+          .single();
+
+        if (attributeError) {
+          console.error('Error updating attribute:', attributeError);
+          return new Response(JSON.stringify({ error: attributeError.message }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Replace attribute values if provided
+        if (values.length > 0) {
+          // First delete existing values
+          const { error: deleteError } = await supabase
+            .from('ae_attribute_values')
+            .delete()
+            .eq('attribute_id', attributeId);
+
+          if (deleteError) {
+            console.error('Error deleting attribute values:', deleteError);
+            // Continue even if delete fails
+          }
+
+          // Then insert new values
+          const attributeValues = values.map((value: string) => ({
+            attribute_id: attributeId,
+            value
+          }));
+
+          const { error: valuesError } = await supabase
+            .from('ae_attribute_values')
+            .insert(attributeValues);
+
+          if (valuesError) {
+            console.error('Error adding attribute values:', valuesError);
+            // Continue even if values insertion fails
+          }
+        }
+
+        // Fetch the complete attribute with its values
+        const { data: completeAttribute, error: fetchError } = await supabase
+          .from('ae_managed_attributes')
+          .select(`
+            *,
+            ae_attribute_values(*)
+          `)
+          .eq('id', attributeId)
+          .single();
+
+        if (fetchError) {
+          console.error('Error fetching complete attribute:', fetchError);
+          return new Response(JSON.stringify({ attribute }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        return new Response(JSON.stringify({ attribute: completeAttribute }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+    else if (req.method === 'DELETE') {
+      if (!attributeId) {
+        return new Response(JSON.stringify({ error: 'Attribute ID is required' }), {
+          status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      // Delete attribute (values will be cascade deleted due to foreign key)
-      const { error: deleteError } = await supabase
-        .from('ae_managed_attributes')
-        .delete()
-        .eq('id', attributeId);
+      try {
+        // Verify access
+        await verifyProjectAccess(projectId);
+        await verifyAttributeAccess(attributeId, projectId);
 
-      if (deleteError) {
-        console.error('Error deleting attribute:', deleteError);
-        return new Response(JSON.stringify({ error: deleteError.message }), {
-          status: 500,
+        // Delete attribute (values will be cascade deleted)
+        const { error: deleteError } = await supabase
+          .from('ae_managed_attributes')
+          .delete()
+          .eq('id', attributeId);
+
+        if (deleteError) {
+          console.error('Error deleting attribute:', deleteError);
+          return new Response(JSON.stringify({ error: deleteError.message }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
     }
     else {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {

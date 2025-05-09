@@ -12,3 +12,12 @@ verify_jwt = true
 
 [functions.ae-jobs]
 verify_jwt = true
+
+[functions.workspaces]
+verify_jwt = true
+
+[functions.projects]
+verify_jwt = true
+
+[functions.ae-project-settings]
+verify_jwt = true
