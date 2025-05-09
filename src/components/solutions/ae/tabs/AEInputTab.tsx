@@ -1,14 +1,12 @@
 
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/ui/FileUpload";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/sonner";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
-import { Separator } from "@/components/ui/separator";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useNavigate } from "react-router-dom";
 
 interface AEInputTabProps {
   projectId: string;
@@ -18,79 +16,40 @@ interface AEInputTabProps {
 const AEInputTab = ({ projectId, onJobCreated }: AEInputTabProps) => {
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
-  const [jobName, setJobName] = useState("");
   const [csvColumns, setCsvColumns] = useState<string[]>([]);
-  const [isCreatingJob, setIsCreatingJob] = useState(false);
   const [isProcessingCsv, setIsProcessingCsv] = useState(false);
+  const [isCreatingJob, setIsCreatingJob] = useState(false);
+  const [sourceColumns, setSourceColumns] = useState<string[]>([
+    'product_id', 
+    'product_name', 
+    'description', 
+    'short_description',
+    'image_url',
+    'price',
+    'category'
+  ]);
   
   // Column mapping
-  const [recordIdColumn, setRecordIdColumn] = useState("");
-  const [titleColumn, setTitleColumn] = useState("");
-  const [urlColumn, setUrlColumn] = useState("");
-  const [imageUrlColumn, setImageUrlColumn] = useState("");
-  const [descriptionColumn, setDescriptionColumn] = useState("");
+  const [productIdMapping, setProductIdMapping] = useState("product_id");
+  const [productNameMapping, setProductNameMapping] = useState("product_name");
+  const [descriptionMapping, setDescriptionMapping] = useState("description");
+  const [imageUrlMapping, setImageUrlMapping] = useState("image_url");
   
   const handleFileUpload = async (uploadedFile: File) => {
     setFile(uploadedFile);
+    toast.success("File uploaded successfully");
+    
     setIsProcessingCsv(true);
     
-    try {
-      // Read the first few lines of the CSV to extract headers
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const lines = text.split('\n');
-        
-        if (lines.length > 0) {
-          // Parse headers (first line)
-          const headers = lines[0].split(',').map(header => 
-            header.trim().replace(/^"|"$/g, '') // Remove surrounding quotes
-          );
-          
-          setCsvColumns(headers);
-          
-          // Try to guess column mappings based on common names
-          const findColumnByPattern = (patterns: RegExp[]) => {
-            return headers.find(header => 
-              patterns.some(pattern => pattern.test(header.toLowerCase()))
-            );
-          };
-          
-          const idPatterns = [/id/i, /record/i, /sku/i];
-          const titlePatterns = [/title/i, /name/i, /product.*name/i];
-          const urlPatterns = [/url/i, /link/i, /product.*url/i];
-          const imagePatterns = [/image/i, /picture/i, /photo/i, /img/i];
-          const descPatterns = [/desc/i, /description/i, /details/i];
-          
-          setRecordIdColumn(findColumnByPattern(idPatterns) || "");
-          setTitleColumn(findColumnByPattern(titlePatterns) || "");
-          setUrlColumn(findColumnByPattern(urlPatterns) || "");
-          setImageUrlColumn(findColumnByPattern(imagePatterns) || "");
-          setDescriptionColumn(findColumnByPattern(descPatterns) || "");
-        }
-        
-        setIsProcessingCsv(false);
-      };
-      
-      reader.readAsText(uploadedFile);
-    } catch (error) {
-      console.error("Error processing CSV:", error);
-      toast.error("Failed to process CSV file");
+    // Simulate loading columns from CSV
+    setTimeout(() => {
+      // In a real implementation, we would parse the CSV file here
+      setCsvColumns(['product_id', 'product_name', 'description', 'image_url', 'price', 'category']);
       setIsProcessingCsv(false);
-    }
+    }, 1000);
   };
   
-  const handleCreateJob = async () => {
-    if (!file) {
-      toast.error("Please upload a CSV file");
-      return;
-    }
-    
-    if (!recordIdColumn || !titleColumn) {
-      toast.error("Record ID and Title columns are required");
-      return;
-    }
-    
+  const handleStartExtraction = async () => {
     try {
       setIsCreatingJob(true);
       
@@ -98,19 +57,19 @@ const AEInputTab = ({ projectId, onJobCreated }: AEInputTabProps) => {
       const jobId = `job_${Date.now()}`;
       const job = {
         id: jobId,
-        name: jobName || `Job ${new Date().toLocaleString()}`,
-        status: "pending",
-        progress: 0,
-        current_stage: "Initializing",
+        name: `Job ${new Date().toLocaleString()}`,
+        status: "processing",
+        progress: 5,
+        current_stage: "Data Preprocessing",
         created_at: new Date().toISOString(),
-        projectId: projectId,
+        projectId,
         columnMapping: {
-          recordId: recordIdColumn,
-          title: titleColumn,
-          url: urlColumn,
-          imageUrl: imageUrlColumn,
-          description: descriptionColumn
-        }
+          productId: productIdMapping,
+          productName: productNameMapping,
+          description: descriptionMapping,
+          imageUrl: imageUrlMapping
+        },
+        fileName: file?.name || "products.csv"
       };
       
       // Save job to localStorage
@@ -118,170 +77,196 @@ const AEInputTab = ({ projectId, onJobCreated }: AEInputTabProps) => {
       jobs.push(job);
       localStorage.setItem(`ae-jobs-${projectId}`, JSON.stringify(jobs));
       
-      // Mock file storage (in real app this would be uploaded to a server)
-      // For demo we'll just store the file name
-      localStorage.setItem(`ae-job-file-${jobId}`, file.name);
+      toast.success("Extraction process started");
       
-      toast.success("Job created successfully!");
-      
-      // Navigate to the results tab or job page
       if (onJobCreated) {
         onJobCreated(jobId);
-      } else {
-        navigate(`/ae/job/${jobId}`);
       }
+      
     } catch (error) {
       console.error("Error creating job:", error);
-      toast.error("Failed to create job");
+      toast.error("Failed to start extraction process");
     } finally {
       setIsCreatingJob(false);
     }
   };
 
   return (
-    <div className="space-y-8">
-      <Card>
+    <div>
+      <h3 className="text-xl font-bold mb-6">Input Product Data</h3>
+
+      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+        <p className="text-blue-800">
+          Upload your product data file to begin the attribute extraction process. The file should contain product information including names, descriptions, and images.
+        </p>
+      </div>
+      
+      <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Upload Products</CardTitle>
-          <CardDescription>
-            Upload a CSV file containing product data to process
-          </CardDescription>
+          <CardTitle>Upload File</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="job_name">Job Name (Optional)</Label>
-              <Input
-                id="job_name"
-                placeholder="Enter a name for this extraction job"
-                value={jobName}
-                onChange={(e) => setJobName(e.target.value)}
-              />
+          <FileUpload
+            onChange={handleFileUpload}
+            acceptedFileTypes={[".csv", ".xlsx"]}
+            maxSizeInMB={10}
+          />
+          <div className="text-xs text-muted-foreground mt-2">
+            .csv, .xlsx files up to 10MB
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Connect to Store</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="mb-4">Import your product data directly from your e-commerce store.</p>
+          <Button variant="outline" disabled>
+            Connect (Coming Soon)
+          </Button>
+        </CardContent>
+      </Card>
+      
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Column Mapping</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isProcessingCsv ? (
+            <div className="text-center py-4">
+              Processing file...
             </div>
-            
-            <div>
-              <FileUpload 
-                onChange={handleFileUpload} 
-                acceptedFileTypes={[".csv"]}
-                maxSizeInMB={10}
-              />
-            </div>
-            
-            {isProcessingCsv && (
-              <div className="text-center py-4">
-                Processing CSV file...
+          ) : (
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-medium mb-4">Source Columns (Your File)</h4>
+                <ul className="border rounded-md divide-y">
+                  {sourceColumns.map(column => (
+                    <li key={column} className="p-2">
+                      {column}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            )}
-            
-            {csvColumns.length > 0 && (
-              <div className="space-y-4">
-                <Separator />
-                
-                <h3 className="text-lg font-medium">Column Mapping</h3>
-                <p className="text-sm text-muted-foreground">
-                  Map the columns from your CSV to the required fields
-                </p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="record_id_column" className="flex items-center">
-                      Record ID <span className="ml-1 text-red-500">*</span>
-                    </Label>
-                    <Select value={recordIdColumn} onValueChange={setRecordIdColumn}>
-                      <SelectTrigger id="record_id_column">
-                        <SelectValue placeholder="Select column" />
+              
+              <div>
+                <h4 className="font-medium mb-4">Required Fields (Autommerce.ai)</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm mb-1">
+                      product_id* 
+                    </label>
+                    <Select 
+                      value={productIdMapping} 
+                      onValueChange={setProductIdMapping}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {csvColumns.map(column => (
-                          <SelectItem key={column} value={column}>{column}</SelectItem>
+                        {sourceColumns.map(column => (
+                          <SelectItem key={column} value={column}>
+                            {column}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="title_column" className="flex items-center">
-                      Product Title <span className="ml-1 text-red-500">*</span>
-                    </Label>
-                    <Select value={titleColumn} onValueChange={setTitleColumn}>
-                      <SelectTrigger id="title_column">
-                        <SelectValue placeholder="Select column" />
+                  <div>
+                    <label className="block text-sm mb-1">
+                      product_name* 
+                    </label>
+                    <Select 
+                      value={productNameMapping} 
+                      onValueChange={setProductNameMapping}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {csvColumns.map(column => (
-                          <SelectItem key={column} value={column}>{column}</SelectItem>
+                        {sourceColumns.map(column => (
+                          <SelectItem key={column} value={column}>
+                            {column}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="url_column">
-                      Product URL (Optional)
-                    </Label>
-                    <Select value={urlColumn} onValueChange={setUrlColumn}>
-                      <SelectTrigger id="url_column">
-                        <SelectValue placeholder="Select column" />
+                  <div>
+                    <label className="block text-sm mb-1">
+                      description
+                    </label>
+                    <Select 
+                      value={descriptionMapping} 
+                      onValueChange={setDescriptionMapping}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
-                        {csvColumns.map(column => (
-                          <SelectItem key={column} value={column}>{column}</SelectItem>
+                        {sourceColumns.map(column => (
+                          <SelectItem key={column} value={column}>
+                            {column}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="image_url_column">
-                      Image URL (Optional)
-                    </Label>
-                    <Select value={imageUrlColumn} onValueChange={setImageUrlColumn}>
-                      <SelectTrigger id="image_url_column">
-                        <SelectValue placeholder="Select column" />
+                  <div>
+                    <label className="block text-sm mb-1">
+                      image_url*
+                    </label>
+                    <Select 
+                      value={imageUrlMapping} 
+                      onValueChange={setImageUrlMapping}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
-                        {csvColumns.map(column => (
-                          <SelectItem key={column} value={column}>{column}</SelectItem>
+                        {sourceColumns.map(column => (
+                          <SelectItem key={column} value={column}>
+                            {column}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="description_column">
-                      Product Description (Optional)
-                    </Label>
-                    <Select value={descriptionColumn} onValueChange={setDescriptionColumn}>
-                      <SelectTrigger id="description_column">
-                        <SelectValue placeholder="Select column" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">None</SelectItem>
-                        {csvColumns.map(column => (
-                          <SelectItem key={column} value={column}>{column}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="text-xs text-muted-foreground">
+                    * Required fields
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button variant="outline" onClick={() => setFile(null)}>
-            Reset
-          </Button>
-          <Button 
-            onClick={handleCreateJob} 
-            disabled={!file || !recordIdColumn || !titleColumn || isCreatingJob}
-          >
-            {isCreatingJob ? "Creating..." : "Start Extraction Process"}
-          </Button>
-        </CardFooter>
       </Card>
+      
+      <div className="flex justify-between mt-6">
+        <Button 
+          variant="outline" 
+          className="flex items-center gap-2"
+          onClick={() => navigate(`/ae/project/${projectId}`)}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Setup
+        </Button>
+        
+        <Button 
+          className="flex items-center gap-2"
+          onClick={handleStartExtraction}
+          disabled={!file || isCreatingJob}
+        >
+          Start Extraction Process
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 };

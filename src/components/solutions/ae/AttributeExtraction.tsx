@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus } from "lucide-react";
+import { Plus, ArrowRight } from "lucide-react";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 
 interface Project {
   id: string;
@@ -111,9 +112,11 @@ const AttributeExtraction: React.FC = () => {
         </p>
       </div>
 
-      <div className="mb-6">
-        <div className="mb-4">
-          <h3 className="text-lg font-medium mb-2">Create New AE Project</h3>
+      <Card className="mb-6">
+        <CardHeader>
+          <h3 className="text-lg font-medium">Create New AE Project</h3>
+        </CardHeader>
+        <CardContent>
           <div className="flex gap-2">
             <Input
               placeholder="Enter project name"
@@ -126,43 +129,40 @@ const AttributeExtraction: React.FC = () => {
               <span>Create AE Project</span>
             </Button>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div>
-        <h3 className="text-lg font-medium mb-4">Existing AE Projects</h3>
-        
-        {projects.length === 0 ? (
-          <div className="text-center py-8 border rounded-lg bg-background">
-            <p className="text-muted-foreground">No projects created yet. Create your first project above.</p>
-          </div>
-        ) : (
-          <div className="border rounded-lg divide-y">
-            <div className="grid grid-cols-2 py-3 px-4 bg-muted/50">
-              <div className="font-medium">Project Name</div>
-              <div className="font-medium">Last updated</div>
+      <Card>
+        <CardHeader>
+          <h3 className="text-lg font-medium">Existing AE Projects</h3>
+        </CardHeader>
+        <CardContent>
+          {projects.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No projects created yet. Create your first project above.</p>
             </div>
-            
-            {projects.map(project => (
-              <div key={project.id} className="grid grid-cols-2 py-3 px-4">
-                <div>{project.name}</div>
-                <div className="flex justify-between items-center">
-                  <div className="text-muted-foreground">
-                    {new Date(project.created_at).toLocaleDateString()}
+          ) : (
+            <div className="border rounded-md divide-y">
+              {projects.map(project => (
+                <div key={project.id} className="flex justify-between items-center p-4">
+                  <div>
+                    <div className="font-medium">{project.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      Last updated: {new Date(project.created_at).toLocaleDateString()}
+                    </div>
                   </div>
                   <Button 
-                    variant="outline"
-                    size="sm"
                     onClick={() => handleOpenProject(project.id)}
+                    className="ml-2"
                   >
                     Open Project
                   </Button>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
