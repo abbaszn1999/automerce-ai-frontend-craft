@@ -31,17 +31,20 @@ export const useSupabase = () => {
     try {
       const accessToken = await getSupabaseAccessToken();
       if (!accessToken) {
+        const error = new Error("Authentication required");
         toast.error("Authentication required");
-        throw new Error("Authentication required");
+        throw error;
       }
       
       // Build query string
       const queryString = Object.entries(query)
+        .filter(([_, value]) => value !== undefined && value !== null)
         .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
         .join("&");
       
       const url = queryString ? `${functionName}?${queryString}` : functionName;
       
+      console.log(`Calling function ${functionName} with method ${method}`);
       const { data, error } = await supabase.functions.invoke(url, {
         method,
         headers: {
@@ -52,14 +55,15 @@ export const useSupabase = () => {
       
       if (error) {
         console.error(`Error calling ${functionName}:`, error);
-        toast.error(error.message || "An error occurred");
         throw error;
       }
       
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error in callEdgeFunction ${functionName}:`, error);
-      throw error;
+      return { 
+        error: error.message || `Failed to call ${functionName}`
+      };
     }
   }, [getSupabaseAccessToken]);
 

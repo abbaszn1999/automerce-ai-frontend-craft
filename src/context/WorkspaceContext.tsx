@@ -39,19 +39,41 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
     try {
       setIsLoading(true);
       setError(null);
+
+      console.log("Loading workspaces...");
+      const { workspaces = [], error } = await supabase.getWorkspaces();
       
-      const { workspaces = [] } = await supabase.getWorkspaces();
-      
-      setWorkspaces(workspaces);
-      
-      // Set current workspace to the first one if none is selected
-      if (!currentWorkspace && workspaces.length > 0) {
-        setCurrentWorkspace(workspaces[0]);
+      if (error) {
+        throw new Error(error);
       }
       
-      // If the current workspace is no longer in the list, reset it
-      if (currentWorkspace && !workspaces.find(w => w.id === currentWorkspace.id)) {
-        setCurrentWorkspace(workspaces.length > 0 ? workspaces[0] : null);
+      console.log("Loaded workspaces:", workspaces);
+      setWorkspaces(workspaces);
+      
+      // If no workspaces exist, create a default one
+      if (workspaces.length === 0) {
+        console.log("No workspaces found, creating default workspace");
+        try {
+          const { workspace } = await supabase.createWorkspace("My Workspace");
+          setWorkspaces([workspace]);
+          setCurrentWorkspace(workspace);
+          console.log("Created default workspace:", workspace);
+        } catch (err) {
+          console.error("Error creating default workspace:", err);
+          toast.error("Failed to create default workspace");
+        }
+      } else {
+        // Set current workspace to the first one if none is selected
+        if (!currentWorkspace && workspaces.length > 0) {
+          setCurrentWorkspace(workspaces[0]);
+          console.log("Set current workspace to:", workspaces[0]);
+        }
+        
+        // If the current workspace is no longer in the list, reset it
+        if (currentWorkspace && !workspaces.find(w => w.id === currentWorkspace.id)) {
+          setCurrentWorkspace(workspaces.length > 0 ? workspaces[0] : null);
+          console.log("Reset current workspace to:", workspaces.length > 0 ? workspaces[0] : null);
+        }
       }
       
     } catch (err) {
@@ -71,13 +93,19 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
   // Create a new workspace
   const handleCreateWorkspace = async (name: string): Promise<Workspace> => {
     try {
-      const { workspace } = await supabase.createWorkspace(name);
+      console.log("Creating workspace:", name);
+      const { workspace, error } = await supabase.createWorkspace(name);
+      
+      if (error) {
+        throw new Error(error);
+      }
+      
       await loadWorkspaces();
       toast.success(`Workspace "${name}" created`);
       return workspace;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating workspace:', err);
-      toast.error('Failed to create workspace');
+      toast.error(err.message || 'Failed to create workspace');
       throw err;
     }
   };
@@ -85,7 +113,12 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
   // Update a workspace
   const handleUpdateWorkspace = async (id: string, name: string): Promise<Workspace> => {
     try {
-      const { workspace } = await supabase.updateWorkspace(id, name);
+      console.log("Updating workspace:", id, name);
+      const { workspace, error } = await supabase.updateWorkspace(id, name);
+      
+      if (error) {
+        throw new Error(error);
+      }
       
       // Update local state
       setWorkspaces(prev => prev.map(w => w.id === id ? workspace : w));
@@ -95,9 +128,9 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
       
       toast.success(`Workspace updated to "${name}"`);
       return workspace;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating workspace:', err);
-      toast.error('Failed to update workspace');
+      toast.error(err.message || 'Failed to update workspace');
       throw err;
     }
   };
@@ -105,7 +138,12 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
   // Delete a workspace
   const handleDeleteWorkspace = async (id: string): Promise<boolean> => {
     try {
-      await supabase.deleteWorkspace(id);
+      console.log("Deleting workspace:", id);
+      const { error } = await supabase.deleteWorkspace(id);
+      
+      if (error) {
+        throw new Error(error);
+      }
       
       // Update local state
       setWorkspaces(prev => prev.filter(w => w.id !== id));
@@ -115,9 +153,9 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
       
       toast.success('Workspace deleted');
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting workspace:', err);
-      toast.error('Failed to delete workspace');
+      toast.error(err.message || 'Failed to delete workspace');
       throw err;
     }
   };

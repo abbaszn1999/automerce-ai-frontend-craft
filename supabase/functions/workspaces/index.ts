@@ -46,90 +46,135 @@ serve(async (req: Request) => {
 
     // Handle different HTTP methods
     if (req.method === 'GET') {
-      let query = supabase.from('workspaces').select('*').eq('owner_id', user.id);
-      
       if (workspaceId) {
-        query = query.eq('id', workspaceId).single();
+        // Get specific workspace
+        const { data, error } = await supabase
+          .from('workspaces')
+          .select('*')
+          .eq('id', workspaceId)
+          .eq('owner_id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching workspace:', error);
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: error.code === 'PGRST116' ? 404 : 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        return new Response(JSON.stringify({ workspace: data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       } else {
-        query = query.order('created_at', { ascending: false });
+        // Get all workspaces for this user
+        const { data, error } = await supabase
+          .from('workspaces')
+          .select('*')
+          .eq('owner_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching workspaces:', error);
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        return new Response(JSON.stringify({ workspaces: data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    } else if (req.method === 'POST') {
+      // Create a new workspace
+      const { name } = await req.json();
+      
+      if (!name || name.trim() === '') {
+        return new Response(JSON.stringify({ error: 'Workspace name is required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
-      const { data, error } = await query;
+      // Create a profile record if it doesn't exist
+      const { data: existingUser, error: existingUserError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+        
+      if (existingUserError && existingUserError.code !== 'PGRST116') {
+        console.error('Error checking user:', existingUserError);
+        return new Response(JSON.stringify({ error: 'Failed to check user profile' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // If user profile doesn't exist, create it
+      if (!existingUser) {
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert([{ 
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || null,
+            last_login_at: new Date().toISOString()
+          }]);
+          
+        if (profileError) {
+          console.error('Error creating user profile:', profileError);
+          return new Response(JSON.stringify({ error: 'Failed to create user profile' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Create workspace
+      const { data, error } = await supabase
+        .from('workspaces')
+        .insert([{ name, owner_id: user.id }])
+        .select()
+        .single();
 
       if (error) {
-        console.error('Error fetching workspaces:', error);
+        console.error('Error creating workspace:', error);
         return new Response(JSON.stringify({ error: error.message }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      return new Response(JSON.stringify({ workspaces: data }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    } 
-    else if (req.method === 'POST') {
-      // Create a new workspace
-      const { name } = await req.json();
-      
-      if (!name) {
-        return new Response(JSON.stringify({ error: 'Workspace name is required' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      // Create default configurations for the new workspace
+      const promises = [
+        supabase
+          .from('workspace_analytics_configs')
+          .insert([{ workspace_id: data.id }]),
+        supabase
+          .from('workspace_js_configs')
+          .insert([{ workspace_id: data.id }]),
+        supabase
+          .from('workspace_feed_configs')
+          .insert([{ workspace_id: data.id }])
+      ];
+
+      const results = await Promise.allSettled(promises);
+      const errors = results
+        .filter(result => result.status === 'rejected')
+        .map(result => (result as PromiseRejectedResult).reason);
+
+      if (errors.length > 0) {
+        console.error('Error creating workspace configurations:', errors);
+        // We'll still return success but log the errors
       }
 
-      // Insert workspace
-      const { data: workspace, error: workspaceError } = await supabase
-        .from('workspaces')
-        .insert([{ name, owner_id: user.id }])
-        .select()
-        .single();
-
-      if (workspaceError) {
-        console.error('Error creating workspace:', workspaceError);
-        return new Response(JSON.stringify({ error: workspaceError.message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // Create default workspace configurations
-      const workspaceId = workspace.id;
-      
-      // Create analytics config
-      const { error: analyticsError } = await supabase
-        .from('workspace_analytics_configs')
-        .insert([{ workspace_id: workspaceId }]);
-
-      if (analyticsError) {
-        console.error('Error creating analytics config:', analyticsError);
-      }
-
-      // Create JS config
-      const { error: jsError } = await supabase
-        .from('workspace_js_configs')
-        .insert([{ workspace_id: workspaceId }]);
-
-      if (jsError) {
-        console.error('Error creating JS config:', jsError);
-      }
-
-      // Create feed config
-      const { error: feedError } = await supabase
-        .from('workspace_feed_configs')
-        .insert([{ workspace_id: workspaceId }]);
-
-      if (feedError) {
-        console.error('Error creating feed config:', feedError);
-      }
-
-      return new Response(JSON.stringify({ workspace }), {
+      return new Response(JSON.stringify({ workspace: data }), {
         status: 201,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-    }
-    else if (req.method === 'PUT') {
+    } else if (req.method === 'PUT') {
       if (!workspaceId) {
         return new Response(JSON.stringify({ error: 'Workspace ID is required' }), {
           status: 400,
@@ -139,49 +184,37 @@ serve(async (req: Request) => {
       
       const { name } = await req.json();
       
-      if (!name) {
+      if (!name || name.trim() === '') {
         return new Response(JSON.stringify({ error: 'Workspace name is required' }), {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // Verify user has access to this workspace
-      const { data: workspaceData, error: workspaceError } = await supabase
-        .from('workspaces')
-        .select('id')
-        .eq('id', workspaceId)
-        .eq('owner_id', user.id)
-        .single();
-        
-      if (workspaceError || !workspaceData) {
-        return new Response(JSON.stringify({ error: 'Workspace not found or access denied' }), {
-          status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
       // Update workspace
-      const { data: updatedWorkspace, error: updateError } = await supabase
+      const { data, error } = await supabase
         .from('workspaces')
-        .update({ name, updated_at: new Date().toISOString() })
+        .update({ 
+          name,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', workspaceId)
+        .eq('owner_id', user.id)
         .select()
         .single();
 
-      if (updateError) {
-        console.error('Error updating workspace:', updateError);
-        return new Response(JSON.stringify({ error: updateError.message }), {
+      if (error) {
+        console.error('Error updating workspace:', error);
+        return new Response(JSON.stringify({ error: error.message }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      return new Response(JSON.stringify({ workspace: updatedWorkspace }), {
+      return new Response(JSON.stringify({ workspace: data }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-    }
-    else if (req.method === 'DELETE') {
+    } else if (req.method === 'DELETE') {
       if (!workspaceId) {
         return new Response(JSON.stringify({ error: 'Workspace ID is required' }), {
           status: 400,
@@ -189,30 +222,16 @@ serve(async (req: Request) => {
         });
       }
 
-      // Verify user has access to this workspace
-      const { data: workspaceData, error: workspaceError } = await supabase
-        .from('workspaces')
-        .select('id')
-        .eq('id', workspaceId)
-        .eq('owner_id', user.id)
-        .single();
-        
-      if (workspaceError || !workspaceData) {
-        return new Response(JSON.stringify({ error: 'Workspace not found or access denied' }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // Delete workspace - cascading delete will remove all related data
-      const { error: deleteError } = await supabase
+      // Delete workspace
+      const { error } = await supabase
         .from('workspaces')
         .delete()
-        .eq('id', workspaceId);
+        .eq('id', workspaceId)
+        .eq('owner_id', user.id);
 
-      if (deleteError) {
-        console.error('Error deleting workspace:', deleteError);
-        return new Response(JSON.stringify({ error: deleteError.message }), {
+      if (error) {
+        console.error('Error deleting workspace:', error);
+        return new Response(JSON.stringify({ error: error.message }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -221,8 +240,7 @@ serve(async (req: Request) => {
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-    }
-    else {
+    } else {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {
         status: 405,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

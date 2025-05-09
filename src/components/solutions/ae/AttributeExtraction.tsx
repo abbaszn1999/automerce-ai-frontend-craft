@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSupabase } from "@/hooks/useSupabase";
@@ -7,8 +8,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowUpRight, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowUpRight, Loader2, Plus, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useWorkspace } from "@/context/WorkspaceContext";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Project {
   id: string;
@@ -19,6 +22,7 @@ interface Project {
 const AttributeExtraction: React.FC = () => {
   const navigate = useNavigate();
   const { callEdgeFunction } = useSupabase();
+  const { currentWorkspace, isLoading: isWorkspaceLoading } = useWorkspace();
   
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,12 +31,35 @@ const AttributeExtraction: React.FC = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const fetchProjects = async () => {
+    if (!currentWorkspace) return;
+    
     try {
       setIsLoading(true);
-      const data = await callEdgeFunction("ae-projects");
+      console.log("Fetching AE projects for workspace:", currentWorkspace.id);
+      
+      // First, try getting all projects for this workspace from the modern projects endpoint
+      const data = await callEdgeFunction("projects", {
+        query: { 
+          workspaceId: currentWorkspace.id,
+          moduleType: "AI_ATTRIBUTE_ENRICHMENT"
+        }
+      });
       
       if (data && data.projects) {
+        console.log("Projects found:", data.projects);
         setProjects(data.projects);
+        return;
+      }
+
+      // Fallback to older ae-projects endpoint if needed
+      const legacyData = await callEdgeFunction("ae-projects");
+      
+      if (legacyData && legacyData.projects) {
+        console.log("Legacy projects found:", legacyData.projects);
+        setProjects(legacyData.projects);
+      } else {
+        console.log("No projects found");
+        setProjects([]);
       }
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -43,11 +70,18 @@ const AttributeExtraction: React.FC = () => {
   };
   
   useEffect(() => {
-    fetchProjects();
-  }, [callEdgeFunction]);
+    if (currentWorkspace) {
+      fetchProjects();
+    }
+  }, [currentWorkspace]);
   
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!currentWorkspace) {
+      toast.error("No workspace selected");
+      return;
+    }
     
     if (!newProjectName.trim()) {
       toast.error("Project name is required");
@@ -56,7 +90,32 @@ const AttributeExtraction: React.FC = () => {
     
     try {
       setIsCreating(true);
+      console.log("Creating project in workspace:", currentWorkspace.id);
       
+      // Attempt to create using the projects endpoint (preferred)
+      try {
+        const data = await callEdgeFunction("projects", {
+          method: "POST",
+          body: { 
+            name: newProjectName.trim(),
+            workspace_id: currentWorkspace.id,
+            module_type: "AI_ATTRIBUTE_ENRICHMENT"
+          }
+        });
+        
+        if (data && data.project) {
+          toast.success("Project created successfully");
+          setNewProjectName("");
+          setCreateDialogOpen(false);
+          fetchProjects();
+          return;
+        }
+      } catch (error) {
+        console.error("Error creating project via projects endpoint:", error);
+        // If projects endpoint fails, try legacy endpoint
+      }
+      
+      // Fallback to legacy endpoint
       const data = await callEdgeFunction("ae-projects", {
         method: "POST",
         body: { name: newProjectName.trim() }
@@ -67,6 +126,8 @@ const AttributeExtraction: React.FC = () => {
         setNewProjectName("");
         setCreateDialogOpen(false);
         fetchProjects();
+      } else {
+        throw new Error("Failed to create project");
       }
     } catch (error) {
       console.error("Error creating project:", error);
@@ -80,10 +141,34 @@ const AttributeExtraction: React.FC = () => {
     navigate(`/ae/project/${projectId}`);
   };
 
+  if (isWorkspaceLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <p className="ml-2">Loading workspace...</p>
+      </div>
+    );
+  }
+
+  if (!currentWorkspace) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>No workspace available</AlertTitle>
+          <AlertDescription>
+            A workspace is required to manage projects. Please refresh the page or contact support if this issue persists.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   if (isLoading && projects.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p>Loading projects...</p>
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <p className="ml-2">Loading projects...</p>
       </div>
     );
   }
@@ -123,6 +208,9 @@ const AttributeExtraction: React.FC = () => {
                     onChange={(e) => setNewProjectName(e.target.value)}
                   />
                 </div>
+                <div className="text-sm text-muted-foreground">
+                  This project will be created in workspace: <strong>{currentWorkspace.name}</strong>
+                </div>
               </div>
               
               <DialogFooter>
@@ -130,7 +218,12 @@ const AttributeExtraction: React.FC = () => {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isCreating || !newProjectName.trim()}>
-                  {isCreating ? "Creating..." : "Create Project"}
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : "Create Project"}
                 </Button>
               </DialogFooter>
             </form>
