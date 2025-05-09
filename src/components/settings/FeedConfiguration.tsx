@@ -4,8 +4,9 @@ import { useAppContext } from "../../context/AppContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/ui/FileUpload";
-import { FileText, ArrowDown } from "lucide-react";
+import { FileText, ArrowDown, List } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
+import ChooseFromFeedDialog from "@/components/dialogs/ChooseFromFeedDialog";
 
 interface ColumnMapping {
   sourceColumn: string;
@@ -13,12 +14,14 @@ interface ColumnMapping {
 }
 
 const FeedConfiguration: React.FC = () => {
-  const { selectedFeedMode, setFeedMappingColumns, setSettingsCurrentTab, addFeedToList } = useAppContext();
+  const { selectedFeedMode, setFeedMappingColumns, setSettingsCurrentTab, addFeedToList, feedList } = useAppContext();
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [sampleColumns, setSampleColumns] = useState<string[]>([]);
   const [mappedColumns, setMappedColumns] = useState<ColumnMapping[]>([]);
   const [feedName, setFeedName] = useState<string>("");
   const [step, setStep] = useState<"upload" | "mapping" | "finalize">("upload");
+  const [chooseFeedDialogOpen, setChooseFeedDialogOpen] = useState(false);
+  const [selectedFeedId, setSelectedFeedId] = useState<string | null>(null);
 
   // Target columns based on feed type
   const targetColumns = selectedFeedMode === "plp" 
@@ -35,6 +38,7 @@ const FeedConfiguration: React.FC = () => {
       
       setSampleColumns(mockColumns);
       setStep("mapping");
+      setSelectedFeedId(null); // Reset selected feed when manually uploading
     }
   };
 
@@ -67,6 +71,21 @@ const FeedConfiguration: React.FC = () => {
     setSettingsCurrentTab("feed-list");
   };
 
+  const handleSelectFeed = (feedId: string) => {
+    setSelectedFeedId(feedId);
+    const selectedFeed = feedList.find(feed => feed.id === feedId);
+    
+    if (selectedFeed) {
+      // Mock data: In a real app, you would load the actual columns from the feed
+      const mockColumns = selectedFeed.type === "plp" 
+        ? ["Category Name", "Category ID", "Parent Category", "URL", "Available Filters", "Products Count"]
+        : ["Product Name", "SKU", "Price", "Description", "Image URLs", "Variants", "Attributes", "Categories"];
+      
+      setSampleColumns(mockColumns);
+      setStep("mapping");
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-8">
@@ -83,14 +102,34 @@ const FeedConfiguration: React.FC = () => {
       {step === "upload" && (
         <Card>
           <CardContent className="pt-6">
-            <FileUpload
-              id="feed-upload"
-              acceptedTypes={[".csv", ".xlsx"]}
-              onFileChange={handleFileUpload}
-              label={`Upload your ${selectedFeedMode === "plp" ? "PLP" : "Product"} feed file`}
-              requiredColumns={targetColumns}
-              downloadTemplateLink="#"
-            />
+            <div className="space-y-6">
+              <FileUpload
+                id="feed-upload"
+                acceptedTypes={[".csv", ".xlsx"]}
+                onFileChange={handleFileUpload}
+                label={`Upload your ${selectedFeedMode === "plp" ? "PLP" : "Product"} feed file`}
+                requiredColumns={targetColumns}
+                downloadTemplateLink="#"
+              />
+              
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or</span>
+                </div>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={() => setChooseFeedDialogOpen(true)}
+              >
+                <List className="mr-2 h-4 w-4" />
+                Choose from Feed List
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -190,6 +229,13 @@ const FeedConfiguration: React.FC = () => {
           </div>
         </div>
       )}
+      
+      <ChooseFromFeedDialog
+        open={chooseFeedDialogOpen}
+        onOpenChange={setChooseFeedDialogOpen}
+        feedType={selectedFeedMode}
+        onSelectFeed={handleSelectFeed}
+      />
     </div>
   );
 };

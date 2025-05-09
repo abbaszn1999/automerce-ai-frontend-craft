@@ -4,6 +4,16 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 type SolutionType = "ae" | "cb" | "ho" | "lhf" | "il" | "opb";
 type ViewType = "project" | "tool" | "settings";
 type FeedModeType = "plp" | "product";
+type FeedOutputType = "extraction" | "collection" | "structure" | "links" | "boosting" | "fruit";
+
+interface Feed {
+  id: string;
+  name: string;
+  type: FeedModeType;
+  status: string;
+  lastUpdated: string;
+  source?: string; // Module that generated the feed (e.g., "ae", "lhf")
+}
 
 interface AppContextType {
   // Global state
@@ -30,7 +40,7 @@ interface AppContextType {
   // Feed settings state
   selectedFeedMode: FeedModeType;
   feedMappingColumns: Array<{sourceColumn: string; targetColumn: string}>;
-  feedList: Array<{id: string; name: string; type: FeedModeType; status: string; lastUpdated: string}>;
+  feedList: Feed[];
   
   // Methods
   setCurrentSolution: (solution: SolutionType) => void;
@@ -45,7 +55,7 @@ interface AppContextType {
   // Feed settings methods
   setSelectedFeedMode: (mode: FeedModeType) => void;
   setFeedMappingColumns: (columns: Array<{sourceColumn: string; targetColumn: string}>) => void;
-  addFeedToList: (name: string, type: FeedModeType) => void;
+  addFeedToList: (name: string, type: FeedModeType, source?: string) => void;
   
   // AE methods
   addAttribute: (name: string, values: string[]) => void;
@@ -83,7 +93,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Feed settings state
   const [selectedFeedMode, setSelectedFeedMode] = useState<FeedModeType>("plp");
   const [feedMappingColumns, setFeedMappingColumns] = useState<Array<{sourceColumn: string; targetColumn: string}>>([]);
-  const [feedList, setFeedList] = useState<Array<{id: string; name: string; type: FeedModeType; status: string; lastUpdated: string}>>([]);
+  const [feedList, setFeedList] = useState<Feed[]>([
+    {
+      id: "feed-1",
+      name: "Product Catalog",
+      type: "product",
+      status: "Active",
+      lastUpdated: "2025-05-01T10:30:00Z",
+      source: "import"
+    },
+    {
+      id: "feed-2",
+      name: "Category Feed",
+      type: "plp",
+      status: "Active",
+      lastUpdated: "2025-05-02T14:15:00Z",
+      source: "import"
+    }
+  ]);
 
   // Update document title when solution changes
   useEffect(() => {
@@ -121,13 +148,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
   
   // Feed list methods
-  const addFeedToList = (name: string, type: FeedModeType) => {
+  const addFeedToList = (name: string, type: FeedModeType, source?: string) => {
     const newFeed = {
       id: `feed-${Date.now()}`,
       name,
       type,
       status: "Active",
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      source: source || "import"
     };
     
     setFeedList(prev => [...prev, newFeed]);

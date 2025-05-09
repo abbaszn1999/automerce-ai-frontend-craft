@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Upload, Check, X } from "lucide-react";
 import { validateFile } from "../../utils/utils";
+import ChooseFromFeedButton from "@/components/common/ChooseFromFeedButton";
 
 interface FileUploadProps {
   id: string;
@@ -12,6 +13,8 @@ interface FileUploadProps {
   onFileChange: (file: File | null) => void;
   downloadTemplateLink?: string;
   mapColumn?: boolean;
+  showFeedListOption?: boolean;
+  onSelectFeed?: (feedId: string) => void;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -22,7 +25,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
   requiredColumns,
   onFileChange,
   downloadTemplateLink,
-  mapColumn
+  mapColumn,
+  showFeedListOption = true,
+  onSelectFeed = () => {}
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"pending" | "uploaded" | "error">("pending");
@@ -51,6 +56,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
     const fileInput = document.getElementById(id) as HTMLInputElement;
     if (fileInput) {
       fileInput.value = "";
+    }
+  };
+
+  const handleSelectFeed = (feedId: string) => {
+    if (onSelectFeed) {
+      onSelectFeed(feedId);
     }
   };
 
@@ -115,9 +126,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
               )}
             </div>
           ) : (
-            <>
+            <div className="flex flex-col items-center">
               <Upload className="h-8 w-8 text-gray-400 mb-2" />
-              <label htmlFor={id} className="btn btn-outline cursor-pointer">
+              <label htmlFor={id} className="btn btn-outline cursor-pointer mb-4">
                 Choose File
               </label>
               <input
@@ -130,7 +141,26 @@ const FileUpload: React.FC<FileUploadProps> = ({
               <p className="mt-2 text-xs text-gray-500">
                 {acceptedTypes.join(", ")} files up to 10MB
               </p>
-            </>
+
+              {showFeedListOption && onSelectFeed && (
+                <div className="mt-4 w-full">
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-white px-2 text-muted-foreground">Or</span>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <ChooseFromFeedButton 
+                      className="w-full" 
+                      onSelectFeed={handleSelectFeed}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
         
