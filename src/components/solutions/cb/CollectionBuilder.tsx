@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../../context/AppContext";
 import ToolViewHeader from "../../common/ToolViewHeader";
@@ -9,6 +8,7 @@ import DataTable from "../../ui/DataTable";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { simulateProcessing } from "../../../utils/utils";
 import { toast } from "@/components/ui/sonner";
+import SaveToFeedButton from "../../common/SaveToFeedButton";
 
 const CollectionBuilder: React.FC = () => {
   const { cbCurrentStage, setCbCurrentStage } = useAppContext();
@@ -508,7 +508,16 @@ const CollectionBuilder: React.FC = () => {
               <li key={index} className="py-1.5">{collection.name}</li>
             ))}
           </ul>
-          <button className="btn btn-sm btn-outline w-full">Export List</button>
+          <div className="space-y-2">
+            <button className="btn btn-sm btn-outline w-full">Export List</button>
+            <SaveToFeedButton 
+              feedType="plp"
+              source="cb"
+              variant="outline"
+              size="sm"
+              className="w-full"
+            />
+          </div>
         </div>
         
         {/* Replacements */}
@@ -522,7 +531,16 @@ const CollectionBuilder: React.FC = () => {
               </li>
             ))}
           </ul>
-          <button className="btn btn-sm btn-outline w-full">Export List</button>
+          <div className="space-y-2">
+            <button className="btn btn-sm btn-outline w-full">Export List</button>
+            <SaveToFeedButton 
+              feedType="plp"
+              source="cb"
+              variant="outline"
+              size="sm"
+              className="w-full"
+            />
+          </div>
         </div>
         
         {/* Updated Product Feed */}
@@ -533,6 +551,13 @@ const CollectionBuilder: React.FC = () => {
           </div>
           <div className="space-y-2">
             <button className="btn btn-sm btn-outline w-full">Download Updated Feed</button>
+            <SaveToFeedButton 
+              feedType="product"
+              source="cb"
+              variant="outline"
+              size="sm"
+              className="w-full"
+            />
             <button className="btn btn-sm btn-primary w-full">Push to CMS</button>
           </div>
         </div>
