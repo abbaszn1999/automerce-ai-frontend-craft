@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
@@ -24,7 +23,7 @@ export interface AEProject {
 const AEProjectPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const { callEdgeFunction } = useSupabase();
+  const { getProject, callEdgeFunction } = useSupabase();
   const { currentWorkspace } = useWorkspace();
   
   const [project, setProject] = useState<AEProject | null>(null);
@@ -46,10 +45,8 @@ const AEProjectPage = () => {
         setError(null);
 
         console.log("Fetching project details for:", projectId);
-        // First try to fetch from the projects endpoint
-        const projectData = await callEdgeFunction("projects", {
-          query: { id: projectId }
-        });
+        // First try to fetch from the projects endpoint using the new hook method
+        const projectData = await getProject(projectId);
         
         if (projectData.project) {
           console.log("Project found via projects endpoint:", projectData.project);
@@ -84,7 +81,7 @@ const AEProjectPage = () => {
     };
     
     fetchProject();
-  }, [projectId, callEdgeFunction, navigate]);
+  }, [projectId, getProject, callEdgeFunction, navigate]);
 
   if (isLoading) {
     return (
