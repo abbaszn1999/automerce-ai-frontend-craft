@@ -22,10 +22,14 @@ const ChooseFromFeedButton: React.FC<ChooseFromFeedButtonProps> = ({
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   
+  const handleOpenDialog = () => {
+    setDialogOpen(true);
+  };
+  
   return (
     <>
       <Button 
-        onClick={() => setDialogOpen(true)} 
+        onClick={handleOpenDialog} 
         variant={variant} 
         size={size}
         {...props}

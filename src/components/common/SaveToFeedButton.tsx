@@ -1,8 +1,9 @@
 
 import React, { useState } from "react";
 import { Button, ButtonProps } from "@/components/ui/button";
-import { Save } from "lucide-react";
+import { BookmarkPlus } from "lucide-react";
 import SaveToFeedDialog from "@/components/dialogs/SaveToFeedDialog";
+import { toast } from "@/components/ui/sonner";
 
 interface SaveToFeedButtonProps extends ButtonProps {
   feedType: "plp" | "product";
@@ -22,15 +23,19 @@ const SaveToFeedButton: React.FC<SaveToFeedButtonProps> = ({
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   
+  const handleOpenDialog = () => {
+    setDialogOpen(true);
+  };
+
   return (
     <>
       <Button 
-        onClick={() => setDialogOpen(true)} 
+        onClick={handleOpenDialog} 
         variant={variant} 
         size={size}
         {...props}
       >
-        <Save className={iconOnly ? "" : "mr-2"} size={16} />
+        <BookmarkPlus className={iconOnly ? "" : "mr-2"} size={16} />
         {!iconOnly && "Save to Feed List"}
       </Button>
       

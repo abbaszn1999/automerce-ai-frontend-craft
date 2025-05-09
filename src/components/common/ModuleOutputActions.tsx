@@ -2,12 +2,14 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import SaveToFeedButton from "./SaveToFeedButton";
+import { toast } from "@/components/ui/sonner";
 
 interface ModuleOutputActionsProps {
   moduleType: "ae" | "cb" | "ho" | "lhf" | "il" | "opb";
   outputType: "plp" | "product";
   onExportCSV?: () => void;
   onExportExcel?: () => void;
+  onExportResults?: () => void; // For general results export
   onPushToCMS?: () => void;
 }
 
@@ -16,10 +18,11 @@ const ModuleOutputActions: React.FC<ModuleOutputActionsProps> = ({
   outputType,
   onExportCSV,
   onExportExcel,
+  onExportResults,
   onPushToCMS
 }) => {
   return (
-    <div className="flex gap-2 justify-end items-center">
+    <div className="flex flex-wrap gap-2 justify-end items-center">
       {onExportCSV && (
         <Button variant="outline" size="sm" onClick={onExportCSV}>
           Export CSV
@@ -31,11 +34,18 @@ const ModuleOutputActions: React.FC<ModuleOutputActionsProps> = ({
           Export Excel
         </Button>
       )}
+
+      {onExportResults && (
+        <Button variant="outline" size="sm" onClick={onExportResults}>
+          Export Results{outputType === "plp" ? " (CSV)" : ""}
+        </Button>
+      )}
       
       <SaveToFeedButton 
         feedType={outputType}
         source={moduleType}
         size="sm"
+        variant="outline"
       />
       
       {onPushToCMS && (
