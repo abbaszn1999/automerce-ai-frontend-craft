@@ -27,13 +27,29 @@ const AEProjectPage = () => {
   const [project, setProject] = useState<AEProject | null>(null);
   const [activeTab, setActiveTab] = useState("setup");
 
-  // Simulate fetching project
+  // Load project from localStorage
   useEffect(() => {
     if (!projectId) {
       return;
     }
     
-    // Create a mock project for the UI to display
+    // Try to get project from localStorage
+    const savedProjects = localStorage.getItem("ae-projects");
+    if (savedProjects) {
+      try {
+        const projects = JSON.parse(savedProjects);
+        const foundProject = projects.find((p: AEProject) => p.id === projectId);
+        
+        if (foundProject) {
+          setProject(foundProject);
+          return;
+        }
+      } catch (error) {
+        console.error("Error parsing saved projects:", error);
+      }
+    }
+    
+    // Fallback: create a mock project
     const mockProject: AEProject = {
       id: projectId,
       name: projectId.startsWith("local-") ? `Project ${projectId.slice(6)}` : `Project ${projectId}`,

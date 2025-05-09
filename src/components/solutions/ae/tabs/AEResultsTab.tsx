@@ -1,13 +1,11 @@
+
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { useSupabase } from "@/hooks/useSupabase";
 import { toast } from "@/components/ui/sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { ArrowUpDown, Download, ExternalLink } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import LogDisplay from "@/components/ui/LogDisplay";
-import ProgressBar from "@/components/ui/ProgressBar";
 import { Badge } from "@/components/ui/badge";
 
 interface Job {
@@ -25,41 +23,44 @@ interface AEResultsTabProps {
 }
 
 const AEResultsTab = ({ projectId }: AEResultsTabProps) => {
-  const { callEdgeFunction } = useSupabase();
   const navigate = useNavigate();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    const fetchJobs = async () => {
+    // Load jobs from localStorage
+    const loadJobs = () => {
       try {
         setIsLoading(true);
-        const data = await callEdgeFunction("ae-jobs", {
-          query: { projectId }
-        });
-        
-        if (data.jobs) {
-          setJobs(data.jobs);
+        const savedJobs = localStorage.getItem(`ae-jobs-${projectId}`);
+        if (savedJobs) {
+          setJobs(JSON.parse(savedJobs));
+        } else {
+          setJobs([]);
         }
       } catch (error) {
-        console.error("Error fetching jobs:", error);
+        console.error("Error loading jobs:", error);
         toast.error("Failed to load jobs");
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchJobs();
+    loadJobs();
     
-    // Periodically update job status if there are active jobs
+    // Simulate periodic updates
     const interval = setInterval(() => {
-      if (jobs.some(job => ['pending', 'processing'].includes(job.status))) {
-        fetchJobs();
+      const savedJobs = localStorage.getItem(`ae-jobs-${projectId}`);
+      if (savedJobs) {
+        const parsedJobs = JSON.parse(savedJobs);
+        if (JSON.stringify(parsedJobs) !== JSON.stringify(jobs)) {
+          setJobs(parsedJobs);
+        }
       }
     }, 5000);
     
     return () => clearInterval(interval);
-  }, [projectId, callEdgeFunction]);
+  }, [projectId]);
 
   const handleViewJob = (jobId: string) => {
     navigate(`/ae/job/${jobId}`);
@@ -123,13 +124,7 @@ const AEResultsTab = ({ projectId }: AEResultsTabProps) => {
                         {getJobStatusBadge(job.status)}
                       </TableCell>
                       <TableCell>
-                        {['pending', 'processing'].includes(job.status) ? (
-                          <div className="w-20">
-                            <ProgressBar progress={job.progress} height="h-2" />
-                          </div>
-                        ) : (
-                          <span>{job.progress}%</span>
-                        )}
+                        <span>{job.progress}%</span>
                       </TableCell>
                       <TableCell>{new Date(job.created_at).toLocaleString()}</TableCell>
                       <TableCell>

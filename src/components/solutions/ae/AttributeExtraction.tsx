@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertCircle, ArrowUpRight, Plus } from "lucide-react";
+import { ArrowUpRight, Plus } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useWorkspace } from "@/context/WorkspaceContext";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Project {
   id: string;
@@ -23,12 +22,27 @@ const AttributeExtraction: React.FC = () => {
   const { currentWorkspace } = useWorkspace();
   
   const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   
-  // Create a new project locally without backend calls
+  // Load projects from localStorage on component mount
+  useEffect(() => {
+    const savedProjects = localStorage.getItem("ae-projects");
+    if (savedProjects) {
+      try {
+        setProjects(JSON.parse(savedProjects));
+      } catch (error) {
+        console.error("Error loading saved projects:", error);
+      }
+    }
+  }, []);
+
+  // Save projects to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("ae-projects", JSON.stringify(projects));
+  }, [projects]);
+  
   const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
     
