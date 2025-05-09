@@ -21,6 +21,20 @@ const ModuleOutputActions: React.FC<ModuleOutputActionsProps> = ({
   onExportResults,
   onPushToCMS
 }) => {
+  // Function to get the appropriate export button label based on the module type
+  const getExportLabel = () => {
+    switch (moduleType) {
+      case "lhf":
+        return `Export ${outputType === "plp" ? "PLP" : "Product"} Fruits (CSV)`;
+      case "il":
+        return "Export Results";
+      case "opb":
+        return "Export Results";
+      default:
+        return `Export ${outputType === "plp" ? "PLP" : "Product"} ${onExportResults ? " (CSV)" : ""}`;
+    }
+  };
+
   return (
     <div className="flex flex-wrap gap-2 justify-end items-center">
       {onExportCSV && (
@@ -37,7 +51,7 @@ const ModuleOutputActions: React.FC<ModuleOutputActionsProps> = ({
 
       {onExportResults && (
         <Button variant="outline" size="sm" onClick={onExportResults}>
-          Export Results{outputType === "plp" ? " (CSV)" : ""}
+          {getExportLabel()}
         </Button>
       )}
       
