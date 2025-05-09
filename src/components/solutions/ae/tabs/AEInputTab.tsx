@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { FileUpload } from "@/components/ui/FileUpload";
+import FileUpload from "@/components/ui/FileUpload";
 import { useEffect, useState } from "react";
 import { useSupabase } from "@/hooks/useSupabase";
 import { toast } from "@/components/ui/sonner";

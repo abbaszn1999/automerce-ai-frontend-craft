@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSupabase } from "@/hooks/useSupabase";
 import { Button } from "@/components/ui/button";
-import { LogDisplay } from "@/components/ui/LogDisplay";
-import { ProgressBar } from "@/components/ui/ProgressBar";
+import LogDisplay from "@/components/ui/LogDisplay";
+import ProgressBar from "@/components/ui/ProgressBar";
 import { toast } from "@/components/ui/sonner";
 
 // Define job type

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSupabase } from "@/hooks/useSupabase";
@@ -19,7 +18,7 @@ interface Project {
 
 const AttributeExtraction: React.FC = () => {
   const navigate = useNavigate();
-  const { supabase, callEdgeFunction } = useSupabase();
+  const { callEdgeFunction } = useSupabase();
   
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);

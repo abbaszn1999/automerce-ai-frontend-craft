@@ -21,7 +21,7 @@ export const useSupabase = () => {
   const callEdgeFunction = useCallback(async (
     functionName: string, 
     options: { 
-      method?: string; 
+      method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE"; 
       body?: any; 
       query?: Record<string, string>;
     } = {}

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useSupabase } from "@/hooks/useSupabase";
@@ -7,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useNavigate } from "react-router-dom";
 import { ArrowUpDown, Download, ExternalLink } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { LogDisplay } from "@/components/ui/LogDisplay";
-import { ProgressBar } from "@/components/ui/ProgressBar";
+import LogDisplay from "@/components/ui/LogDisplay";
+import ProgressBar from "@/components/ui/ProgressBar";
 import { Badge } from "@/components/ui/badge";
 
 interface Job {
@@ -73,7 +72,7 @@ const AEResultsTab = ({ projectId }: AEResultsTabProps) => {
       case 'processing':
         return <Badge variant="default">Processing</Badge>;
       case 'completed':
-        return <Badge variant="success">Completed</Badge>;
+        return <Badge>Completed</Badge>;
       case 'failed':
         return <Badge variant="destructive">Failed</Badge>;
       case 'cancelled':
