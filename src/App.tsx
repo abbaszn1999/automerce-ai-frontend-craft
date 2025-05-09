@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppProvider } from "./context/AppContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import AEProjectPage from "./pages/ae/AEProjectPage";
+import AEJobPage from "./pages/ae/AEJobPage";
 
 const queryClient = new QueryClient();
 
@@ -19,6 +21,8 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/ae/project/:projectId" element={<AEProjectPage />} />
+            <Route path="/ae/job/:jobId" element={<AEJobPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,1 +1,14 @@
+
 project_id = "vshkxxwocmoomljdfsrk"
+
+[functions.ae-projects]
+verify_jwt = true
+
+[functions.ae-project-config]
+verify_jwt = true
+
+[functions.ae-attributes]
+verify_jwt = true
+
+[functions.ae-jobs]
+verify_jwt = true
