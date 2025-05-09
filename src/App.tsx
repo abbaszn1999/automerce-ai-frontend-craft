@@ -11,7 +11,14 @@ import NotFound from "./pages/NotFound";
 import AEProjectPage from "./pages/ae/AEProjectPage";
 import AEJobPage from "./pages/ae/AEJobPage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

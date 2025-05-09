@@ -1,9 +1,63 @@
 
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useCallback } from "react";
+import { useCallback, useState, useEffect } from "react";
 
 export const useSupabaseCore = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [authErrorShown, setAuthErrorShown] = useState(false);
+
+  // Check authentication status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        setIsCheckingAuth(true);
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error checking auth status:", error);
+          setIsAuthenticated(false);
+          return;
+        }
+        
+        const isAuthed = !!data.session?.access_token;
+        setIsAuthenticated(isAuthed);
+        
+        if (!isAuthed && !authErrorShown) {
+          toast.error("Authentication required. Please sign in.", {
+            id: "auth-required",
+            duration: 5000
+          });
+          setAuthErrorShown(true);
+        }
+      } catch (err) {
+        console.error("Error in auth check:", err);
+        setIsAuthenticated(false);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+    
+    checkAuth();
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+      
+      if (event === 'SIGNED_IN') {
+        setAuthErrorShown(false);
+        toast.success("Successfully signed in");
+      } else if (event === 'SIGNED_OUT') {
+        toast.info("Signed out");
+      }
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const getSupabaseAccessToken = useCallback(async () => {
     try {
       const { data, error } = await supabase.auth.getSession();
@@ -31,19 +85,33 @@ export const useSupabaseCore = () => {
       body?: any; 
       query?: Record<string, string>;
       showErrors?: boolean;
+      skipAuthCheck?: boolean;
     } = {}
   ) => {
-    const { method = "GET", body, query = {}, showErrors = true } = options;
+    const { method = "GET", body, query = {}, showErrors = true, skipAuthCheck = false } = options;
+    
+    // Skip API call if we know we're not authenticated (unless specifically requested)
+    if (!skipAuthCheck && isAuthenticated === false) {
+      console.log(`Skipping API call to ${functionName} - not authenticated`);
+      return { error: "Authentication required" };
+    }
     
     try {
       const accessToken = await getSupabaseAccessToken();
       if (!accessToken) {
         const error = new Error("Authentication required");
-        if (showErrors) {
-          toast.error("Authentication required");
+        if (showErrors && !authErrorShown) {
+          toast.error("Authentication required", {
+            id: "auth-required",
+            duration: 5000
+          });
+          setAuthErrorShown(true);
         }
-        throw error;
+        return { error: "Authentication required" };
       }
+      
+      // Reset auth error shown flag once we have a valid token
+      setAuthErrorShown(false);
       
       // Build query string
       const queryString = Object.entries(query)
@@ -65,7 +133,10 @@ export const useSupabaseCore = () => {
       if (error) {
         console.error(`Error calling ${functionName}:`, error);
         if (showErrors) {
-          toast.error(`API error: ${error.message || `Error calling ${functionName}`}`);
+          const errorMessage = error.message || `Error calling ${functionName}`;
+          toast.error(`API error: ${errorMessage}`, {
+            id: `api-error-${functionName}`,
+          });
         }
         return { error: error.message || `Failed to call ${functionName}` };
       }
@@ -73,16 +144,21 @@ export const useSupabaseCore = () => {
       return data;
     } catch (error: any) {
       console.error(`Error in callEdgeFunction ${functionName}:`, error);
-      if (showErrors) {
-        toast.error(`API error: ${error.message || `Failed to call ${functionName}`}`);
+      if (showErrors && !authErrorShown) {
+        const errorMessage = error.message || `Failed to call ${functionName}`;
+        toast.error(`API error: ${errorMessage}`, {
+          id: `api-error-${functionName}`,
+        });
       }
       return { 
         error: error.message || `Failed to call ${functionName}`
       };
     }
-  }, [getSupabaseAccessToken]);
+  }, [getSupabaseAccessToken, isAuthenticated, authErrorShown]);
 
   return {
+    isAuthenticated,
+    isCheckingAuth,
     getSupabaseAccessToken,
     callEdgeFunction,
   };

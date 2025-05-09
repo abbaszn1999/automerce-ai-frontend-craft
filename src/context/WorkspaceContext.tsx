@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useSupabase } from "@/hooks/useSupabase";
 import { toast } from "@/components/ui/sonner";
@@ -28,17 +27,42 @@ interface WorkspaceContextType {
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
 
 export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { getWorkspaces, createWorkspace: createWorkspaceApi, updateWorkspace: updateWorkspaceApi, deleteWorkspace: deleteWorkspaceApi } = useSupabase();
+  const { getWorkspaces, createWorkspace: createWorkspaceApi, updateWorkspace: updateWorkspaceApi, deleteWorkspace: deleteWorkspaceApi, isAuthenticated, isCheckingAuth } = useSupabase();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [hasTriedLoading, setHasTriedLoading] = useState(false);
 
-  // Load workspaces on mount
+  // Load workspaces when authenticated
+  useEffect(() => {
+    // Wait until auth check completes
+    if (isCheckingAuth) return;
+    
+    // If we're not authenticated, don't try loading workspaces
+    if (isAuthenticated === false) {
+      setIsLoading(false);
+      return;
+    }
+    
+    // If authenticated, load workspaces
+    if (isAuthenticated === true && !hasTriedLoading) {
+      loadWorkspaces();
+      setHasTriedLoading(true);
+    }
+  }, [isAuthenticated, isCheckingAuth, hasTriedLoading]);
+
+  // Load workspaces function
   const loadWorkspaces = async () => {
     try {
+      if (!isAuthenticated) {
+        console.log("Not authenticated, skipping workspace load");
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
       setError(null);
 
@@ -125,7 +149,7 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
       setError(err.message || 'Failed to load workspaces');
       
       // If we fail to load workspaces but have a current workspace, keep it
-      if (!currentWorkspace && retryCount < 3) {
+      if (!currentWorkspace && retryCount < 3 && isAuthenticated) {
         console.log(`Retrying workspace load (attempt ${retryCount + 1})...`);
         setRetryCount(prev => prev + 1);
         
@@ -133,18 +157,13 @@ export const WorkspaceProvider: React.FC<{ children: ReactNode }> = ({ children 
         setTimeout(() => {
           loadWorkspaces();
         }, 1000 * (retryCount + 1)); 
-      } else if (!currentWorkspace) {
+      } else if (!currentWorkspace && isAuthenticated) {
         toast.error('Failed to load workspaces');
       }
     } finally {
       setIsLoading(false);
     }
   };
-
-  // Initial load
-  useEffect(() => {
-    loadWorkspaces();
-  }, []);
 
   // Save the current workspace ID to localStorage whenever it changes
   useEffect(() => {
