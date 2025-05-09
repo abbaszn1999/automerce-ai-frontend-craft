@@ -5,8 +5,9 @@ import { toast } from "@/components/ui/sonner";
  * Simulates file upload validation
  * @param file The file to validate
  * @param acceptedTypes Array of accepted file extensions (e.g., ['.csv', '.xlsx'])
+ * @param maxSizeInMB Maximum file size in MB
  */
-export const validateFile = (file: File | null, acceptedTypes: string[]): boolean => {
+export const validateFile = (file: File | null, acceptedTypes: string[], maxSizeInMB: number = 10): boolean => {
   if (!file) {
     toast.error("Please select a file to upload.");
     return false;
@@ -16,6 +17,13 @@ export const validateFile = (file: File | null, acceptedTypes: string[]): boolea
   
   if (!acceptedTypes.includes(fileExtension)) {
     toast.error(`Invalid file type. Please upload ${acceptedTypes.join(', ')} files only.`);
+    return false;
+  }
+  
+  // Check file size
+  const fileSizeInMB = file.size / (1024 * 1024);
+  if (fileSizeInMB > maxSizeInMB) {
+    toast.error(`File size exceeds ${maxSizeInMB}MB limit.`);
     return false;
   }
   

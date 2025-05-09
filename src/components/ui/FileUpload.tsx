@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Upload, Check, X } from "lucide-react";
 import { validateFile } from "../../utils/utils";
