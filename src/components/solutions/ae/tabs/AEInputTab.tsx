@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/ui/FileUpload";
 import { useEffect, useState } from "react";
+import { useSupabase } from "@/hooks/useSupabase";
 import { toast } from "@/components/ui/sonner";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
@@ -16,6 +17,7 @@ interface AEInputTabProps {
 }
 
 const AEInputTab = ({ projectId, onJobCreated }: AEInputTabProps) => {
+  const { callEdgeFunction } = useSupabase();
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [jobName, setJobName] = useState("");
@@ -94,58 +96,42 @@ const AEInputTab = ({ projectId, onJobCreated }: AEInputTabProps) => {
     try {
       setIsCreatingJob(true);
       
-      // Create a job locally with localStorage
-      const jobId = `job-${Date.now()}`;
-      const newJob = {
-        id: jobId,
-        name: jobName || `Job ${new Date().toLocaleString()}`,
-        status: "pending",
-        progress: 0,
-        current_stage: "created",
-        created_at: new Date().toISOString(),
-        completed_at: null,
-        projectId: projectId
-      };
+      // First create a job
+      const jobData = await callEdgeFunction("ae-jobs", {
+        method: "POST",
+        query: { projectId },
+        body: {
+          name: jobName || `Job ${new Date().toLocaleString()}`
+        }
+      });
       
-      // Save job to localStorage
-      const savedJobs = localStorage.getItem(`ae-jobs-${projectId}`);
-      const jobs = savedJobs ? JSON.parse(savedJobs) : [];
-      jobs.push(newJob);
-      localStorage.setItem(`ae-jobs-${projectId}`, JSON.stringify(jobs));
+      if (!jobData.job || !jobData.job.id) {
+        throw new Error("Failed to create job");
+      }
+      
+      const jobId = jobData.job.id;
+      
+      // TODO: Next steps would be:
+      // 1. Upload the CSV file to Supabase Storage
+      // 2. Start processing the file on the backend
+      // 3. Update job status as processing begins
       
       toast.success("Job created successfully!");
       
-      // Simulate job starting
-      setTimeout(() => {
-        const updatedJobs = jobs.map(job => {
-          if (job.id === jobId) {
-            return {
-              ...job,
-              status: "processing",
-              progress: 10,
-              current_stage: "processing_started"
-            };
-          }
-          return job;
-        });
-        localStorage.setItem(`ae-jobs-${projectId}`, JSON.stringify(updatedJobs));
-      }, 1500);
-      
-      // Navigate to the job page or call the callback
+      // For now, we'll just navigate to the job page
       if (onJobCreated) {
         onJobCreated(jobId);
       } else {
         navigate(`/ae/job/${jobId}`);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error creating job:", error);
       toast.error("Failed to create job");
     } finally {
       setIsCreatingJob(false);
     }
   };
-  
-  // Render the UI similar to the Collection Builder input tab
+
   return (
     <div className="space-y-8">
       <Card>

@@ -48,7 +48,6 @@ serve(async (req: Request) => {
     if (req.method === 'GET') {
       // If projectId is provided, fetch a specific project
       if (projectId) {
-        console.log(`[ae-projects] Fetching project with ID: ${projectId}`);
         // First check if it exists in the modern projects table
         try {
           const { data: modernProject, error: modernError } = await supabase
@@ -59,72 +58,51 @@ serve(async (req: Request) => {
             .maybeSingle();
 
           if (!modernError && modernProject) {
-            console.log('[ae-projects] Found project in modern table:', modernProject);
+            console.log('Found project in modern table:', modernProject);
             return new Response(JSON.stringify({ projects: [modernProject] }), {
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
-          } else if (modernError) {
-            console.error('[ae-projects] Error checking modern projects table:', modernError);
           }
         } catch (err) {
-          console.error('[ae-projects] Error checking modern projects table:', err);
+          console.error('Error checking modern projects table:', err);
         }
 
         // Fallback to legacy table
-        try {
-          console.log('[ae-projects] Checking legacy table for project');
-          const { data, error } = await supabase
-            .from('ae_projects')
-            .select('*')
-            .eq('id', projectId)
-            .maybeSingle();
+        const { data, error } = await supabase
+          .from('ae_projects')
+          .select('*')
+          .eq('id', projectId);
 
-          if (error) {
-            console.error('[ae-projects] Error fetching project from legacy table:', error);
-            return new Response(JSON.stringify({ error: error.message }), {
-              status: 500,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-
-          if (!data) {
-            console.log('[ae-projects] Project not found in any table');
-            return new Response(JSON.stringify({ error: 'Project not found' }), {
-              status: 404,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-
-          console.log('[ae-projects] Found project in legacy table:', data);
-          return new Response(JSON.stringify({ projects: [data] }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        } catch (err) {
-          console.error('[ae-projects] Error fetching from legacy table:', err);
-          return new Response(JSON.stringify({ error: 'Failed to fetch project' }), {
+        if (error) {
+          console.error('Error fetching project:', error);
+          return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
+
+        return new Response(JSON.stringify({ projects: data }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       // First try to get projects from the modern projects table
       try {
-        console.log('[ae-projects] Fetching all projects for user:', user.id);
         const { data: modernProjects, error: modernError } = await supabase
           .from('projects')
           .select('*')
           .eq('module_type', 'AI_ATTRIBUTE_ENRICHMENT')
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
         if (!modernError && modernProjects && modernProjects.length > 0) {
-          console.log('[ae-projects] Found projects in modern table:', modernProjects.length);
+          console.log('Found projects in modern table:', modernProjects.length);
           return new Response(JSON.stringify({ projects: modernProjects }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
       } catch (err) {
-        console.error('[ae-projects] Error checking modern projects table:', err);
+        console.error('Error checking modern projects table:', err);
       }
 
       // Fallback to legacy projects table
@@ -135,15 +113,14 @@ serve(async (req: Request) => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('[ae-projects] Error fetching projects from legacy table:', error);
+        console.error('Error fetching projects:', error);
         return new Response(JSON.stringify({ error: error.message }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      console.log('[ae-projects] Found projects in legacy table:', data?.length || 0);
-      return new Response(JSON.stringify({ projects: data || [] }), {
+      return new Response(JSON.stringify({ projects: data }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } 
@@ -158,8 +135,6 @@ serve(async (req: Request) => {
         });
       }
 
-      console.log('[ae-projects] Creating new project:', name);
-
       // First try to create in the modern projects table if workspace_id is available
       try {
         // Get user's default workspace
@@ -172,44 +147,33 @@ serve(async (req: Request) => {
           
         if (!workspaceError && workspaces && workspaces.length > 0) {
           const workspace_id = workspaces[0].id;
-          console.log(`[ae-projects] Using workspace: ${workspace_id} for new project`);
           
           const { data: project, error: projectError } = await supabase
             .from('projects')
             .insert([{ 
               name, 
               workspace_id, 
-              module_type: 'AI_ATTRIBUTE_ENRICHMENT',
-              user_id: user.id  // Include user_id for compatibility
+              module_type: 'AI_ATTRIBUTE_ENRICHMENT' 
             }])
             .select()
             .single();
 
-          if (!projectError && project) {
-            console.log('[ae-projects] Created project in modern table:', project);
+          if (!projectError) {
+            console.log('Created project in modern table:', project);
             
             // Create default settings for the project
-            try {
-              await supabase
-                .from('ae_project_settings')
-                .insert([{ project_id: project.id }]);
-            } catch (settingErr) {
-              console.error('[ae-projects] Error creating default settings:', settingErr);
-              // Continue anyway as this is not critical
-            }
+            await supabase
+              .from('ae_project_settings')
+              .insert([{ project_id: project.id }]);
               
             return new Response(JSON.stringify({ project }), {
               status: 201,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
-          } else {
-            console.error('[ae-projects] Error creating project in modern table:', projectError);
           }
-        } else {
-          console.warn('[ae-projects] No workspace found for user:', user.id);
         }
       } catch (err) {
-        console.error('[ae-projects] Error creating in modern projects table:', err);
+        console.error('Error creating in modern projects table:', err);
       }
 
       // Fallback to legacy table
@@ -220,7 +184,7 @@ serve(async (req: Request) => {
         .single();
 
       if (projectError) {
-        console.error('[ae-projects] Error creating project in legacy table:', projectError);
+        console.error('Error creating project:', projectError);
         return new Response(JSON.stringify({ error: projectError.message }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -228,20 +192,18 @@ serve(async (req: Request) => {
       }
 
       // Create default configuration for the new project
-      try {
-        const { error: configError } = await supabase
-          .from('ae_project_configs')
-          .insert([{ project_id: project.id }]);
+      const { error: configError } = await supabase
+        .from('ae_project_configs')
+        .insert([{ project_id: project.id }]);
 
-        if (configError) {
-          console.error('[ae-projects] Error creating project configuration:', configError);
-          // Continue anyway as we've already created the project
-        }
-      } catch (err) {
-        console.error('[ae-projects] Error creating project configuration:', err);
+      if (configError) {
+        console.error('Error creating project configuration:', configError);
+        return new Response(JSON.stringify({ error: configError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
-      console.log('[ae-projects] Created project in legacy table:', project);
       return new Response(JSON.stringify({ project }), {
         status: 201,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -254,7 +216,7 @@ serve(async (req: Request) => {
       });
     }
   } catch (error) {
-    console.error('[ae-projects] Unexpected error:', error);
+    console.error('Unexpected error:', error);
     return new Response(JSON.stringify({ error: 'An unexpected error occurred' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

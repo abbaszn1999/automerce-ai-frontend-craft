@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
+import { useSupabase } from "@/hooks/useSupabase";
 import { toast } from "@/components/ui/sonner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Plus, Trash2, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -26,6 +28,7 @@ interface AEAttributesTabProps {
 }
 
 const AEAttributesTab = ({ projectId }: AEAttributesTabProps) => {
+  const { callEdgeFunction } = useSupabase();
   const [attributes, setAttributes] = useState<Attribute[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -36,31 +39,27 @@ const AEAttributesTab = ({ projectId }: AEAttributesTabProps) => {
   const [newAttributeValueInput, setNewAttributeValueInput] = useState("");
   const [isCreatingAttribute, setIsCreatingAttribute] = useState(false);
 
-  // Load attributes from localStorage
-  useEffect(() => {
-    const loadAttributes = () => {
-      try {
-        setIsLoading(true);
-        const savedAttributes = localStorage.getItem(`ae-attributes-${projectId}`);
-        if (savedAttributes) {
-          setAttributes(JSON.parse(savedAttributes));
-        } else {
-          setAttributes([]);
-        }
-      } catch (error) {
-        console.error("Error loading attributes:", error);
-      } finally {
-        setIsLoading(false);
+  const fetchAttributes = async () => {
+    try {
+      setIsLoading(true);
+      const data = await callEdgeFunction("ae-attributes", {
+        query: { projectId }
+      });
+      
+      if (data.attributes) {
+        setAttributes(data.attributes);
       }
-    };
-    
-    loadAttributes();
-  }, [projectId]);
+    } catch (error) {
+      console.error("Error fetching attributes:", error);
+      toast.error("Failed to load attributes");
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
-  // Save attributes to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem(`ae-attributes-${projectId}`, JSON.stringify(attributes));
-  }, [attributes, projectId]);
+    fetchAttributes();
+  }, [projectId, callEdgeFunction]);
   
   const handleAddAttributeValue = () => {
     if (!newAttributeValueInput.trim()) return;
@@ -76,7 +75,7 @@ const AEAttributesTab = ({ projectId }: AEAttributesTabProps) => {
     setNewAttributeValues(newAttributeValues.filter(v => v !== value));
   };
   
-  const handleCreateAttribute = () => {
+  const handleCreateAttribute = async () => {
     if (!newAttributeName.trim()) {
       toast.error("Attribute name is required");
       return;
@@ -85,23 +84,25 @@ const AEAttributesTab = ({ projectId }: AEAttributesTabProps) => {
     try {
       setIsCreatingAttribute(true);
       
-      const newAttribute: Attribute = {
-        id: `attr-${Date.now()}`,
-        name: newAttributeName.trim(),
-        description: newAttributeDescription.trim() || null,
-        ae_attribute_values: newAttributeValues.map(value => ({
-          id: `val-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-          value
-        }))
-      };
+      await callEdgeFunction("ae-attributes", {
+        method: "POST",
+        query: { projectId },
+        body: {
+          name: newAttributeName.trim(),
+          description: newAttributeDescription.trim() || null,
+          predefinedValues: newAttributeValues
+        }
+      });
       
-      setAttributes(prev => [...prev, newAttribute]);
       toast.success("Attribute created successfully");
       
       // Reset form
       setNewAttributeName("");
       setNewAttributeDescription("");
       setNewAttributeValues([]);
+      
+      // Refresh attributes
+      fetchAttributes();
     } catch (error) {
       console.error("Error creating attribute:", error);
       toast.error("Failed to create attribute");
@@ -110,9 +111,21 @@ const AEAttributesTab = ({ projectId }: AEAttributesTabProps) => {
     }
   };
   
-  const handleDeleteAttribute = (attributeId: string) => {
-    setAttributes(prev => prev.filter(attr => attr.id !== attributeId));
-    toast.success("Attribute deleted successfully");
+  const handleDeleteAttribute = async (attributeId: string) => {
+    try {
+      await callEdgeFunction("ae-attributes", {
+        method: "DELETE",
+        query: { projectId, attributeId }
+      });
+      
+      toast.success("Attribute deleted successfully");
+      
+      // Refresh attributes
+      fetchAttributes();
+    } catch (error) {
+      console.error("Error deleting attribute:", error);
+      toast.error("Failed to delete attribute");
+    }
   };
 
   if (isLoading && attributes.length === 0) {

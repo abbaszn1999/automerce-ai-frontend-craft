@@ -15,7 +15,7 @@ export const useSupabase = () => {
   const aeJobs = useSupabaseAEJobs();
 
   return {
-    // Core Supabase functionality including auth state
+    // Core Supabase functionality
     ...core,
     
     // Workspace functions
