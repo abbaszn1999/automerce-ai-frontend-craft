@@ -36,7 +36,7 @@ const SaveToFeedButton: React.FC<SaveToFeedButtonProps> = ({
         {...props}
       >
         <BookmarkPlus className={iconOnly ? "" : "mr-2"} size={16} />
-        {!iconOnly && "Save to Feed List"}
+        {!iconOnly && "Save to Feed"}
       </Button>
       
       <SaveToFeedDialog

@@ -35,7 +35,7 @@ const ChooseFromFeedButton: React.FC<ChooseFromFeedButtonProps> = ({
         {...props}
       >
         <List className={iconOnly ? "" : "mr-2"} size={16} />
-        {!iconOnly && "Choose from Feed List"}
+        {!iconOnly && "Choose from Feed"}
       </Button>
       
       <ChooseFromFeedDialog
