@@ -9,7 +9,6 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AEProjectPage from "./pages/ae/AEProjectPage";
 import AEJobPage from "./pages/ae/AEJobPage";
-import AttributeExtraction from "@/components/solutions/ae/AttributeExtraction";
 
 const queryClient = new QueryClient();
 
@@ -22,9 +21,9 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/ae" element={<AttributeExtraction />} />
             <Route path="/ae/project/:projectId" element={<AEProjectPage />} />
             <Route path="/ae/job/:jobId" element={<AEJobPage />} />
+            <Route path="/ae" element={<Navigate to="/" />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

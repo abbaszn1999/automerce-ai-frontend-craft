@@ -79,7 +79,7 @@ const AttributeExtraction: React.FC = () => {
       toast.success("Project created successfully");
       setNewProjectName("");
       
-      // Navigate to the new project
+      // Navigate directly to the project setup page
       navigate(`/ae/project/${projectId}`);
       
     } catch (error) {
@@ -89,6 +89,7 @@ const AttributeExtraction: React.FC = () => {
   };
   
   const handleOpenProject = (projectId: string) => {
+    // Navigate directly to the project page
     navigate(`/ae/project/${projectId}`);
   };
 

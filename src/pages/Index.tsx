@@ -32,16 +32,13 @@ const Index: React.FC = () => {
     if (currentView === "settings") {
       return <Settings />;
     } else if (currentView === "project") {
-      // Show Project View for the current solution
+      // Show the Attribute Extraction component directly instead of ProjectView for AE
+      if (currentSolution === "ae") {
+        return <AttributeExtraction />;
+      }
+      
+      // For other solutions, show the standard ProjectView
       switch (currentSolution) {
-        case "ae":
-          return (
-            <ProjectView 
-              solutionPrefix="ae" 
-              solutionName="AI Attribute Enrichment"
-              solutionDescription="Extract and organize product attributes using AI to enhance your product data quality and improve filtering options."
-            />
-          );
         case "cb":
           return (
             <ProjectView 
