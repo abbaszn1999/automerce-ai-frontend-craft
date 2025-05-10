@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../../context/AppContext";
 import ToolViewHeader from "../../common/ToolViewHeader";
@@ -8,7 +9,6 @@ import DataTable from "../../ui/DataTable";
 import { simulateProcessing, copyToClipboard } from "../../../utils/utils";
 import { toast } from "@/components/ui/sonner";
 import { ArrowLeft, Copy, Check } from "lucide-react";
-import ModuleOutputActions from "../../common/ModuleOutputActions";
 
 const InternalLinks: React.FC = () => {
   const { ilCurrentSubTab, setIlCurrentSubTab } = useAppContext();
@@ -47,22 +47,6 @@ const InternalLinks: React.FC = () => {
   
   const handleTargetPagesChange = (file: File | null) => {
     setTargetPagesFile(file);
-  };
-
-  // Export handlers
-  const handleExportContextualLinks = () => {
-    toast.success("Exporting Contextual Links Results");
-    // Implementation would go here
-  };
-
-  const handleExportWidgetLinks = () => {
-    toast.success("Exporting Widget Links Results");
-    // Implementation would go here
-  };
-
-  const handleExportProductLinks = () => {
-    toast.success("Exporting Product Internal Links Results");
-    // Implementation would go here
   };
 
   // Start PLP Internal Link Boosting
@@ -391,11 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <div className="card">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">Contextual Links Outcome</h3>
-                  <ModuleOutputActions
-                    moduleType="il"
-                    outputType="plp"
-                    onExportResults={handleExportContextualLinks}
-                  />
+                  <button className="btn btn-sm btn-outline">Export Results</button>
                 </div>
                 
                 <DataTable 
@@ -415,11 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <div className="card">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">Widget Links Outcome</h3>
-                  <ModuleOutputActions
-                    moduleType="il"
-                    outputType="plp"
-                    onExportResults={handleExportWidgetLinks}
-                  />
+                  <button className="btn btn-sm btn-outline">Export Results</button>
                 </div>
                 
                 <DataTable 
@@ -584,11 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
               <div className="card">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">Internal Linking Output</h3>
-                  <ModuleOutputActions
-                    moduleType="il"
-                    outputType="product"
-                    onExportResults={handleExportProductLinks}
-                  />
+                  <button className="btn btn-sm btn-outline">Export Results</button>
                 </div>
                 
                 <div className="overflow-x-auto">

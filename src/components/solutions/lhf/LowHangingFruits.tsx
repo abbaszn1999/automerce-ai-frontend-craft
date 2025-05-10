@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import ToolViewHeader from "../../common/ToolViewHeader";
 import FileUpload from "../../ui/FileUpload";
@@ -7,7 +8,6 @@ import DataTable from "../../ui/DataTable";
 import { simulateProcessing } from "../../../utils/utils";
 import { toast } from "@/components/ui/sonner";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import ModuleOutputActions from "../../common/ModuleOutputActions";
 
 const LowHangingFruits: React.FC = () => {
   // Stage state
@@ -85,17 +85,6 @@ const LowHangingFruits: React.FC = () => {
     if (!gscConnected) {
       toast.success("Successfully connected to Google Search Console!");
     }
-  };
-
-  // Export handlers
-  const handleExportProductResults = () => {
-    toast.success("Exporting Product Fruits (CSV)");
-    // Implementation would go here
-  };
-
-  const handleExportPlpResults = () => {
-    toast.success("Exporting PLP Fruits (CSV)");
-    // Implementation would go here
   };
 
   // Start processing analysis
@@ -453,11 +442,7 @@ const LowHangingFruits: React.FC = () => {
           <div className="card">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">Low Hanging Product Fruits</h3>
-              <ModuleOutputActions
-                moduleType="lhf"
-                outputType="product"
-                onExportResults={handleExportProductResults}
-              />
+              <button className="btn btn-sm btn-outline">Export Product Fruits (CSV)</button>
             </div>
             
             <DataTable 
@@ -479,11 +464,7 @@ const LowHangingFruits: React.FC = () => {
           <div className="card">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">Low Hanging PLP Fruits</h3>
-              <ModuleOutputActions
-                moduleType="lhf"
-                outputType="plp"
-                onExportResults={handleExportPlpResults}
-              />
+              <button className="btn btn-sm btn-outline">Export PLP Fruits (CSV)</button>
             </div>
             
             <DataTable 

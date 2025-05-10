@@ -34,13 +34,13 @@ const ChooseFromFeedDialog: React.FC<ChooseFromFeedDialogProps> = ({
   feedType,
   onSelectFeed 
 }) => {
-  const { feedList = [] } = useAppContext();
+  const { feedList } = useAppContext();
   const [selectedFeedId, setSelectedFeedId] = useState<string | null>(null);
 
-  // Filter feeds by type if specified and feedList exists
-  const availableFeeds = feedType && feedList 
+  // Filter feeds by type if specified
+  const availableFeeds = feedType 
     ? feedList.filter(feed => feed.type === feedType)
-    : feedList || [];
+    : feedList;
 
   const handleSelect = () => {
     if (!selectedFeedId) {

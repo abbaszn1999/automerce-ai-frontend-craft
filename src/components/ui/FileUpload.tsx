@@ -1,67 +1,56 @@
+
 import React, { useState } from "react";
 import { Upload, Check, X } from "lucide-react";
 import { validateFile } from "../../utils/utils";
 import ChooseFromFeedButton from "@/components/common/ChooseFromFeedButton";
 
 interface FileUploadProps {
-  id?: string;
+  id: string;
   statusId?: string;
-  acceptedTypes?: string[];
-  acceptedFileTypes?: string[]; // Added to support the prop name used in AEInputTab
-  label?: string;
+  acceptedTypes: string[];
+  label: string;
   requiredColumns?: string[];
-  onFileChange?: (file: File | null) => void;
-  onChange?: (file: File) => Promise<void> | void; // Added to support the prop name used in AEInputTab
+  onFileChange: (file: File | null) => void;
   downloadTemplateLink?: string;
   mapColumn?: boolean;
   showFeedListOption?: boolean;
   onSelectFeed?: (feedId: string) => void;
-  maxSizeInMB?: number;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
-  id = "file-upload",
+  id,
   statusId,
-  acceptedTypes = [],
-  acceptedFileTypes = [], // Added support
-  label = "Upload File",
+  acceptedTypes,
+  label,
   requiredColumns,
   onFileChange,
-  onChange, // Added support
   downloadTemplateLink,
   mapColumn,
   showFeedListOption = true,
-  onSelectFeed = () => {},
-  maxSizeInMB = 10
+  onSelectFeed = () => {}
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"pending" | "uploaded" | "error">("pending");
   const [selectedColumn, setSelectedColumn] = useState<string>("");
 
-  // Use either acceptedTypes or acceptedFileTypes
-  const fileTypes = acceptedTypes.length > 0 ? acceptedTypes : acceptedFileTypes;
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
     
-    if (selectedFile && validateFile(selectedFile, fileTypes, maxSizeInMB)) {
+    if (selectedFile && validateFile(selectedFile, acceptedTypes)) {
       setFile(selectedFile);
       setStatus("uploaded");
-      
-      // Call both callback props if they exist
-      if (onFileChange) onFileChange(selectedFile);
-      if (onChange) onChange(selectedFile);
+      onFileChange(selectedFile);
     } else if (selectedFile) {
       setStatus("error");
       setFile(null);
-      if (onFileChange) onFileChange(null);
+      onFileChange(null);
     }
   };
 
   const handleRemoveFile = () => {
     setFile(null);
     setStatus("pending");
-    if (onFileChange) onFileChange(null);
+    onFileChange(null);
     
     // Reset the file input
     const fileInput = document.getElementById(id) as HTMLInputElement;
@@ -147,10 +136,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 type="file"
                 className="hidden"
                 onChange={handleFileChange}
-                accept={fileTypes.join(",")}
+                accept={acceptedTypes.join(",")}
               />
               <p className="mt-2 text-xs text-gray-500">
-                {fileTypes.join(", ")} files up to {maxSizeInMB}MB
+                {acceptedTypes.join(", ")} files up to 10MB
               </p>
 
               {showFeedListOption && onSelectFeed && (
