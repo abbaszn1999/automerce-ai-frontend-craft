@@ -177,7 +177,7 @@ const AEResultsTab = ({ projectId }: AEResultsTabProps) => {
             <CardTitle>Real-time Log</CardTitle>
           </CardHeader>
           <CardContent>
-            <LogDisplay logs={logs} maxHeight={200} />
+            <LogDisplay logs={logs} maxHeight="200px" />
           </CardContent>
         </Card>
       </div>
