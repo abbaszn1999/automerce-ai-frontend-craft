@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, ArrowRight } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 
 interface Project {
@@ -104,16 +104,15 @@ const AttributeExtraction: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">AI Attribute Enrichment</h1>
-        <h2 className="text-xl font-bold mt-4">AI Attribute Enrichment Projects</h2>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">AI Attribute Enrichment Projects</h1>
         <p className="text-muted-foreground mt-1">
           Extract and organize product attributes using AI to enhance your product data quality and improve filtering options.
         </p>
       </div>
 
-      <Card className="mb-6">
+      <Card>
         <CardHeader>
           <h3 className="text-lg font-medium">Create New AE Project</h3>
         </CardHeader>
@@ -123,9 +122,9 @@ const AttributeExtraction: React.FC = () => {
               placeholder="Enter project name"
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
-              className="max-w-md"
+              className="flex-grow"
             />
-            <Button onClick={handleCreateProject} className="flex items-center gap-1">
+            <Button onClick={handleCreateProject} className="flex items-center gap-1 bg-green-600 hover:bg-green-700">
               <Plus className="h-4 w-4" />
               <span>Create AE Project</span>
             </Button>
@@ -154,7 +153,7 @@ const AttributeExtraction: React.FC = () => {
                   </div>
                   <Button 
                     onClick={() => handleOpenProject(project.id)}
-                    className="ml-2"
+                    className="ml-2 bg-green-600 hover:bg-green-700"
                   >
                     Open Project
                   </Button>
