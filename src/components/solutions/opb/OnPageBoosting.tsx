@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../../context/AppContext";
 import ToolViewHeader from "../../common/ToolViewHeader";
@@ -9,6 +8,7 @@ import DataTable from "../../ui/DataTable";
 import { simulateProcessing } from "../../../utils/utils";
 import { toast } from "@/components/ui/sonner";
 import { ArrowLeft } from "lucide-react";
+import ModuleOutputActions from "../../common/ModuleOutputActions";
 
 const OnPageBoosting: React.FC = () => {
   const { opbCurrentSubTab, setOpbCurrentSubTab } = useAppContext();
@@ -223,6 +223,16 @@ const OnPageBoosting: React.FC = () => {
     setPlopResults([]);
   };
 
+  // Export handlers for POP
+  const handleExportPopResults = () => {
+    toast.success("Exporting product on-page boosting results...");
+  };
+  
+  // Export handlers for PLOP
+  const handleExportPlopResults = () => {
+    toast.success("Exporting PLP on-page boosting results...");
+  };
+
   return (
     <div>
       <ToolViewHeader 
@@ -338,7 +348,11 @@ const OnPageBoosting: React.FC = () => {
               <div className="card">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">Optimized Product Content</h3>
-                  <button className="btn btn-sm btn-outline">Export Results (CSV)</button>
+                  <ModuleOutputActions
+                    moduleType="opb"
+                    outputType="product"
+                    onExportResults={handleExportPopResults}
+                  />
                 </div>
                 
                 <div className="overflow-x-auto">
@@ -461,7 +475,11 @@ const OnPageBoosting: React.FC = () => {
               <div className="card">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">Optimized PLP Content</h3>
-                  <button className="btn btn-sm btn-outline">Export Results (CSV)</button>
+                  <ModuleOutputActions
+                    moduleType="opb"
+                    outputType="plp"
+                    onExportResults={handleExportPlopResults}
+                  />
                 </div>
                 
                 <div className="overflow-x-auto">
