@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setLinkBoostingCode(savedLinkBoostingCode);
         break;
       case "collections-cluster":
-        setCollectionsCode(savedCollectionsCode);
+        setCollectionsClusterCode(savedCollectionsCode);
         break;
     }
     toast.info("Changes discarded");
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setLinkBoostingCode(value);
         break;
       case "collections-cluster":
-        setCollectionsCode(value);
+        setCollectionsClusterCode(value);
         break;
     }
   };
