@@ -8,6 +8,7 @@ import DataTable from "../../ui/DataTable";
 import { simulateProcessing } from "../../../utils/utils";
 import { toast } from "@/components/ui/sonner";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import ModuleOutputActions from "../../common/ModuleOutputActions";
 
 const LowHangingFruits: React.FC = () => {
   // Stage state
@@ -241,6 +242,15 @@ const LowHangingFruits: React.FC = () => {
     setPlpResults([]);
   };
 
+  // Export handlers
+  const handleExportProductCSV = () => {
+    toast.success("Exporting Product Fruits to CSV...");
+  };
+
+  const handleExportPLPCSV = () => {
+    toast.success("Exporting PLP Fruits to CSV...");
+  };
+
   return (
     <div>
       <ToolViewHeader 
@@ -442,7 +452,11 @@ const LowHangingFruits: React.FC = () => {
           <div className="card">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">Low Hanging Product Fruits</h3>
-              <button className="btn btn-sm btn-outline">Export Product Fruits (CSV)</button>
+              <ModuleOutputActions
+                moduleType="lhf"
+                outputType="product"
+                onExportCSV={handleExportProductCSV}
+              />
             </div>
             
             <DataTable 
@@ -464,7 +478,11 @@ const LowHangingFruits: React.FC = () => {
           <div className="card">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">Low Hanging PLP Fruits</h3>
-              <button className="btn btn-sm btn-outline">Export PLP Fruits (CSV)</button>
+              <ModuleOutputActions
+                moduleType="lhf"
+                outputType="plp"
+                onExportCSV={handleExportPLPCSV}
+              />
             </div>
             
             <DataTable 
