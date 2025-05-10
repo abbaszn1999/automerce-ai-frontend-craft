@@ -9,6 +9,7 @@ import DataTable from "../../ui/DataTable";
 import { ArrowLeft, ArrowRight, Pause, Play, XCircle } from "lucide-react";
 import { simulateProcessing } from "../../../utils/utils";
 import { toast } from "@/components/ui/sonner";
+import ModuleOutputActions from "../../common/ModuleOutputActions";
 
 const AttributeExtraction: React.FC = () => {
   const { aeCurrentTab, setAeCurrentTab, aeAttributes, setCurrentView, setSelectedProjectName } = useAppContext();
@@ -194,6 +195,19 @@ const AttributeExtraction: React.FC = () => {
       className: "btn-outline"
     }
   ];
+
+  // Export handlers
+  const handleExportCSV = () => {
+    toast.success("Exporting attributes to CSV...");
+  };
+
+  const handleExportExcel = () => {
+    toast.success("Exporting attributes to Excel...");
+  };
+
+  const handlePushToCMS = () => {
+    toast.success("Pushing attributes to CMS...");
+  };
 
   return (
     <div>
@@ -571,17 +585,13 @@ const AttributeExtraction: React.FC = () => {
                     className="border rounded px-3 py-1 text-sm w-full sm:w-auto"
                   />
                   
-                  <div className="flex gap-2">
-                    <button className="btn btn-sm btn-outline">
-                      Export CSV
-                    </button>
-                    <button className="btn btn-sm btn-outline">
-                      Export Excel
-                    </button>
-                    <button className="btn btn-sm btn-primary">
-                      Push to CMS
-                    </button>
-                  </div>
+                  <ModuleOutputActions
+                    moduleType="ae"
+                    outputType="product"
+                    onExportCSV={handleExportCSV}
+                    onExportExcel={handleExportExcel}
+                    onPushToCMS={handlePushToCMS}
+                  />
                 </div>
               </div>
               

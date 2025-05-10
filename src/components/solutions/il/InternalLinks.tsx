@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../../context/AppContext";
 import ToolViewHeader from "../../common/ToolViewHeader";
@@ -9,6 +8,7 @@ import DataTable from "../../ui/DataTable";
 import { simulateProcessing, copyToClipboard } from "../../../utils/utils";
 import { toast } from "@/components/ui/sonner";
 import { ArrowLeft, Copy, Check } from "lucide-react";
+import ModuleOutputActions from "../../common/ModuleOutputActions";
 
 const InternalLinks: React.FC = () => {
   const { ilCurrentSubTab, setIlCurrentSubTab } = useAppContext();
@@ -289,6 +289,16 @@ document.addEventListener('DOMContentLoaded', function() {
     setProductLinks([]);
   };
 
+  // Export handlers for PLP
+  const handleExportPlpResults = () => {
+    toast.success("Exporting PLP internal linking results...");
+  };
+  
+  // Export handlers for Product
+  const handleExportProductResults = () => {
+    toast.success("Exporting product internal linking results...");
+  };
+  
   return (
     <div>
       <ToolViewHeader 
@@ -375,7 +385,11 @@ document.addEventListener('DOMContentLoaded', function() {
               <div className="card">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">Contextual Links Outcome</h3>
-                  <button className="btn btn-sm btn-outline">Export Results</button>
+                  <ModuleOutputActions 
+                    moduleType="il"
+                    outputType="plp"
+                    onExportResults={handleExportPlpResults}
+                  />
                 </div>
                 
                 <DataTable 
@@ -395,7 +409,11 @@ document.addEventListener('DOMContentLoaded', function() {
               <div className="card">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">Widget Links Outcome</h3>
-                  <button className="btn btn-sm btn-outline">Export Results</button>
+                  <ModuleOutputActions 
+                    moduleType="il"
+                    outputType="plp"
+                    onExportResults={handleExportPlpResults}
+                  />
                 </div>
                 
                 <DataTable 
@@ -560,7 +578,11 @@ document.addEventListener('DOMContentLoaded', function() {
               <div className="card">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-medium">Internal Linking Output</h3>
-                  <button className="btn btn-sm btn-outline">Export Results</button>
+                  <ModuleOutputActions 
+                    moduleType="il"
+                    outputType="product"
+                    onExportResults={handleExportProductResults}
+                  />
                 </div>
                 
                 <div className="overflow-x-auto">
