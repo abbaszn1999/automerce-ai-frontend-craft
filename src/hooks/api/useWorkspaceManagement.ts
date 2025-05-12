@@ -67,24 +67,8 @@ export const useWorkspaceManagement = (userId: string | undefined) => {
         return null;
       }
 
-      // Associate the user with the workspace as owner
-      const { error: userAssociationError } = await supabase
-        .from('workspace_users')
-        .insert({
-          workspace_id: newWorkspace.id,
-          user_id: userId,
-          role: 'owner'
-        });
-
-      if (userAssociationError) {
-        // If we fail to associate the user, clean up by deleting the workspace
-        await supabase
-          .from('workspaces')
-          .delete()
-          .eq('id', newWorkspace.id);
-          
-        throw userAssociationError;
-      }
+      // The trigger will associate the user with the workspace as owner
+      // We don't need to manually insert into workspace_users
       
       toast.success(`Workspace "${name}" created successfully`);
       return newWorkspace as Workspace;

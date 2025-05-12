@@ -17,7 +17,7 @@ export type Database = {
           gsc_verified: boolean | null
           id: string
           updated_at: string
-          workspace_id: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
@@ -26,7 +26,7 @@ export type Database = {
           gsc_verified?: boolean | null
           id?: string
           updated_at?: string
-          workspace_id: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
@@ -35,7 +35,7 @@ export type Database = {
           gsc_verified?: boolean | null
           id?: string
           updated_at?: string
-          workspace_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -55,7 +55,7 @@ export type Database = {
           created_at: string
           id: string
           updated_at: string
-          workspace_id: string
+          workspace_id: string | null
         }
         Insert: {
           cms_type?: string | null
@@ -64,7 +64,7 @@ export type Database = {
           created_at?: string
           id?: string
           updated_at?: string
-          workspace_id: string
+          workspace_id?: string | null
         }
         Update: {
           cms_type?: string | null
@@ -73,7 +73,7 @@ export type Database = {
           created_at?: string
           id?: string
           updated_at?: string
-          workspace_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -91,21 +91,21 @@ export type Database = {
           feed_mode: string | null
           id: string
           updated_at: string
-          workspace_id: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
           feed_mode?: string | null
           id?: string
           updated_at?: string
-          workspace_id: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
           feed_mode?: string | null
           id?: string
           updated_at?: string
-          workspace_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -127,7 +127,7 @@ export type Database = {
           status: string
           type: string
           updated_at: string
-          workspace_id: string
+          workspace_id: string | null
         }
         Insert: {
           column_mapping?: Json | null
@@ -138,7 +138,7 @@ export type Database = {
           status: string
           type: string
           updated_at?: string
-          workspace_id: string
+          workspace_id?: string | null
         }
         Update: {
           column_mapping?: Json | null
@@ -149,7 +149,7 @@ export type Database = {
           status?: string
           type?: string
           updated_at?: string
-          workspace_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -169,7 +169,7 @@ export type Database = {
           id: string
           link_boosting_js: string | null
           updated_at: string
-          workspace_id: string
+          workspace_id: string | null
         }
         Insert: {
           collections_cluster_js?: string | null
@@ -178,7 +178,7 @@ export type Database = {
           id?: string
           link_boosting_js?: string | null
           updated_at?: string
-          workspace_id: string
+          workspace_id?: string | null
         }
         Update: {
           collections_cluster_js?: string | null
@@ -187,7 +187,7 @@ export type Database = {
           id?: string
           link_boosting_js?: string | null
           updated_at?: string
-          workspace_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -235,7 +235,7 @@ export type Database = {
           input_data: Json | null
           logs: string | null
           output_data: Json | null
-          project_id: string
+          project_id: string | null
           started_at: string
           status: string
           updated_at: string
@@ -248,7 +248,7 @@ export type Database = {
           input_data?: Json | null
           logs?: string | null
           output_data?: Json | null
-          project_id: string
+          project_id?: string | null
           started_at?: string
           status: string
           updated_at?: string
@@ -261,7 +261,7 @@ export type Database = {
           input_data?: Json | null
           logs?: string | null
           output_data?: Json | null
-          project_id?: string
+          project_id?: string | null
           started_at?: string
           status?: string
           updated_at?: string
@@ -280,21 +280,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          project_id: string
+          project_id: string | null
           settings: Json
           updated_at: string
         }
         Insert: {
           created_at?: string
           id?: string
-          project_id: string
+          project_id?: string | null
           settings: Json
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
-          project_id?: string
+          project_id?: string | null
           settings?: Json
           updated_at?: string
         }
@@ -302,7 +302,7 @@ export type Database = {
           {
             foreignKeyName: "project_settings_project_id_fkey"
             columns: ["project_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
@@ -317,7 +317,7 @@ export type Database = {
           name: string
           status: string
           updated_at: string
-          workspace_id: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
@@ -327,7 +327,7 @@ export type Database = {
           name: string
           status: string
           updated_at?: string
-          workspace_id: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
@@ -337,7 +337,7 @@ export type Database = {
           name?: string
           status?: string
           updated_at?: string
-          workspace_id?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
