@@ -2,11 +2,11 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useWorkspace } from "./WorkspaceContext";
 
 type SolutionType = "ae" | "cb" | "ho" | "lhf" | "il" | "opb";
 type ViewType = "project" | "tool" | "settings";
 type FeedModeType = "plp" | "product";
+type FeedOutputType = "extraction" | "collection" | "structure" | "links" | "boosting" | "fruit";
 
 interface Feed {
   id: string;
@@ -96,11 +96,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Feed settings state
   const [selectedFeedMode, setSelectedFeedMode] = useState<FeedModeType>("plp");
   const [feedMappingColumns, setFeedMappingColumns] = useState<Array<{sourceColumn: string; targetColumn: string}>>([]);
-  // Feed list is no longer needed here as we fetch it directly from Supabase in the FeedList component
-  const [feedList, setFeedList] = useState<Feed[]>([]);
-
-  // Access the workspace context
-  const { currentWorkspace } = useWorkspace();
+  const [feedList, setFeedList] = useState<Feed[]>([
+    {
+      id: "feed-1",
+      name: "Product Catalog",
+      type: "product",
+      status: "Active",
+      lastUpdated: "2025-05-01T10:30:00Z",
+      source: "import"
+    },
+    {
+      id: "feed-2",
+      name: "Category Feed",
+      type: "plp",
+      status: "Active",
+      lastUpdated: "2025-05-02T14:15:00Z",
+      source: "import"
+    }
+  ]);
 
   // Update document title when solution changes
   useEffect(() => {
@@ -115,41 +128,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     document.title = `Autommerce.ai - ${solutionNames[currentSolution]}`;
   }, [currentSolution]);
-
-  // Feed list methods - updated to use Supabase with workspace context
-  const addFeedToList = async (name: string, type: FeedModeType, source?: string) => {
-    if (!currentWorkspace) {
-      toast.error("Please select a workspace first");
-      return;
-    }
-    
-    try {
-      // Create the new feed in Supabase
-      const { data, error } = await supabase
-        .from('feeds')
-        .insert([
-          { 
-            name, 
-            type, 
-            status: 'Active',
-            workspace_id: currentWorkspace.id,
-            configuration: {},
-            column_mapping: {}
-          }
-        ])
-        .select();
-
-      if (error) throw error;
-      
-      toast.success("Feed added successfully");
-      
-      // Navigate to feed list
-      setSettingsCurrentTab("feed-list");
-    } catch (error: any) {
-      console.error("Error adding feed:", error);
-      toast.error("Failed to add feed: " + (error.message || error));
-    }
-  };
 
   // AE methods
   const addAttribute = (name: string, values: string[]) => {
@@ -172,6 +150,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAeAttributes(prev => prev.filter(attr => attr.id !== id));
   };
   
+  // Feed list methods - updated to use Supabase
+  const addFeedToList = async (name: string, type: FeedModeType, source?: string) => {
+    try {
+      // Create the new feed in Supabase
+      const { data, error } = await supabase
+        .from('feeds')
+        .insert([
+          { 
+            name, 
+            type, 
+            status: 'Active',
+            workspace_id: '00000000-0000-0000-0000-000000000000', // Default workspace ID - this should be updated in a real implementation
+            configuration: {},
+            column_mapping: {}
+          }
+        ])
+        .select();
+
+      if (error) throw error;
+      
+      // If successful, update the local state
+      if (data && data[0]) {
+        setFeedList(prev => [...prev, {
+          id: data[0].id,
+          name: data[0].name,
+          type: data[0].type as FeedModeType,
+          status: data[0].status,
+          lastUpdated: data[0].updated_at,
+          updated_at: data[0].updated_at,
+          source: source || 'import'
+        }]);
+        
+        // Show success message
+        toast.success("Feed added successfully");
+        
+        // Navigate to feed list
+        setSettingsCurrentTab("feed-list");
+      }
+    } catch (error: any) {
+      console.error("Error adding feed:", error);
+      toast.error("Failed to add feed: " + (error.message || error));
+    }
+  };
+
   const value = {
     currentSolution,
     currentView,

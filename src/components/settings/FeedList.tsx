@@ -1,7 +1,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
-import { useWorkspace } from "../../context/WorkspaceContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/utils/utils";
@@ -10,30 +9,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
 const FeedList: React.FC = () => {
-  const { setSettingsCurrentTab } = useAppContext();
-  const { currentWorkspace } = useWorkspace();
+  const { feedList, setSettingsCurrentTab } = useAppContext();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const [feeds, setFeeds] = useState<any[]>([]);
+  const [dbFeeds, setDbFeeds] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchFeeds = async () => {
-      if (!currentWorkspace) return;
-      
       try {
         setIsLoading(true);
         const { data, error } = await supabase
           .from('feeds')
           .select('*')
-          .eq('workspace_id', currentWorkspace.id)
           .order('created_at', { ascending: false });
 
         if (error) {
           throw error;
         }
 
-        setFeeds(data || []);
+        setDbFeeds(data || []);
       } catch (err: any) {
         console.error('Error fetching feeds:', err);
         setError(err.message || 'Failed to load feeds');
@@ -48,11 +43,14 @@ const FeedList: React.FC = () => {
     };
 
     fetchFeeds();
-  }, [toast, currentWorkspace]);
+  }, [toast]);
 
   const handleAddNewFeed = () => {
     setSettingsCurrentTab("feed-mode");
   };
+
+  // Use database feeds if available, otherwise fall back to context feeds
+  const displayFeeds = dbFeeds.length > 0 ? dbFeeds : feedList;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -60,7 +58,7 @@ const FeedList: React.FC = () => {
         <div>
           <h2 className="text-2xl font-semibold mb-2">Feed List</h2>
           <p className="text-gray-600">
-            Manage your configured feeds for the {currentWorkspace?.name || 'workspace'}
+            Manage your configured feeds for the store
           </p>
         </div>
         <Button 
@@ -86,7 +84,7 @@ const FeedList: React.FC = () => {
             <Button onClick={() => window.location.reload()} variant="outline">Retry</Button>
           </CardContent>
         </Card>
-      ) : feeds.length === 0 ? (
+      ) : displayFeeds.length === 0 ? (
         <Card>
           <CardContent className="py-12 flex flex-col items-center justify-center">
             <div className="text-gray-400 mb-3">
@@ -106,7 +104,7 @@ const FeedList: React.FC = () => {
         </Card>
       ) : (
         <div className="space-y-4">
-          {feeds.map((feed) => (
+          {displayFeeds.map((feed) => (
             <Card key={feed.id} className="overflow-hidden">
               <div className="flex">
                 <div className="bg-gray-100 p-4 flex items-center justify-center">
@@ -130,7 +128,7 @@ const FeedList: React.FC = () => {
                       Type: {feed.type === "plp" ? "Product Listing Page" : "Product Feed"}
                     </span>
                     <span className="text-gray-500">
-                      Last updated: {formatDate(feed.updated_at)}
+                      Last updated: {formatDate(feed.updated_at || feed.lastUpdated)}
                     </span>
                   </div>
                 </CardContent>

@@ -1,113 +1,119 @@
 
 import React from "react";
-import { useAppContext } from "../context/AppContext";
 import AppLayout from "../components/AppLayout";
-import SolutionSelector from "../components/SolutionSelector";
+import { useAppContext } from "../context/AppContext";
 import ProjectView from "../components/common/ProjectView";
-import Settings from "../components/settings/Settings";
 import AttributeExtraction from "../components/solutions/ae/AttributeExtraction";
 import CollectionBuilder from "../components/solutions/cb/CollectionBuilder";
 import HeaderOptimization from "../components/solutions/ho/HeaderOptimization";
 import LowHangingFruits from "../components/solutions/lhf/LowHangingFruits";
 import InternalLinks from "../components/solutions/il/InternalLinks";
 import OnPageBoosting from "../components/solutions/opb/OnPageBoosting";
-import Dashboard from "./Dashboard";
+import Settings from "../components/settings/Settings";
+
+// Helper function to map solution IDs to friendly names
+const getSolutionName = (id: string): string => {
+  switch (id) {
+    case "ae": return "AI Attribute Enrichment";
+    case "cb": return "AI Collection Builder";
+    case "ho": return "Website Restructure";
+    case "lhf": return "Low-Hanging Fruits";
+    case "il": return "Link Boosting";
+    case "opb": return "On-Page Boosting";
+    default: return id.toUpperCase();
+  }
+};
 
 const Index: React.FC = () => {
-  const { currentSolution, currentView, selectedProjectName } = useAppContext();
+  const { currentSolution, currentView } = useAppContext();
 
+  // Determine which view to show based on solution and view type
   const renderContent = () => {
     if (currentView === "settings") {
       return <Settings />;
-    }
-
-    if (currentView === "project") {
-      // Show dashboard if no solution is selected
-      if (!currentSolution) {
-        return <Dashboard />;
-      }
-      
+    } else if (currentView === "project") {
+      // Show Project View for the current solution
       switch (currentSolution) {
         case "ae":
           return (
-            <ProjectView
-              solutionPrefix="ae"
+            <ProjectView 
+              solutionPrefix="ae" 
               solutionName="AI Attribute Enrichment"
-              solutionDescription="Extract and enhance product attributes using AI"
+              solutionDescription="Extract and organize product attributes using AI to enhance your product data quality and improve filtering options."
             />
           );
         case "cb":
           return (
-            <ProjectView
-              solutionPrefix="cb"
+            <ProjectView 
+              solutionPrefix="cb" 
               solutionName="AI Collection Builder"
-              solutionDescription="Create and optimize product collections using AI"
+              solutionDescription="Create optimized product collections based on data analysis to improve navigation and conversion rates."
             />
           );
         case "ho":
           return (
-            <ProjectView
-              solutionPrefix="ho"
+            <ProjectView 
+              solutionPrefix="ho" 
               solutionName="Website Restructure"
-              solutionDescription="Optimize your website structure for better performance"
+              solutionDescription="Optimize your site's navigation structure for improved user experience and SEO performance."
             />
           );
         case "lhf":
           return (
-            <ProjectView
-              solutionPrefix="lhf"
+            <ProjectView 
+              solutionPrefix="lhf" 
               solutionName="Low-Hanging Fruits"
-              solutionDescription="Quick wins to improve your site's performance"
+              solutionDescription="Identify quick wins for SEO improvements based on your existing product and category pages."
             />
           );
         case "il":
           return (
-            <ProjectView
-              solutionPrefix="il"
+            <ProjectView 
+              solutionPrefix="il" 
               solutionName="Link Boosting"
-              solutionDescription="Enhance your internal linking structure"
+              solutionDescription="Enhance your site's internal linking structure to improve SEO and user navigation between pages."
             />
           );
         case "opb":
           return (
-            <ProjectView
-              solutionPrefix="opb"
+            <ProjectView 
+              solutionPrefix="opb" 
               solutionName="On-Page Boosting"
-              solutionDescription="Optimize individual pages for better performance"
+              solutionDescription="Optimize product and category page content for improved search visibility and conversion rates."
             />
           );
         default:
-          return <Dashboard />;
+          return <div>Invalid solution selected</div>;
       }
-    }
-
-    if (currentView === "tool" && selectedProjectName) {
+    } else {
+      // Show Tool View for the current solution
       switch (currentSolution) {
         case "ae":
-          return <AttributeExtraction projectName={selectedProjectName} />;
+          return <AttributeExtraction />;
         case "cb":
-          return <CollectionBuilder projectName={selectedProjectName} />;
+          return <CollectionBuilder />;
         case "ho":
-          return <HeaderOptimization projectName={selectedProjectName} />;
+          return <HeaderOptimization />;
         case "lhf":
-          return <LowHangingFruits projectName={selectedProjectName} />;
+          return <LowHangingFruits />;
         case "il":
-          return <InternalLinks projectName={selectedProjectName} />;
+          return <InternalLinks />;
         case "opb":
-          return <OnPageBoosting projectName={selectedProjectName} />;
+          return <OnPageBoosting />;
         default:
-          return <div>Unknown solution</div>;
+          return <div>Invalid solution selected</div>;
       }
     }
-
-    // Default view is the dashboard
-    return <Dashboard />;
   };
 
   return (
     <AppLayout>
-      {currentView !== "settings" && currentSolution && <SolutionSelector />}
-      <div className="main-content-area">{renderContent()}</div>
+      {currentView !== "settings" && (
+        <h1 className="text-2xl font-bold mb-4">
+          {getSolutionName(currentSolution)}
+        </h1>
+      )}
+      {renderContent()}
     </AppLayout>
   );
 };
