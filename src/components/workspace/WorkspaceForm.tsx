@@ -39,17 +39,22 @@ const WorkspaceForm: React.FC<WorkspaceFormProps> = ({
     setIsSubmitting(true);
     
     try {
+      let success = false;
+      
       if (isEditing && workspace) {
-        await updateWorkspace(workspace.id, name, description);
+        const result = await updateWorkspace(workspace.id, name, description);
+        success = result;
       } else {
-        await createWorkspace(name, description);
+        const result = await createWorkspace(name, description);
+        success = !!result;
       }
       
-      if (onComplete) {
+      if (success && onComplete) {
         onComplete();
       }
     } catch (error: any) {
-      setError(error.message);
+      console.error("Form submission error:", error);
+      setError(error.message || "An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
     }

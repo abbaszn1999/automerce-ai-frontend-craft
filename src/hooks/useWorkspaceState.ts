@@ -23,6 +23,7 @@ export const useWorkspaceState = () => {
       }
       
       const userWorkspaces = await workspaceApi.fetchWorkspaces();
+      console.log("Fetched workspaces:", userWorkspaces);
       
       setWorkspaces(userWorkspaces);
       
@@ -53,16 +54,23 @@ export const useWorkspaceState = () => {
   };
 
   const handleCreateWorkspace = async (name: string, description: string): Promise<Workspace | null> => {
-    const newWorkspace = await workspaceApi.createWorkspace(name, description);
-    if (newWorkspace) {
-      // Update local state
-      setWorkspaces([...workspaces, newWorkspace]);
-      setCurrentWorkspace(newWorkspace);
+    try {
+      const newWorkspace = await workspaceApi.createWorkspace(name, description);
       
-      // Store in localStorage
-      localStorage.setItem('currentWorkspaceId', newWorkspace.id);
+      if (newWorkspace) {
+        // Update local state
+        setWorkspaces(prev => [...prev, newWorkspace]);
+        setCurrentWorkspace(newWorkspace);
+        
+        // Store in localStorage
+        localStorage.setItem('currentWorkspaceId', newWorkspace.id);
+      }
+      
+      return newWorkspace;
+    } catch (error) {
+      console.error("Error in handleCreateWorkspace:", error);
+      return null;
     }
-    return newWorkspace;
   };
 
   const handleUpdateWorkspace = async (id: string, name: string, description: string): Promise<boolean> => {
@@ -132,9 +140,9 @@ export const useWorkspaceState = () => {
     workspaceUsers,
     setCurrentWorkspace,
     fetchWorkspaces,
-    createWorkspace: workspaceApi.createWorkspace,
-    updateWorkspace: workspaceApi.updateWorkspace,
-    deleteWorkspace: workspaceApi.deleteWorkspace,
+    createWorkspace: handleCreateWorkspace,
+    updateWorkspace: handleUpdateWorkspace,
+    deleteWorkspace: handleDeleteWorkspace,
     fetchWorkspaceUsers: handleFetchWorkspaceUsers,
     inviteUserToWorkspace: workspaceApi.inviteUserToWorkspace
   };

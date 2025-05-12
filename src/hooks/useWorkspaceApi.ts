@@ -63,13 +63,7 @@ export const useWorkspaceApi = (userId: string | undefined) => {
       
     } catch (error: any) {
       console.error("Error creating workspace:", error);
-      
-      if (error.message.includes("workspace_users_pkey")) {
-        toast.error("Failed to create workspace: You already have a role in this workspace");
-      } else {
-        toast.error(`Failed to create workspace: ${error.message}`);
-      }
-      
+      toast.error(`Failed to create workspace: ${error.message}`);
       return null;
     }
   };
