@@ -47,8 +47,17 @@ export const useWorkspaceApi = (userId: string | undefined) => {
         return null;
       }
       
-      // Use the create_workspace_with_owner function instead of direct insert
-      // This function handles the RLS and creates both workspace and workspace_user entries
+      // First check if a workspace with this name already exists for this user
+      // to prevent duplicate key violations
+      const { data: existingWorkspaces } = await fetchWorkspaces();
+      const alreadyExists = existingWorkspaces?.some(ws => ws.name === name);
+      
+      if (alreadyExists) {
+        toast.error(`A workspace named "${name}" already exists`);
+        return null;
+      }
+      
+      // Use the create_workspace_with_owner function with tryCatch to handle errors
       const { data: workspaceData, error: workspaceError } = await supabase
         .rpc('create_workspace_with_owner', {
           workspace_name: name,
@@ -56,7 +65,14 @@ export const useWorkspaceApi = (userId: string | undefined) => {
           owner_id: userId
         });
 
-      if (workspaceError) throw workspaceError;
+      if (workspaceError) {
+        // Check for duplicate key error
+        if (workspaceError.code === '23505') {
+          toast.error("You already have access to this workspace");
+          return null;
+        }
+        throw workspaceError;
+      }
       
       // Fetch the newly created workspace
       if (workspaceData) {
