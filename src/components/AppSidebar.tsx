@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { useAppContext } from "../context/AppContext";
+import { useWorkspace } from "../context/WorkspaceContext";
 import AutommerceLogo from "./AutommerceLogo";
 import { 
   ChevronDown, 
@@ -11,19 +12,27 @@ import {
   Link, 
   Rocket,
   Settings,
-  ChevronRight
+  ChevronRight,
+  PlusCircle
 } from "lucide-react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-  DropdownMenuItem
+  DropdownMenuItem,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import WorkspaceForm from "./workspace/WorkspaceForm";
 
 const AppSidebar: React.FC = () => {
   const { currentSolution, setCurrentSolution, setCurrentView, currentView, settingsCurrentTab, setSettingsCurrentTab } = useAppContext();
+  const { workspaces, currentWorkspace, setCurrentWorkspace } = useWorkspace();
   const [showFeedSettings, setShowFeedSettings] = useState(false);
   const [showConfiguration, setShowConfiguration] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const navigate = useNavigate();
   
   // Map the old solution IDs to the new names
   const solutionMapping = {
@@ -67,6 +76,15 @@ const AppSidebar: React.FC = () => {
     }
   };
 
+  const handleWorkspaceSelect = (workspace: any) => {
+    setCurrentWorkspace(workspace);
+    localStorage.setItem('currentWorkspaceId', workspace.id);
+  };
+
+  const handleManageWorkspaces = () => {
+    navigate("/workspaces");
+  };
+
   const isActive = (solutionId: string) => {
     if (solutionId === "dashboard") return false; // Dashboard not implemented yet
     
@@ -92,14 +110,41 @@ const AppSidebar: React.FC = () => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <div className="flex items-center justify-between w-full cursor-pointer">
-              <span className="font-medium">Demo en-GB</span>
+              <span className="font-medium truncate">
+                {currentWorkspace?.name || "Select Workspace"}
+              </span>
               <ChevronDown size={16} />
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="workspace-dropdown">
-            <DropdownMenuItem className="workspace-item">Demo en-GB</DropdownMenuItem>
-            <DropdownMenuItem className="workspace-item">Demo en-US</DropdownMenuItem>
-            <DropdownMenuItem className="workspace-item">+ Add Workspace</DropdownMenuItem>
+            {workspaces.map(workspace => (
+              <DropdownMenuItem 
+                key={workspace.id} 
+                className={`workspace-item ${currentWorkspace?.id === workspace.id ? 'bg-secondary' : ''}`}
+                onClick={() => handleWorkspaceSelect(workspace)}
+              >
+                {workspace.name}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="workspace-item">
+                  <PlusCircle size={16} className="mr-2" />
+                  <span>Add Workspace</span>
+                </DropdownMenuItem>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Workspace</DialogTitle>
+                </DialogHeader>
+                <WorkspaceForm onComplete={() => setIsCreateDialogOpen(false)} />
+              </DialogContent>
+            </Dialog>
+            <DropdownMenuItem className="workspace-item" onClick={handleManageWorkspaces}>
+              <Settings size={16} className="mr-2" />
+              <span>Manage Workspaces</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useWorkspace } from "./WorkspaceContext";
 
 type SolutionType = "ae" | "cb" | "ho" | "lhf" | "il" | "opb";
 type ViewType = "project" | "tool" | "settings";
@@ -73,6 +74,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentSolution, setCurrentSolution] = useState<SolutionType>("ae");
   const [currentView, setCurrentView] = useState<ViewType>("project");
   const [selectedProjectName, setSelectedProjectName] = useState<string | null>(null);
+  const { currentWorkspace } = useWorkspace();
   
   // AE specific state
   const [aeCurrentTab, setAeCurrentTab] = useState("attr-setup-content");
@@ -115,6 +117,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   ]);
 
+  // Load workspace-specific data when current workspace changes
+  useEffect(() => {
+    if (currentWorkspace) {
+      fetchWorkspaceFeeds();
+    }
+  }, [currentWorkspace]);
+
+  // Fetch workspace-specific feeds
+  const fetchWorkspaceFeeds = async () => {
+    if (!currentWorkspace) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('feeds')
+        .select('*')
+        .eq('workspace_id', currentWorkspace.id);
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const formattedFeeds = data.map(feed => ({
+          id: feed.id,
+          name: feed.name,
+          type: feed.type as FeedModeType,
+          status: feed.status,
+          lastUpdated: feed.updated_at,
+          updated_at: feed.updated_at,
+          source: 'import'
+        }));
+        
+        setFeedList(formattedFeeds);
+      }
+    } catch (error: any) {
+      console.error("Error fetching workspace feeds:", error);
+      toast.error("Failed to load workspace feeds");
+    }
+  };
+
   // Update document title when solution changes
   useEffect(() => {
     const solutionNames = {
@@ -126,8 +166,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       opb: "On-Page Boosting"
     };
     
-    document.title = `Autommerce.ai - ${solutionNames[currentSolution]}`;
-  }, [currentSolution]);
+    let title = `Autommerce.ai - ${solutionNames[currentSolution]}`;
+    if (currentWorkspace?.name) {
+      title = `${currentWorkspace.name} | ${title}`;
+    }
+    
+    document.title = title;
+  }, [currentSolution, currentWorkspace]);
 
   // AE methods
   const addAttribute = (name: string, values: string[]) => {
@@ -150,9 +195,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAeAttributes(prev => prev.filter(attr => attr.id !== id));
   };
   
-  // Feed list methods - updated to use Supabase
+  // Feed list methods - updated to use Supabase and current workspace
   const addFeedToList = async (name: string, type: FeedModeType, source?: string) => {
     try {
+      if (!currentWorkspace) {
+        toast.error("No workspace selected. Please select or create a workspace first.");
+        return;
+      }
+      
       // Create the new feed in Supabase
       const { data, error } = await supabase
         .from('feeds')
@@ -161,7 +211,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             name, 
             type, 
             status: 'Active',
-            workspace_id: '00000000-0000-0000-0000-000000000000', // Default workspace ID - this should be updated in a real implementation
+            workspace_id: currentWorkspace.id,
             configuration: {},
             column_mapping: {}
           }
