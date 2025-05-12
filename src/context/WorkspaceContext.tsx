@@ -96,27 +96,36 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return null;
       }
       
-      const { data, error } = await supabase.rpc(
-        'create_workspace_with_owner',
-        {
-          workspace_name: name,
-          workspace_description: description,
-          owner_id: user.id
-        }
-      );
-      
-      if (error) throw error;
-      
-      // Fetch the created workspace
+      // First, create the workspace
       const { data: workspaceData, error: workspaceError } = await supabase
         .from('workspaces')
-        .select('*')
-        .eq('id', data)
+        .insert({
+          name,
+          description
+        })
+        .select()
         .single();
-        
+
       if (workspaceError) throw workspaceError;
       
       const newWorkspace = workspaceData as Workspace;
+
+      // Then, create the workspace_user relationship with a separate query
+      // This avoids using the composite function which seems to be causing the error
+      const { error: userWorkspaceError } = await supabase
+        .from('workspace_users')
+        .insert({
+          workspace_id: newWorkspace.id,
+          user_id: user.id,
+          role: 'owner'
+        });
+
+      if (userWorkspaceError) {
+        // If there was an error adding the user to the workspace,
+        // attempt to delete the workspace we just created to avoid orphaned workspaces
+        await supabase.from('workspaces').delete().eq('id', newWorkspace.id);
+        throw userWorkspaceError;
+      }
       
       // Update local state
       setWorkspaces([...workspaces, newWorkspace]);
@@ -130,7 +139,13 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       
     } catch (error: any) {
       console.error("Error creating workspace:", error);
-      toast.error(`Failed to create workspace: ${error.message}`);
+      
+      if (error.message.includes("workspace_users_pkey")) {
+        toast.error("Failed to create workspace: You already have a role in this workspace");
+      } else {
+        toast.error(`Failed to create workspace: ${error.message}`);
+      }
+      
       return null;
     }
   };
