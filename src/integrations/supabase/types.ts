@@ -407,6 +407,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_workspace_ownership: {
+        Args: { workspace_id: string; checking_user_id: string }
+        Returns: boolean
+      }
       create_workspace_with_owner: {
         Args: {
           workspace_name: string

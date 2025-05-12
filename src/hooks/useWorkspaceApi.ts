@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Workspace, WorkspaceUser } from "@/types/workspace.types";
 import { toast } from "sonner";
@@ -10,23 +9,29 @@ export const useWorkspaceApi = (userId: string | undefined) => {
     }
     
     try {
-      const { data, error } = await supabase
+      // First get the workspace IDs this user has access to
+      const { data: workspaceUsersData, error: workspaceUsersError } = await supabase
         .from('workspace_users')
-        .select(`
-          workspace_id,
-          workspaces:workspace_id (
-            id, 
-            name, 
-            description,
-            created_at
-          )
-        `)
+        .select('workspace_id')
         .eq('user_id', userId);
 
-      if (error) throw error;
-
-      // Transform data to extract workspace objects
-      return data.map((item: any) => item.workspaces) as Workspace[];
+      if (workspaceUsersError) throw workspaceUsersError;
+      
+      if (!workspaceUsersData || workspaceUsersData.length === 0) {
+        return [];
+      }
+      
+      const workspaceIds = workspaceUsersData.map(wu => wu.workspace_id);
+      
+      // Then fetch the actual workspace details
+      const { data: workspacesData, error: workspacesError } = await supabase
+        .from('workspaces')
+        .select('*')
+        .in('id', workspaceIds);
+      
+      if (workspacesError) throw workspacesError;
+      
+      return workspacesData as Workspace[];
     } catch (error: any) {
       console.error("Error fetching workspaces:", error);
       toast.error("Failed to load workspaces");
@@ -41,7 +46,7 @@ export const useWorkspaceApi = (userId: string | undefined) => {
         return null;
       }
       
-      // First, create the workspace
+      // Insert the workspace directly - the trigger we created will handle the workspace_user relationship
       const { data: workspaceData, error: workspaceError } = await supabase
         .from('workspaces')
         .insert({
@@ -53,26 +58,8 @@ export const useWorkspaceApi = (userId: string | undefined) => {
 
       if (workspaceError) throw workspaceError;
       
-      const newWorkspace = workspaceData as Workspace;
-
-      // Then, create the workspace_user relationship with a separate query
-      const { error: userWorkspaceError } = await supabase
-        .from('workspace_users')
-        .insert({
-          workspace_id: newWorkspace.id,
-          user_id: userId,
-          role: 'owner'
-        });
-
-      if (userWorkspaceError) {
-        // If there was an error adding the user to the workspace,
-        // attempt to delete the workspace we just created to avoid orphaned workspaces
-        await supabase.from('workspaces').delete().eq('id', newWorkspace.id);
-        throw userWorkspaceError;
-      }
-      
       toast.success(`Workspace "${name}" created successfully`);
-      return newWorkspace;
+      return workspaceData as Workspace;
       
     } catch (error: any) {
       console.error("Error creating workspace:", error);

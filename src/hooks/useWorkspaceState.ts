@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspaceApi } from "./useWorkspaceApi";
@@ -27,12 +26,25 @@ export const useWorkspaceState = () => {
       
       setWorkspaces(userWorkspaces);
       
-      // If there are workspaces and no current workspace is selected, set the first one
+      // If there are workspaces but no current workspace is selected, set the first one
       if (userWorkspaces.length > 0 && !currentWorkspace) {
-        setCurrentWorkspace(userWorkspaces[0]);
+        // Check if there's a stored workspace ID in localStorage
+        const storedWorkspaceId = localStorage.getItem('currentWorkspaceId');
         
-        // Store the selected workspace in localStorage
-        localStorage.setItem('currentWorkspaceId', userWorkspaces[0].id);
+        if (storedWorkspaceId) {
+          const storedWorkspace = userWorkspaces.find(ws => ws.id === storedWorkspaceId);
+          if (storedWorkspace) {
+            setCurrentWorkspace(storedWorkspace);
+          } else {
+            // If the stored ID doesn't match any workspace, use the first one
+            setCurrentWorkspace(userWorkspaces[0]);
+            localStorage.setItem('currentWorkspaceId', userWorkspaces[0].id);
+          }
+        } else {
+          // No stored workspace, use the first one
+          setCurrentWorkspace(userWorkspaces[0]);
+          localStorage.setItem('currentWorkspaceId', userWorkspaces[0].id);
+        }
       }
       
     } finally {
@@ -101,20 +113,15 @@ export const useWorkspaceState = () => {
     setWorkspaceUsers(users);
   };
 
-  // Load the previously selected workspace from localStorage on initial mount
+  // Load workspaces on initial mount or when user changes
   useEffect(() => {
     if (user) {
       fetchWorkspaces();
-      
-      // Check if there's a stored workspace ID in localStorage
-      const storedWorkspaceId = localStorage.getItem('currentWorkspaceId');
-      
-      if (storedWorkspaceId && workspaces.length > 0) {
-        const storedWorkspace = workspaces.find(ws => ws.id === storedWorkspaceId);
-        if (storedWorkspace) {
-          setCurrentWorkspace(storedWorkspace);
-        }
-      }
+    } else {
+      // Clear workspaces when user is not authenticated
+      setWorkspaces([]);
+      setCurrentWorkspace(null);
+      setIsLoading(false);
     }
   }, [user]);
 
@@ -125,9 +132,9 @@ export const useWorkspaceState = () => {
     workspaceUsers,
     setCurrentWorkspace,
     fetchWorkspaces,
-    createWorkspace: handleCreateWorkspace,
-    updateWorkspace: handleUpdateWorkspace,
-    deleteWorkspace: handleDeleteWorkspace,
+    createWorkspace: workspaceApi.createWorkspace,
+    updateWorkspace: workspaceApi.updateWorkspace,
+    deleteWorkspace: workspaceApi.deleteWorkspace,
     fetchWorkspaceUsers: handleFetchWorkspaceUsers,
     inviteUserToWorkspace: workspaceApi.inviteUserToWorkspace
   };
