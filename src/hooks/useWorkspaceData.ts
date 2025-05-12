@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
@@ -63,35 +64,42 @@ export const useWorkspaceData = (userId: string | undefined) => {
     try {
       setLoading(true);
       
-      // We'll use our RPC function which handles both workspace creation and user association
-      const { data: workspaceData, error: workspaceError } = await supabase.rpc(
-        // We need to use type assertion here since the types don't include our custom RPC function yet
-        'create_workspace_with_owner' as any, 
-        {
-          workspace_name: name,
-          workspace_description: description || null,
-          owner_id: userId
-        }
-      );
+      // First create the workspace
+      const { data: workspaceData, error: workspaceError } = await supabase
+        .from('workspaces')
+        .insert([
+          { name, description }
+        ])
+        .select()
+        .single();
       
       if (workspaceError) {
         toast.error("Failed to create workspace: " + workspaceError.message);
-        console.error("RPC error:", workspaceError);
         return null;
       }
-      
-      // Fetch the newly created workspace
-      const { data: newWorkspaceData } = await supabase
-        .from('workspaces')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1);
+
+      // Then create the workspace user association
+      // This approach avoids the duplicate key error as we're handling each step separately
+      if (workspaceData) {
+        const { error: userError } = await supabase
+          .from('workspace_users')
+          .insert([
+            { workspace_id: workspaceData.id, user_id: userId, role: 'owner' }
+          ]);
         
-      if (newWorkspaceData && newWorkspaceData.length > 0) {
-        setWorkspaces(prev => [newWorkspaceData[0], ...prev]);
-        setCurrentWorkspace(newWorkspaceData[0]);
+        if (userError) {
+          // If there's an error adding the user, cleanup by deleting the workspace
+          await supabase.from('workspaces').delete().eq('id', workspaceData.id);
+          toast.error("Failed to associate user with workspace: " + userError.message);
+          return null;
+        }
+        
+        // Update local state
+        setWorkspaces(prev => [workspaceData, ...prev]);
+        setCurrentWorkspace(workspaceData);
         toast.success("Workspace created successfully");
-        return newWorkspaceData[0];
+        
+        return workspaceData;
       }
       
       return null;
