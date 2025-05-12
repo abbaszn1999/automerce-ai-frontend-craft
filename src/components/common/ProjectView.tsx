@@ -1,9 +1,21 @@
+
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../context/AppContext";
 import { formatDate } from "../../utils/utils";
 import { toast } from "sonner";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Trash2 } from "lucide-react";
 import { useWorkspace } from "@/context/WorkspaceContext";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 interface ProjectViewProps {
   solutionPrefix: string;
@@ -15,7 +27,7 @@ interface Project {
   id: string;
   name: string;
   lastUpdated: Date;
-  workspaceId: string; // Added workspaceId to track which workspace a project belongs to
+  workspaceId: string;
 }
 
 const ProjectView: React.FC<ProjectViewProps> = ({ 
@@ -27,6 +39,8 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   const { currentWorkspace } = useWorkspace();
   const [newProjectName, setNewProjectName] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
   // Generate a storage key that includes the workspace ID
   const getStorageKey = () => {
@@ -68,6 +82,9 @@ const ProjectView: React.FC<ProjectViewProps> = ({
     const storageKey = getStorageKey();
     if (storageKey && projects.length > 0) {
       localStorage.setItem(storageKey, JSON.stringify(projects));
+    } else if (storageKey) {
+      // If projects array is empty, remove the item from localStorage
+      localStorage.removeItem(storageKey);
     }
   }, [projects, currentWorkspace]);
 
@@ -95,7 +112,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
       id: `${solutionPrefix}-${Date.now()}`,
       name: newProjectName.trim(),
       lastUpdated: new Date(),
-      workspaceId: currentWorkspace.id // Store the workspace ID with the project
+      workspaceId: currentWorkspace.id
     };
     
     setProjects(prev => [...prev, newProject]);
@@ -111,6 +128,21 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   const handleOpenProject = (projectName: string) => {
     setSelectedProjectName(projectName);
     setCurrentView("tool");
+  };
+
+  const handleDeleteProject = (project: Project) => {
+    setProjectToDelete(project);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteProject = () => {
+    if (projectToDelete) {
+      const updatedProjects = projects.filter(p => p.id !== projectToDelete.id);
+      setProjects(updatedProjects);
+      toast.success(`Project "${projectToDelete.name}" deleted successfully`);
+      setDeleteDialogOpen(false);
+      setProjectToDelete(null);
+    }
   };
 
   const viewId = `${solutionPrefix}-project-view`;
@@ -144,13 +176,13 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
               
-              <button 
+              <Button 
                 className="btn btn-success sm:w-auto whitespace-nowrap flex gap-2 items-center"
                 onClick={handleCreateProject}
               >
                 <PlusCircle size={18} />
                 <span>Create {solutionPrefix.toUpperCase()} Project</span>
-              </button>
+              </Button>
             </div>
           </div>
           
@@ -172,12 +204,23 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                         Last updated: {formatDate(project.lastUpdated)}
                       </div>
                     </div>
-                    <button
-                      className="btn btn-outline btn-sm"
-                      onClick={() => handleOpenProject(project.name)}
-                    >
-                      Open Project
-                    </button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenProject(project.name)}
+                      >
+                        Open Project
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteProject(project)}
+                        className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -185,6 +228,27 @@ const ProjectView: React.FC<ProjectViewProps> = ({
           </div>
         </>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{projectToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteProject}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
