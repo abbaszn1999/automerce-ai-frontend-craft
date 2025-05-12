@@ -63,11 +63,14 @@ export const useWorkspaceData = (userId: string | undefined) => {
         // Check if it's an RLS policy error
         if (error.message.includes("row-level security")) {
           // Try the approach of creating workspace_users entry first
-          const { data: workspaceData, error: workspaceError } = await supabase.rpc('create_workspace_with_owner', {
-            workspace_name: name,
-            workspace_description: description || null,
-            owner_id: userId
-          });
+          // Using any type to avoid TS error with custom RPC functions
+          const { data: workspaceData, error: workspaceError } = await supabase.rpc(
+            'create_workspace_with_owner' as any, {
+              workspace_name: name,
+              workspace_description: description || null,
+              owner_id: userId
+            }
+          );
           
           if (workspaceError) {
             toast.error("Permission denied: Couldn't create workspace");
