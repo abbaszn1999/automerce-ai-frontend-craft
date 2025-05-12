@@ -63,9 +63,10 @@ export const useWorkspaceData = (userId: string | undefined) => {
         // Check if it's an RLS policy error
         if (error.message.includes("row-level security")) {
           // Try the approach of creating workspace_users entry first
-          // Using any type to avoid TS error with custom RPC functions
           const { data: workspaceData, error: workspaceError } = await supabase.rpc(
-            'create_workspace_with_owner' as any, {
+            // We need to use type assertion here since the types don't include our custom RPC function yet
+            'create_workspace_with_owner' as any, 
+            {
               workspace_name: name,
               workspace_description: description || null,
               owner_id: userId
