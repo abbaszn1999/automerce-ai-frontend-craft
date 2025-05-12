@@ -1,7 +1,8 @@
-
 import React, { useState } from "react";
 import { useAppContext } from "../context/AppContext";
+import { useAuth } from "../context/AuthContext";
 import AutommerceLogo from "./AutommerceLogo";
+import { WorkspaceSelector } from "./workspace/WorkspaceManager";
 import { 
   ChevronDown, 
   LayoutDashboard, 
@@ -11,8 +12,10 @@ import {
   Link, 
   Rocket,
   Settings,
-  ChevronRight
+  ChevronRight,
+  LogOut
 } from "lucide-react";
+import { toast } from "@/components/ui/sonner";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +25,7 @@ import {
 
 const AppSidebar: React.FC = () => {
   const { currentSolution, setCurrentSolution, setCurrentView, currentView, settingsCurrentTab, setSettingsCurrentTab } = useAppContext();
+  const { signOut } = useAuth();
   const [showFeedSettings, setShowFeedSettings] = useState(false);
   const [showConfiguration, setShowConfiguration] = useState(false);
   
@@ -85,23 +89,21 @@ const AppSidebar: React.FC = () => {
     setCurrentView("settings");
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success("Logged out successfully");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Failed to log out");
+    }
+  };
+
   return (
     <aside className="app-sidebar">
       {/* Workspace Selector */}
       <div className="sidebar-workspace-selector">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <div className="flex items-center justify-between w-full cursor-pointer">
-              <span className="font-medium">Demo en-GB</span>
-              <ChevronDown size={16} />
-            </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="workspace-dropdown">
-            <DropdownMenuItem className="workspace-item">Demo en-GB</DropdownMenuItem>
-            <DropdownMenuItem className="workspace-item">Demo en-US</DropdownMenuItem>
-            <DropdownMenuItem className="workspace-item">+ Add Workspace</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <WorkspaceSelector />
       </div>
       
       {/* Autommerce Logo */}
@@ -260,6 +262,17 @@ const AppSidebar: React.FC = () => {
           )}
         </div>
       </nav>
+      
+      {/* Sign Out Button */}
+      <div className="mt-auto p-4">
+        <button 
+          onClick={handleSignOut}
+          className="w-full flex items-center gap-2 text-sidebar-foreground/80 hover:text-sidebar-foreground px-3 py-2 rounded-md transition-colors"
+        >
+          <LogOut size={18} />
+          <span>Sign Out</span>
+        </button>
+      </div>
     </aside>
   );
 };
