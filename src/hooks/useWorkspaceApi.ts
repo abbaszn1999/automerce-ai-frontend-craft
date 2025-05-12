@@ -48,7 +48,6 @@ export const useWorkspaceApi = (userId: string | undefined) => {
       }
       
       // First check if a workspace with this name already exists for this user
-      // to prevent duplicate key violations
       const existingWorkspaces = await fetchWorkspaces();
       const alreadyExists = existingWorkspaces.some(ws => ws.name === name);
       
@@ -66,9 +65,10 @@ export const useWorkspaceApi = (userId: string | undefined) => {
         });
 
       if (workspaceError) {
-        // Check for duplicate key error
-        if (workspaceError.code === '23505') {
-          toast.error("You already have access to this workspace");
+        // Check for conflict error (409) which indicates user already has access
+        if (workspaceError.code === '23505' || workspaceError.message?.includes('already exists') || workspaceError.code === '409') {
+          console.log("Workspace access conflict:", workspaceError);
+          toast.error("You already have access to a workspace with this name");
           return null;
         }
         throw workspaceError;
