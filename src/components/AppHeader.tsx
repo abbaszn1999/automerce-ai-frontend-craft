@@ -5,6 +5,7 @@ import AutommerceLogo from "./AutommerceLogo";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import WorkspaceSelector from "./workspace/WorkspaceSelector";
 
 const AppHeader: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -20,8 +21,9 @@ const AppHeader: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-10 bg-white shadow-sm border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
         <AutommerceLogo size="sm" />
+        {user && <WorkspaceSelector />}
       </div>
       
       <div className="user-menu flex items-center gap-4">
