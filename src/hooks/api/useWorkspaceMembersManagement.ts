@@ -6,6 +6,7 @@ import { toast } from "sonner";
 export const useWorkspaceMembersManagement = (userId: string | undefined) => {
   const fetchWorkspaceUsers = async (workspaceId: string): Promise<WorkspaceUser[]> => {
     try {
+      // This will only succeed if the user has access to this workspace due to RLS
       const { data, error } = await supabase
         .from('workspace_users')
         .select('*')
@@ -28,7 +29,20 @@ export const useWorkspaceMembersManagement = (userId: string | undefined) => {
     role: string
   ): Promise<boolean> => {
     try {
-      // First, we need to get the user ID from the email
+      // First, check if the current user is an owner of this workspace
+      const { data: currentUserRole, error: roleCheckError } = await supabase
+        .from('workspace_users')
+        .select('role')
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', userId)
+        .single();
+      
+      if (roleCheckError || !currentUserRole || currentUserRole.role !== 'owner') {
+        toast.error("You don't have permission to invite users to this workspace");
+        return false;
+      }
+      
+      // Get the user ID from the email
       const { data: userData, error: userError } = await supabase
         .from('profiles')
         .select('id')
@@ -37,6 +51,19 @@ export const useWorkspaceMembersManagement = (userId: string | undefined) => {
       
       if (userError) {
         toast.error(`User with email ${email} not found`);
+        return false;
+      }
+      
+      // Check if user is already in the workspace
+      const { data: existingUser, error: existingUserError } = await supabase
+        .from('workspace_users')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', userData.id)
+        .single();
+        
+      if (existingUser) {
+        toast.error(`User ${email} is already a member of this workspace`);
         return false;
       }
       
@@ -61,8 +88,52 @@ export const useWorkspaceMembersManagement = (userId: string | undefined) => {
     }
   };
 
+  const removeUserFromWorkspace = async (
+    workspaceId: string,
+    userIdToRemove: string
+  ): Promise<boolean> => {
+    try {
+      // Check if the current user is an owner (only owners can remove members)
+      const { data: currentUserRole, error: roleCheckError } = await supabase
+        .from('workspace_users')
+        .select('role')
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', userId)
+        .single();
+      
+      if (roleCheckError || !currentUserRole || currentUserRole.role !== 'owner') {
+        toast.error("You don't have permission to remove users from this workspace");
+        return false;
+      }
+      
+      // Prevent removing yourself as owner
+      if (userIdToRemove === userId) {
+        toast.error("You cannot remove yourself as the workspace owner");
+        return false;
+      }
+      
+      // Remove the user from the workspace
+      const { error } = await supabase
+        .from('workspace_users')
+        .delete()
+        .eq('workspace_id', workspaceId)
+        .eq('user_id', userIdToRemove);
+      
+      if (error) throw error;
+      
+      toast.success("User removed from workspace successfully");
+      return true;
+      
+    } catch (error: any) {
+      console.error("Error removing user:", error);
+      toast.error(`Failed to remove user: ${error.message}`);
+      return false;
+    }
+  };
+
   return {
     fetchWorkspaceUsers,
-    inviteUserToWorkspace
+    inviteUserToWorkspace,
+    removeUserFromWorkspace
   };
 };

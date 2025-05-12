@@ -121,6 +121,10 @@ export const useWorkspaceState = () => {
     setWorkspaceUsers(users);
   };
 
+  const handleRemoveUserFromWorkspace = async (workspaceId: string, userIdToRemove: string): Promise<boolean> => {
+    return await workspaceApi.removeUserFromWorkspace(workspaceId, userIdToRemove);
+  };
+
   // Load workspaces on initial mount or when user changes
   useEffect(() => {
     if (user) {
@@ -144,6 +148,7 @@ export const useWorkspaceState = () => {
     updateWorkspace: handleUpdateWorkspace,
     deleteWorkspace: handleDeleteWorkspace,
     fetchWorkspaceUsers: handleFetchWorkspaceUsers,
-    inviteUserToWorkspace: workspaceApi.inviteUserToWorkspace
+    inviteUserToWorkspace: workspaceApi.inviteUserToWorkspace,
+    removeUserFromWorkspace: handleRemoveUserFromWorkspace
   };
 };

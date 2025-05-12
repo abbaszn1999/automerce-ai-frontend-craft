@@ -10,29 +10,15 @@ export const useWorkspaceManagement = (userId: string | undefined) => {
     }
     
     try {
-      // First get the workspace IDs this user has access to
-      const { data: workspaceUsersData, error: workspaceUsersError } = await supabase
-        .from('workspace_users')
-        .select('workspace_id')
-        .eq('user_id', userId);
-
-      if (workspaceUsersError) throw workspaceUsersError;
-      
-      if (!workspaceUsersData || workspaceUsersData.length === 0) {
-        return [];
-      }
-      
-      const workspaceIds = workspaceUsersData.map(wu => wu.workspace_id);
-      
-      // Then fetch the actual workspace details
-      const { data: workspacesData, error: workspacesError } = await supabase
+      // With RLS in place, this will automatically return only the workspaces
+      // the user has access to through the workspace_users table
+      const { data, error } = await supabase
         .from('workspaces')
-        .select('*')
-        .in('id', workspaceIds);
+        .select('*');
+
+      if (error) throw error;
       
-      if (workspacesError) throw workspacesError;
-      
-      return workspacesData as Workspace[];
+      return data as Workspace[];
     } catch (error: any) {
       console.error("Error fetching workspaces:", error);
       toast.error("Failed to load workspaces");
@@ -48,21 +34,26 @@ export const useWorkspaceManagement = (userId: string | undefined) => {
       }
       
       // First check for existing workspaces with similar names to prevent errors
-      const existingWorkspaces = await fetchWorkspaces();
-      const alreadyExists = existingWorkspaces.some(ws => ws.name === name);
+      const { data: existingWorkspaces, error: checkError } = await supabase
+        .from('workspaces')
+        .select('name')
+        .eq('name', name)
+        .limit(1);
       
-      if (alreadyExists) {
+      if (checkError) throw checkError;
+      
+      if (existingWorkspaces && existingWorkspaces.length > 0) {
         toast.error(`A workspace named "${name}" already exists`);
         return null;
       }
       
-      // Manual approach to create workspace and add user as owner to avoid conflicts
-      // First, create the workspace
+      // Insert the new workspace - RLS will allow this for authenticated users
       const { data: newWorkspace, error: createError } = await supabase
         .from('workspaces')
         .insert({
           name,
-          description
+          description,
+          owner_user_id: userId // Track the creator as the owner
         })
         .select()
         .single();
@@ -76,7 +67,7 @@ export const useWorkspaceManagement = (userId: string | undefined) => {
         return null;
       }
 
-      // Then associate the user with the workspace
+      // Associate the user with the workspace as owner
       const { error: userAssociationError } = await supabase
         .from('workspace_users')
         .insert({
@@ -92,13 +83,6 @@ export const useWorkspaceManagement = (userId: string | undefined) => {
           .delete()
           .eq('id', newWorkspace.id);
           
-        // Check for duplicate user association
-        if (userAssociationError.code === '23505') {
-          console.error("Workspace user association conflict:", userAssociationError);
-          toast.error("You already have access to a workspace with this name");
-          return null;
-        }
-        
         throw userAssociationError;
       }
       
@@ -114,6 +98,7 @@ export const useWorkspaceManagement = (userId: string | undefined) => {
 
   const updateWorkspace = async (id: string, name: string, description: string): Promise<boolean> => {
     try {
+      // RLS policies will ensure only workspace owners can update
       const { error } = await supabase
         .from('workspaces')
         .update({ 
@@ -136,6 +121,7 @@ export const useWorkspaceManagement = (userId: string | undefined) => {
 
   const deleteWorkspace = async (id: string): Promise<boolean> => {
     try {
+      // RLS policies will ensure only workspace owners can delete
       const { error } = await supabase
         .from('workspaces')
         .delete()

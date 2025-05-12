@@ -15,6 +15,7 @@ export const useWorkspaceApi = (userId: string | undefined) => {
 
     // User management methods
     fetchWorkspaceUsers: memberManagement.fetchWorkspaceUsers,
-    inviteUserToWorkspace: memberManagement.inviteUserToWorkspace
+    inviteUserToWorkspace: memberManagement.inviteUserToWorkspace,
+    removeUserFromWorkspace: memberManagement.removeUserFromWorkspace
   };
 };
