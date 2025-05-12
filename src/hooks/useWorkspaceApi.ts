@@ -47,7 +47,7 @@ export const useWorkspaceApi = (userId: string | undefined) => {
         return null;
       }
       
-      // First check if a workspace with this name already exists for this user
+      // First check for existing workspaces with similar names to prevent errors
       const existingWorkspaces = await fetchWorkspaces();
       const alreadyExists = existingWorkspaces.some(ws => ws.name === name);
       
@@ -56,39 +56,54 @@ export const useWorkspaceApi = (userId: string | undefined) => {
         return null;
       }
       
-      // Use the create_workspace_with_owner function with tryCatch to handle errors
-      const { data: workspaceData, error: workspaceError } = await supabase
-        .rpc('create_workspace_with_owner', {
-          workspace_name: name,
-          workspace_description: description,
-          owner_id: userId
+      // Manual approach to create workspace and add user as owner to avoid conflicts
+      // First, create the workspace
+      const { data: newWorkspace, error: createError } = await supabase
+        .from('workspaces')
+        .insert({
+          name,
+          description
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        throw createError;
+      }
+
+      if (!newWorkspace) {
+        toast.error("Failed to create workspace");
+        return null;
+      }
+
+      // Then associate the user with the workspace
+      const { error: userAssociationError } = await supabase
+        .from('workspace_users')
+        .insert({
+          workspace_id: newWorkspace.id,
+          user_id: userId,
+          role: 'owner'
         });
 
-      if (workspaceError) {
-        // Check for conflict error (409) which indicates user already has access
-        if (workspaceError.code === '23505' || workspaceError.message?.includes('already exists') || workspaceError.code === '409') {
-          console.log("Workspace access conflict:", workspaceError);
+      if (userAssociationError) {
+        // If we fail to associate the user, clean up by deleting the workspace
+        await supabase
+          .from('workspaces')
+          .delete()
+          .eq('id', newWorkspace.id);
+          
+        // Check for duplicate user association
+        if (userAssociationError.code === '23505') {
+          console.error("Workspace user association conflict:", userAssociationError);
           toast.error("You already have access to a workspace with this name");
           return null;
         }
-        throw workspaceError;
-      }
-      
-      // Fetch the newly created workspace
-      if (workspaceData) {
-        const { data: newWorkspace, error: fetchError } = await supabase
-          .from('workspaces')
-          .select('*')
-          .eq('id', workspaceData)
-          .single();
-          
-        if (fetchError) throw fetchError;
         
-        toast.success(`Workspace "${name}" created successfully`);
-        return newWorkspace as Workspace;
+        throw userAssociationError;
       }
       
-      return null;
+      toast.success(`Workspace "${name}" created successfully`);
+      return newWorkspace as Workspace;
       
     } catch (error: any) {
       console.error("Error creating workspace:", error);
