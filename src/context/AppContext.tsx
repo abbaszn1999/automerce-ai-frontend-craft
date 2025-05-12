@@ -1,5 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type SolutionType = "ae" | "cb" | "ho" | "lhf" | "il" | "opb";
 type ViewType = "project" | "tool" | "settings";
@@ -12,6 +14,7 @@ interface Feed {
   type: FeedModeType;
   status: string;
   lastUpdated: string;
+  updated_at?: string;
   source?: string; // Module that generated the feed (e.g., "ae", "lhf")
 }
 
@@ -55,7 +58,7 @@ interface AppContextType {
   // Feed settings methods
   setSelectedFeedMode: (mode: FeedModeType) => void;
   setFeedMappingColumns: (columns: Array<{sourceColumn: string; targetColumn: string}>) => void;
-  addFeedToList: (name: string, type: FeedModeType, source?: string) => void;
+  addFeedToList: (name: string, type: FeedModeType, source?: string) => Promise<void>;
   
   // AE methods
   addAttribute: (name: string, values: string[]) => void;
@@ -147,18 +150,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAeAttributes(prev => prev.filter(attr => attr.id !== id));
   };
   
-  // Feed list methods
-  const addFeedToList = (name: string, type: FeedModeType, source?: string) => {
-    const newFeed = {
-      id: `feed-${Date.now()}`,
-      name,
-      type,
-      status: "Active",
-      lastUpdated: new Date().toISOString(),
-      source: source || "import"
-    };
-    
-    setFeedList(prev => [...prev, newFeed]);
+  // Feed list methods - updated to use Supabase
+  const addFeedToList = async (name: string, type: FeedModeType, source?: string) => {
+    try {
+      // Create the new feed in Supabase
+      const { data, error } = await supabase
+        .from('feeds')
+        .insert([
+          { 
+            name, 
+            type, 
+            status: 'Active',
+            workspace_id: '00000000-0000-0000-0000-000000000000', // Default workspace ID - this should be updated in a real implementation
+            configuration: {},
+            column_mapping: {}
+          }
+        ])
+        .select();
+
+      if (error) throw error;
+      
+      // If successful, update the local state
+      if (data && data[0]) {
+        setFeedList(prev => [...prev, {
+          id: data[0].id,
+          name: data[0].name,
+          type: data[0].type as FeedModeType,
+          status: data[0].status,
+          lastUpdated: data[0].updated_at,
+          updated_at: data[0].updated_at,
+          source: source || 'import'
+        }]);
+        
+        // Show success message
+        toast.success("Feed added successfully");
+        
+        // Navigate to feed list
+        setSettingsCurrentTab("feed-list");
+      }
+    } catch (error: any) {
+      console.error("Error adding feed:", error);
+      toast.error("Failed to add feed: " + (error.message || error));
+    }
   };
 
   const value = {

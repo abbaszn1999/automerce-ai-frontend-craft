@@ -1,17 +1,56 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/utils/utils";
-import { FileText, Rows3 } from "lucide-react";
+import { FileText, Rows3, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const FeedList: React.FC = () => {
   const { feedList, setSettingsCurrentTab } = useAppContext();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [dbFeeds, setDbFeeds] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchFeeds = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('feeds')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          throw error;
+        }
+
+        setDbFeeds(data || []);
+      } catch (err: any) {
+        console.error('Error fetching feeds:', err);
+        setError(err.message || 'Failed to load feeds');
+        toast({
+          title: "Error loading feeds",
+          description: err.message || 'Failed to load feeds from the database',
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFeeds();
+  }, [toast]);
 
   const handleAddNewFeed = () => {
     setSettingsCurrentTab("feed-mode");
   };
+
+  // Use database feeds if available, otherwise fall back to context feeds
+  const displayFeeds = dbFeeds.length > 0 ? dbFeeds : feedList;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -30,7 +69,22 @@ const FeedList: React.FC = () => {
         </Button>
       </div>
 
-      {feedList.length === 0 ? (
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+        </div>
+      ) : error ? (
+        <Card>
+          <CardContent className="py-6 flex flex-col items-center justify-center">
+            <div className="text-red-500 mb-3">
+              <AlertCircle size={48} />
+            </div>
+            <h3 className="text-xl font-medium mb-2">Failed to load feeds</h3>
+            <p className="text-gray-500 mb-4 text-center">{error}</p>
+            <Button onClick={() => window.location.reload()} variant="outline">Retry</Button>
+          </CardContent>
+        </Card>
+      ) : displayFeeds.length === 0 ? (
         <Card>
           <CardContent className="py-12 flex flex-col items-center justify-center">
             <div className="text-gray-400 mb-3">
@@ -50,7 +104,7 @@ const FeedList: React.FC = () => {
         </Card>
       ) : (
         <div className="space-y-4">
-          {feedList.map((feed) => (
+          {displayFeeds.map((feed) => (
             <Card key={feed.id} className="overflow-hidden">
               <div className="flex">
                 <div className="bg-gray-100 p-4 flex items-center justify-center">
@@ -74,7 +128,7 @@ const FeedList: React.FC = () => {
                       Type: {feed.type === "plp" ? "Product Listing Page" : "Product Feed"}
                     </span>
                     <span className="text-gray-500">
-                      Last updated: {formatDate(feed.lastUpdated)}
+                      Last updated: {formatDate(feed.updated_at || feed.lastUpdated)}
                     </span>
                   </div>
                 </CardContent>
