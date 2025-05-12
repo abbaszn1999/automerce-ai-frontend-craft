@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Workspace, WorkspaceUser } from "@/types/workspace.types";
 import { toast } from "sonner";
@@ -46,12 +47,13 @@ export const useWorkspaceApi = (userId: string | undefined) => {
         return null;
       }
       
-      // Insert the workspace directly - the trigger we created will handle the workspace_user relationship
+      // Include owner_user_id in the workspace creation
       const { data: workspaceData, error: workspaceError } = await supabase
         .from('workspaces')
         .insert({
           name,
-          description
+          description,
+          owner_user_id: userId // Added owner_user_id field
         })
         .select()
         .single();
