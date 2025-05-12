@@ -47,21 +47,32 @@ export const useWorkspaceApi = (userId: string | undefined) => {
         return null;
       }
       
-      // Include owner_user_id in the workspace creation
+      // Use the create_workspace_with_owner function instead of direct insert
+      // This function handles the RLS and creates both workspace and workspace_user entries
       const { data: workspaceData, error: workspaceError } = await supabase
-        .from('workspaces')
-        .insert({
-          name,
-          description,
-          owner_user_id: userId // Added owner_user_id field
-        })
-        .select()
-        .single();
+        .rpc('create_workspace_with_owner', {
+          workspace_name: name,
+          workspace_description: description,
+          owner_id: userId
+        });
 
       if (workspaceError) throw workspaceError;
       
-      toast.success(`Workspace "${name}" created successfully`);
-      return workspaceData as Workspace;
+      // Fetch the newly created workspace
+      if (workspaceData) {
+        const { data: newWorkspace, error: fetchError } = await supabase
+          .from('workspaces')
+          .select('*')
+          .eq('id', workspaceData)
+          .single();
+          
+        if (fetchError) throw fetchError;
+        
+        toast.success(`Workspace "${name}" created successfully`);
+        return newWorkspace as Workspace;
+      }
+      
+      return null;
       
     } catch (error: any) {
       console.error("Error creating workspace:", error);
