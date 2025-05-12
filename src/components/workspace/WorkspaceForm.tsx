@@ -45,7 +45,9 @@ const WorkspaceForm: React.FC<WorkspaceFormProps> = ({
         const result = await updateWorkspace(workspace.id, name, description);
         success = result;
       } else {
+        console.log("Creating workspace with name:", name, "description:", description);
         const result = await createWorkspace(name, description);
+        console.log("Create workspace result:", result);
         success = !!result;
       }
       

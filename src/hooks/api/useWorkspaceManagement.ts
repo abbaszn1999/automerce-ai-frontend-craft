@@ -47,13 +47,13 @@ export const useWorkspaceManagement = (userId: string | undefined) => {
         return null;
       }
       
-      // Insert the new workspace - RLS will allow this for authenticated users
+      // Insert the new workspace
       const { data: newWorkspace, error: createError } = await supabase
         .from('workspaces')
         .insert({
           name,
           description,
-          owner_user_id: userId // Track the creator as the owner
+          owner_user_id: userId
         })
         .select()
         .single();

@@ -4,6 +4,7 @@ export interface Workspace {
   name: string;
   description: string | null;
   created_at: string;
+  owner_user_id?: string;
 }
 
 export interface WorkspaceUser {
@@ -17,12 +18,13 @@ export interface WorkspaceContextType {
   workspaces: Workspace[];
   currentWorkspace: Workspace | null;
   isLoading: boolean;
+  workspaceUsers: WorkspaceUser[];
   fetchWorkspaces: () => Promise<void>;
   setCurrentWorkspace: (workspace: Workspace | null) => void;
   createWorkspace: (name: string, description: string) => Promise<Workspace | null>;
   updateWorkspace: (id: string, name: string, description: string) => Promise<boolean>;
   deleteWorkspace: (id: string) => Promise<boolean>;
-  workspaceUsers: WorkspaceUser[];
   fetchWorkspaceUsers: (workspaceId: string) => Promise<void>;
   inviteUserToWorkspace: (workspaceId: string, email: string, role: string) => Promise<boolean>;
+  removeUserFromWorkspace: (workspaceId: string, userIdToRemove: string) => Promise<boolean>;
 }
