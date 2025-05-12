@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
@@ -18,9 +17,27 @@ export const useWorkspaceData = (userId: string | undefined) => {
       setLoading(true);
       setError(null);
       
+      // First, get workspace IDs the user belongs to
+      const { data: membershipData, error: membershipError } = await supabase
+        .from('workspace_users')
+        .select('workspace_id')
+        .eq('user_id', userId);
+
+      if (membershipError) throw membershipError;
+      
+      if (!membershipData || membershipData.length === 0) {
+        setWorkspaces([]);
+        setCurrentWorkspace(null);
+        setLoading(false);
+        return;
+      }
+      
+      // Then fetch the actual workspace data for those IDs
+      const workspaceIds = membershipData.map(item => item.workspace_id);
       const { data, error } = await supabase
         .from('workspaces')
         .select('*')
+        .in('id', workspaceIds)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -46,88 +63,38 @@ export const useWorkspaceData = (userId: string | undefined) => {
     try {
       setLoading(true);
       
-      const newWorkspace = {
-        name,
-        description: description || null
-      };
-      
-      // Insert a new workspace
-      const { data, error } = await supabase
-        .from('workspaces')
-        .insert([newWorkspace])
-        .select();
-
-      if (error) {
-        console.error("Workspace creation error:", error);
-        
-        // Check if it's an RLS policy error
-        if (error.message.includes("row-level security")) {
-          // Try the approach of creating workspace_users entry first
-          const { data: workspaceData, error: workspaceError } = await supabase.rpc(
-            // We need to use type assertion here since the types don't include our custom RPC function yet
-            'create_workspace_with_owner' as any, 
-            {
-              workspace_name: name,
-              workspace_description: description || null,
-              owner_id: userId
-            }
-          );
-          
-          if (workspaceError) {
-            toast.error("Permission denied: Couldn't create workspace");
-            console.error("RPC error:", workspaceError);
-            return null;
-          }
-          
-          if (workspaceData) {
-            // Fetch the newly created workspace
-            const { data: newWorkspaceData } = await supabase
-              .from('workspaces')
-              .select('*')
-              .order('created_at', { ascending: false })
-              .limit(1);
-              
-            if (newWorkspaceData && newWorkspaceData.length > 0) {
-              setWorkspaces(prev => [newWorkspaceData[0], ...prev]);
-              setCurrentWorkspace(newWorkspaceData[0]);
-              toast.success("Workspace created successfully");
-              return newWorkspaceData[0];
-            }
-          }
-          
-          return null;
+      // We'll use our RPC function which handles both workspace creation and user association
+      const { data: workspaceData, error: workspaceError } = await supabase.rpc(
+        // We need to use type assertion here since the types don't include our custom RPC function yet
+        'create_workspace_with_owner' as any, 
+        {
+          workspace_name: name,
+          workspace_description: description || null,
+          owner_id: userId
         }
-        
-        toast.error(error.message || "Failed to create workspace");
+      );
+      
+      if (workspaceError) {
+        toast.error("Failed to create workspace: " + workspaceError.message);
+        console.error("RPC error:", workspaceError);
         return null;
       }
-
-      // Handle workspace user association - this should be handled by a database trigger
-      // but we'll add a fallback here
-      if (data && data.length > 0) {
-        try {
-          await supabase
-            .from('workspace_users')
-            .insert([{
-              workspace_id: data[0].id,
-              user_id: userId,
-              role: 'owner'
-            }]);
-        } catch (userAssocError) {
-          console.error("Failed to associate user with workspace:", userAssocError);
-          // Don't block the flow, as the database trigger should handle this
-        }
-      }
-
-      if (data && data.length > 0) {
-        setWorkspaces(prev => [data[0], ...prev]);
-        setCurrentWorkspace(data[0]);
+      
+      // Fetch the newly created workspace
+      const { data: newWorkspaceData } = await supabase
+        .from('workspaces')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+        
+      if (newWorkspaceData && newWorkspaceData.length > 0) {
+        setWorkspaces(prev => [newWorkspaceData[0], ...prev]);
+        setCurrentWorkspace(newWorkspaceData[0]);
         toast.success("Workspace created successfully");
-        return data[0];
+        return newWorkspaceData[0];
       }
       
       return null;
-      
     } catch (err: any) {
       toast.error(err.message || "Failed to create workspace");
       return null;

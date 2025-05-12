@@ -415,6 +415,10 @@ export type Database = {
         }
         Returns: string
       }
+      is_workspace_owner: {
+        Args: { workspace_uuid: string; user_uuid?: string }
+        Returns: boolean
+      }
       user_belongs_to_workspace: {
         Args: { workspace_uuid: string }
         Returns: boolean
