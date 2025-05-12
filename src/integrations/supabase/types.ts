@@ -410,6 +410,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_workspace_member: {
+        Args: { workspace_uuid: string }
+        Returns: boolean
+      }
+      check_workspace_owner: {
+        Args: { workspace_uuid: string }
+        Returns: boolean
+      }
       check_workspace_ownership: {
         Args: { workspace_id: string; checking_user_id: string }
         Returns: boolean

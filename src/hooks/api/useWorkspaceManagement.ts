@@ -40,12 +40,17 @@ export const useWorkspaceManagement = (userId: string | undefined) => {
         .eq('name', name)
         .limit(1);
       
-      if (checkError) throw checkError;
+      if (checkError) {
+        console.error("Error checking existing workspaces:", checkError);
+        throw checkError;
+      }
       
       if (existingWorkspaces && existingWorkspaces.length > 0) {
         toast.error(`A workspace named "${name}" already exists`);
         return null;
       }
+      
+      console.log("Creating workspace with userId:", userId);
       
       // Insert the new workspace
       const { data: newWorkspace, error: createError } = await supabase
@@ -59,6 +64,7 @@ export const useWorkspaceManagement = (userId: string | undefined) => {
         .single();
 
       if (createError) {
+        console.error("Error creating workspace:", createError);
         throw createError;
       }
 
@@ -67,6 +73,8 @@ export const useWorkspaceManagement = (userId: string | undefined) => {
         return null;
       }
 
+      console.log("Workspace created successfully:", newWorkspace);
+      
       // The trigger will associate the user with the workspace as owner
       // We don't need to manually insert into workspace_users
       

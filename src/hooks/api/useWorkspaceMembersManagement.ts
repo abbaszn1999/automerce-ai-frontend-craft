@@ -29,19 +29,6 @@ export const useWorkspaceMembersManagement = (userId: string | undefined) => {
     role: string
   ): Promise<boolean> => {
     try {
-      // First, check if the current user is an owner of this workspace
-      const { data: currentUserRole, error: roleCheckError } = await supabase
-        .from('workspace_users')
-        .select('role')
-        .eq('workspace_id', workspaceId)
-        .eq('user_id', userId)
-        .single();
-      
-      if (roleCheckError || !currentUserRole || currentUserRole.role !== 'owner') {
-        toast.error("You don't have permission to invite users to this workspace");
-        return false;
-      }
-      
       // Get the user ID from the email
       const { data: userData, error: userError } = await supabase
         .from('profiles')
@@ -93,19 +80,6 @@ export const useWorkspaceMembersManagement = (userId: string | undefined) => {
     userIdToRemove: string
   ): Promise<boolean> => {
     try {
-      // Check if the current user is an owner (only owners can remove members)
-      const { data: currentUserRole, error: roleCheckError } = await supabase
-        .from('workspace_users')
-        .select('role')
-        .eq('workspace_id', workspaceId)
-        .eq('user_id', userId)
-        .single();
-      
-      if (roleCheckError || !currentUserRole || currentUserRole.role !== 'owner') {
-        toast.error("You don't have permission to remove users from this workspace");
-        return false;
-      }
-      
       // Prevent removing yourself as owner
       if (userIdToRemove === userId) {
         toast.error("You cannot remove yourself as the workspace owner");

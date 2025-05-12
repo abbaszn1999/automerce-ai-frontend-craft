@@ -23,6 +23,7 @@ export const useWorkspaceState = () => {
         return;
       }
       
+      console.log("Fetching workspaces for user:", user.id);
       const userWorkspaces = await workspaceApi.fetchWorkspaces();
       console.log("Fetched workspaces:", userWorkspaces);
       
@@ -49,6 +50,8 @@ export const useWorkspaceState = () => {
         }
       }
       
+    } catch (error) {
+      console.error("Error in fetchWorkspaces:", error);
     } finally {
       setIsLoading(false);
     }
@@ -56,6 +59,7 @@ export const useWorkspaceState = () => {
 
   const handleCreateWorkspace = async (name: string, description: string): Promise<Workspace | null> => {
     try {
+      console.log("Creating workspace in useWorkspaceState");
       const newWorkspace = await workspaceApi.createWorkspace(name, description);
       
       if (newWorkspace) {
@@ -65,6 +69,9 @@ export const useWorkspaceState = () => {
         
         // Store in localStorage
         localStorage.setItem('currentWorkspaceId', newWorkspace.id);
+        
+        // Refresh the workspace list to ensure we have the latest data
+        fetchWorkspaces();
       }
       
       return newWorkspace;
@@ -129,6 +136,7 @@ export const useWorkspaceState = () => {
   // Load workspaces on initial mount or when user changes
   useEffect(() => {
     if (user) {
+      console.log("User changed, fetching workspaces for:", user.id);
       fetchWorkspaces();
     } else {
       // Clear workspaces when user is not authenticated
