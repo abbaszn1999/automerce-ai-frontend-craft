@@ -62,12 +62,40 @@ export const useWorkspaceData = (userId: string | undefined) => {
         
         // Check if it's an RLS policy error
         if (error.message.includes("row-level security")) {
-          toast.error("Permission denied: You don't have rights to create workspaces");
-          console.log("RLS error: Make sure the workspace_users entry is being created");
+          // Try the approach of creating workspace_users entry first
+          const { data: workspaceData, error: workspaceError } = await supabase.rpc('create_workspace_with_owner', {
+            workspace_name: name,
+            workspace_description: description || null,
+            owner_id: userId
+          });
+          
+          if (workspaceError) {
+            toast.error("Permission denied: Couldn't create workspace");
+            console.error("RPC error:", workspaceError);
+            return null;
+          }
+          
+          if (workspaceData) {
+            // Fetch the newly created workspace
+            const { data: newWorkspaceData } = await supabase
+              .from('workspaces')
+              .select('*')
+              .order('created_at', { ascending: false })
+              .limit(1);
+              
+            if (newWorkspaceData && newWorkspaceData.length > 0) {
+              setWorkspaces(prev => [newWorkspaceData[0], ...prev]);
+              setCurrentWorkspace(newWorkspaceData[0]);
+              toast.success("Workspace created successfully");
+              return newWorkspaceData[0];
+            }
+          }
+          
           return null;
         }
         
-        throw error;
+        toast.error(error.message || "Failed to create workspace");
+        return null;
       }
 
       // Handle workspace user association - this should be handled by a database trigger
