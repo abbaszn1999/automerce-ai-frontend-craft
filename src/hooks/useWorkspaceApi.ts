@@ -49,8 +49,8 @@ export const useWorkspaceApi = (userId: string | undefined) => {
       
       // First check if a workspace with this name already exists for this user
       // to prevent duplicate key violations
-      const { data: existingWorkspaces } = await fetchWorkspaces();
-      const alreadyExists = existingWorkspaces?.some(ws => ws.name === name);
+      const existingWorkspaces = await fetchWorkspaces();
+      const alreadyExists = existingWorkspaces.some(ws => ws.name === name);
       
       if (alreadyExists) {
         toast.error(`A workspace named "${name}" already exists`);
