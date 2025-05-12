@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
@@ -81,18 +80,50 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         description: description || null
       };
       
+      // Insert a new workspace
       const { data, error } = await supabase
         .from('workspaces')
         .insert([newWorkspace])
-        .select()
-        .single();
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Workspace creation error:", error);
+        
+        // Check if it's an RLS policy error
+        if (error.message.includes("row-level security")) {
+          toast.error("Permission denied: You don't have rights to create workspaces");
+          console.log("RLS error: Make sure the workspace_users entry is being created");
+          return null;
+        }
+        
+        throw error;
+      }
 
-      setWorkspaces(prev => [data, ...prev]);
-      setCurrentWorkspace(data);
-      toast.success("Workspace created successfully");
-      return data;
+      // Handle workspace user association - this should be handled by a database trigger
+      // but we'll add a fallback here
+      if (data && data.length > 0) {
+        try {
+          await supabase
+            .from('workspace_users')
+            .insert([{
+              workspace_id: data[0].id,
+              user_id: user.id,
+              role: 'owner'
+            }]);
+        } catch (userAssocError) {
+          console.error("Failed to associate user with workspace:", userAssocError);
+          // Don't block the flow, as the database trigger should handle this
+        }
+      }
+
+      if (data && data.length > 0) {
+        setWorkspaces(prev => [data[0], ...prev]);
+        setCurrentWorkspace(data[0]);
+        toast.success("Workspace created successfully");
+        return data[0];
+      }
+      
+      return null;
       
     } catch (err: any) {
       toast.error(err.message || "Failed to create workspace");
