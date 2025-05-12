@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
@@ -64,42 +63,38 @@ export const useWorkspaceData = (userId: string | undefined) => {
     try {
       setLoading(true);
       
-      // First create the workspace
-      const { data: workspaceData, error: workspaceError } = await supabase
-        .from('workspaces')
-        .insert([
-          { name, description }
-        ])
-        .select()
-        .single();
+      // Call the database function that handles both workspace creation and user association
+      const { data, error } = await supabase.rpc(
+        'create_workspace_with_owner',
+        { 
+          workspace_name: name, 
+          workspace_description: description || '',
+          owner_id: userId 
+        }
+      );
       
-      if (workspaceError) {
-        toast.error("Failed to create workspace: " + workspaceError.message);
+      if (error) {
+        toast.error("Failed to create workspace: " + error.message);
         return null;
       }
-
-      // Then create the workspace user association
-      // This approach avoids the duplicate key error as we're handling each step separately
-      if (workspaceData) {
-        const { error: userError } = await supabase
-          .from('workspace_users')
-          .insert([
-            { workspace_id: workspaceData.id, user_id: userId, role: 'owner' }
-          ]);
-        
-        if (userError) {
-          // If there's an error adding the user, cleanup by deleting the workspace
-          await supabase.from('workspaces').delete().eq('id', workspaceData.id);
-          toast.error("Failed to associate user with workspace: " + userError.message);
+      
+      // After successful creation, fetch the new workspace
+      if (data) {
+        const { data: newWorkspace, error: fetchError } = await supabase
+          .from('workspaces')
+          .select('*')
+          .eq('id', data)
+          .single();
+          
+        if (fetchError) {
+          toast.error("Created workspace but failed to fetch details");
           return null;
         }
         
-        // Update local state
-        setWorkspaces(prev => [workspaceData, ...prev]);
-        setCurrentWorkspace(workspaceData);
+        setWorkspaces(prev => [newWorkspace, ...prev]);
+        setCurrentWorkspace(newWorkspace);
         toast.success("Workspace created successfully");
-        
-        return workspaceData;
+        return newWorkspace;
       }
       
       return null;
