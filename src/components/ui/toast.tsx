@@ -117,6 +117,9 @@ type ToastProps = React.ComponentPropsWithoutRef<typeof Toast> & {
   action?: React.ReactNode
 }
 
+// Define the ToastActionElement type that was missing
+type ToastActionElement = React.ReactElement<typeof ToastAction>
+
 export {
   type ToastProps,
   type ToastActionElement,
@@ -128,4 +131,3 @@ export {
   ToastClose,
   ToastAction,
 }
-
