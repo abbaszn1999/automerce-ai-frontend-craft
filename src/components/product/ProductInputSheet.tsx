@@ -22,7 +22,7 @@ interface ProductInputSheetProps {
 
 const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete }) => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [columnMapping, setColumnMapping] = useState<ColumnMappingType>({
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({
     product_id: '',
     product_title: '',
     product_url: '',

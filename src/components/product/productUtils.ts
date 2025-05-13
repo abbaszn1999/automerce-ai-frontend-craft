@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 import { toast } from "@/hooks/use-toast";
 
@@ -17,6 +16,7 @@ export interface ColumnMapping {
   product_url: string;
   product_image_url: string;
   product_description: string;
+  [key: string]: string; // Added index signature to allow dynamic string keys
 }
 
 // Define required columns with display names - all columns are required
