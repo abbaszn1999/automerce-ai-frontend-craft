@@ -43,6 +43,9 @@ const AttributeExtraction: React.FC = () => {
     resume: () => void;
   } | null>(null);
   
+  // Add state for tracking source columns from the uploaded file
+  const [sourceColumns, setSourceColumns] = useState<string[]>([]);
+  
   // Form state for configuration
   const [formData, setFormData] = useState<AEConfigType>({
     aiSettings: {
@@ -136,6 +139,17 @@ const AttributeExtraction: React.FC = () => {
 
   const handleFileChange = (file: File | null) => {
     setUploadedFile(file);
+    
+    // Reset source columns when file changes
+    if (!file) {
+      setSourceColumns([]);
+    }
+  };
+  
+  // Handle columns extracted from the file
+  const handleColumnsExtracted = (columns: string[]) => {
+    setSourceColumns(columns);
+    console.log("Source columns extracted:", columns);
   };
 
   const handleStartProcess = () => {
@@ -661,6 +675,7 @@ const AttributeExtraction: React.FC = () => {
               acceptedTypes={[".csv", ".xlsx"]}
               label="Upload File"
               onFileChange={handleFileChange}
+              onColumnsExtracted={handleColumnsExtracted}
             />
             
             <div className="card">
@@ -676,15 +691,17 @@ const AttributeExtraction: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="font-medium mb-2">Source Columns (Your File)</h4>
-                  <ul className="bg-gray-50 p-3 rounded text-sm">
-                    <li className="py-1">product_id</li>
-                    <li className="py-1">product_name</li>
-                    <li className="py-1">description</li>
-                    <li className="py-1">short_description</li>
-                    <li className="py-1">image_url</li>
-                    <li className="py-1">price</li>
-                    <li className="py-1">category</li>
-                  </ul>
+                  {sourceColumns.length > 0 ? (
+                    <ul className="bg-gray-50 p-3 rounded text-sm">
+                      {sourceColumns.map((column, index) => (
+                        <li key={index} className="py-1">{column}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="bg-gray-50 p-3 rounded text-sm text-gray-500 italic">
+                      {uploadedFile ? "Processing columns..." : "No file uploaded yet. Columns will appear here after upload."}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <h4 className="font-medium mb-2">Required Fields (Autommerce.ai)</h4>

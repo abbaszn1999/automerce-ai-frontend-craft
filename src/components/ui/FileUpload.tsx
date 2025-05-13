@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Upload, Check, X, FileInput, ArrowDown } from "lucide-react";
 import { validateFile } from "../../utils/utils";
@@ -57,54 +56,52 @@ const FileUpload: React.FC<FileUploadProps> = ({
       setSampleColumns([]);
       setColumnMapping({});
       
-      // If we have foundation columns defined, read columns from the file
-      if (foundationColumns && foundationColumns.length > 0) {
-        try {
-          setStatus("mapping");
+      // Always try to extract columns
+      try {
+        setStatus("mapping");
+        
+        // Read the spreadsheet file to extract column headers
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
           
-          // Actually read the spreadsheet file to extract column headers
-          const reader = new FileReader();
-          reader.onload = async (e) => {
-            const data = new Uint8Array(e.target?.result as ArrayBuffer);
-            const workbook = XLSX.read(data, { type: 'array' });
+          // Get the first worksheet
+          const worksheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[worksheetName];
+          
+          // Convert to JSON to get headers
+          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+          
+          if (jsonData && jsonData.length > 0) {
+            // Extract column headers from first row
+            const extractedColumns = Object.keys(jsonData[0]);
+            console.log("Extracted columns from file:", extractedColumns);
+            setSampleColumns(extractedColumns);
             
-            // Get the first worksheet
-            const worksheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[worksheetName];
-            
-            // Convert to JSON to get headers
-            const jsonData = XLSX.utils.sheet_to_json(worksheet);
-            
-            if (jsonData && jsonData.length > 0) {
-              // Extract column headers from first row
-              const extractedColumns = Object.keys(jsonData[0]);
-              console.log("Extracted columns from file:", extractedColumns);
-              setSampleColumns(extractedColumns);
-              
-              // Notify parent component about the extracted columns
-              if (onColumnsExtracted) {
-                onColumnsExtracted(extractedColumns);
-              }
-              
-              // Show column mapping after successful extraction
-              setShowColumnMapping(true);
-            } else {
-              toast.error("No data found in the spreadsheet");
-              setStatus("error");
+            // Notify parent component about the extracted columns
+            if (onColumnsExtracted) {
+              onColumnsExtracted(extractedColumns);
             }
-          };
-          
-          reader.onerror = () => {
-            toast.error("Failed to read file");
+            
+            // Show column mapping if foundationColumns is provided
+            setShowColumnMapping(!!foundationColumns?.length);
+          } else {
+            toast.error("No data found in the spreadsheet");
             setStatus("error");
-          };
-          
-          reader.readAsArrayBuffer(selectedFile);
-        } catch (error) {
-          console.error("Error reading spreadsheet:", error);
-          toast.error("Failed to read columns from file");
+          }
+        };
+        
+        reader.onerror = () => {
+          toast.error("Failed to read file");
           setStatus("error");
-        }
+        };
+        
+        reader.readAsArrayBuffer(selectedFile);
+      } catch (error) {
+        console.error("Error reading spreadsheet:", error);
+        toast.error("Failed to read columns from file");
+        setStatus("error");
       }
     } else if (selectedFile) {
       setStatus("error");
@@ -223,9 +220,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     onChange={(e) => setSelectedColumn(e.target.value)}
                   >
                     <option value="">Select column</option>
-                    <option value="product_id">product_id</option>
-                    <option value="id">id</option>
-                    <option value="sku">sku</option>
+                    {sampleColumns.map((col, index) => (
+                      <option key={index} value={col}>{col}</option>
+                    ))}
                   </select>
                 </div>
               )}

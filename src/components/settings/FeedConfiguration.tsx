@@ -1,10 +1,11 @@
+
 import React, { useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import FileUpload from "@/components/ui/FileUpload";
 import { FileText, ArrowDown, List } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/hooks/use-toast";
 import ChooseFromFeedDialog from "@/components/dialogs/ChooseFromFeedDialog";
 
 interface ColumnMapping {
@@ -30,15 +31,15 @@ const FeedConfiguration: React.FC = () => {
   const handleFileUpload = (file: File | null) => {
     if (file) {
       setUploadedFile(file);
-      // Simulate reading column headers from the file
-      const mockColumns = selectedFeedMode === "plp" 
-        ? ["Category Name", "Category ID", "Parent Category", "URL", "Available Filters", "Products Count"]
-        : ["Product Name", "SKU", "Price", "Description", "Image URLs", "Variants", "Attributes", "Categories"];
-      
-      setSampleColumns(mockColumns);
-      setStep("mapping");
       setSelectedFeedId(null); // Reset selected feed when manually uploading
     }
+  };
+
+  // Handle columns extracted from the uploaded file
+  const handleColumnsExtracted = (columns: string[]) => {
+    setSampleColumns(columns);
+    setStep("mapping");
+    console.log("Extracted columns:", columns);
   };
 
   const handleColumnMapping = (sourceColumn: string, targetColumn: string) => {
@@ -106,6 +107,7 @@ const FeedConfiguration: React.FC = () => {
                 id="feed-upload"
                 acceptedTypes={[".csv", ".xlsx"]}
                 onFileChange={handleFileUpload}
+                onColumnsExtracted={handleColumnsExtracted}
                 label={`Upload your ${selectedFeedMode === "plp" ? "PLP" : "Product"} feed file`}
                 requiredColumns={targetColumns}
                 downloadTemplateLink="#"
