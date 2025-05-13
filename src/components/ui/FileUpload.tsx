@@ -53,6 +53,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
       setStatus("uploaded");
       onFileChange(selectedFile);
       
+      // Reset previous mapping data when a new file is uploaded
+      setSampleColumns([]);
+      setColumnMapping({});
+      
       // If we have foundation columns defined, read columns from the file
       if (foundationColumns && foundationColumns.length > 0) {
         try {
@@ -74,6 +78,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
             if (jsonData && jsonData.length > 0) {
               // Extract column headers from first row
               const extractedColumns = Object.keys(jsonData[0]);
+              console.log("Extracted columns from file:", extractedColumns);
               setSampleColumns(extractedColumns);
               
               // Notify parent component about the extracted columns
@@ -81,6 +86,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 onColumnsExtracted(extractedColumns);
               }
               
+              // Show column mapping after successful extraction
               setShowColumnMapping(true);
             } else {
               toast.error("No data found in the spreadsheet");
@@ -182,7 +188,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
             <div className="flex flex-wrap gap-1">
               {requiredColumns.map((col, index) => (
                 <span key={index} className="px-2 py-0.5 bg-gray-100 rounded-full text-xs">
-                  {col}{index === 0 && "*"}
+                  {col}
                 </span>
               ))}
             </div>
@@ -228,29 +234,35 @@ const FileUpload: React.FC<FileUploadProps> = ({
             <div className="w-full">
               <h3 className="font-medium mb-4">Map Your Sheet Columns</h3>
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {sampleColumns.map((sourceColumn, index) => (
-                  <div key={index} className="flex items-center gap-4">
-                    <div className="w-1/3 p-2 bg-gray-100 rounded">
-                      <span className="text-sm font-medium">{sourceColumn}</span>
+                {sampleColumns.length > 0 ? (
+                  sampleColumns.map((sourceColumn, index) => (
+                    <div key={index} className="flex items-center gap-4">
+                      <div className="w-1/3 p-2 bg-gray-100 rounded">
+                        <span className="text-sm font-medium">{sourceColumn}</span>
+                      </div>
+                      <ArrowDown className="text-gray-400" />
+                      <select
+                        className="w-1/3 p-2 border rounded"
+                        value={columnMapping[sourceColumn] || ""}
+                        onChange={(e) => handleColumnMappingChange(sourceColumn, e.target.value)}
+                      >
+                        <option value="">-- Select target column --</option>
+                        {foundationColumns?.map((col) => {
+                          const cleanCol = col.endsWith('*') ? col.replace('*', '') : col;
+                          return (
+                            <option key={col} value={cleanCol}>
+                              {cleanCol}{col.endsWith('*') ? '*' : ''}
+                            </option>
+                          );
+                        })}
+                      </select>
                     </div>
-                    <ArrowDown className="text-gray-400" />
-                    <select
-                      className="w-1/3 p-2 border rounded"
-                      value={columnMapping[sourceColumn] || ""}
-                      onChange={(e) => handleColumnMappingChange(sourceColumn, e.target.value)}
-                    >
-                      <option value="">-- Select target column --</option>
-                      {foundationColumns?.map((col) => {
-                        const cleanCol = col.endsWith('*') ? col.replace('*', '') : col;
-                        return (
-                          <option key={col} value={cleanCol}>
-                            {cleanCol}{col.endsWith('*') ? '*' : ''}
-                          </option>
-                        );
-                      })}
-                    </select>
+                  ))
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    No columns found in the uploaded file.
                   </div>
-                ))}
+                )}
               </div>
               <div className="flex justify-end mt-4 gap-2">
                 <Button variant="outline" onClick={handleRemoveFile}>

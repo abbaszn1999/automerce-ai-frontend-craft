@@ -27,24 +27,27 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
   ];
 
   const handleFileChange = (file: File | null) => {
+    console.log("File changed:", file?.name);
     setUploadedFile(file);
     setIsReady(false);
     
+    // Reset columns and mapping when file changes
     if (!file) {
       setSourceColumns([]);
+      setColumnMapping({});
     }
   };
 
   const handleColumnsExtracted = (columns: string[]) => {
-    setSourceColumns(columns);
     console.log("Extracted columns:", columns);
+    setSourceColumns(columns);
   };
 
   const handleColumnMappingComplete = (mapping: Record<string, string>) => {
+    console.log("Column mapping completed:", mapping);
     setColumnMapping(mapping);
     setIsReady(true);
     toast.success("Column mapping completed successfully");
-    console.log("Column mapping:", mapping);
   };
 
   const handleProcess = async () => {

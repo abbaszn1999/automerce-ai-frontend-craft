@@ -62,7 +62,7 @@ const ProductInput: React.FC = () => {
                 {processedData.map((row, rowIndex) => (
                   <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                     {Object.values(row).map((cell: any, cellIndex) => (
-                      <td key={cellIndex} className="border p-2">{cell}</td>
+                      <td key={cellIndex} className="border p-2">{String(cell)}</td>
                     ))}
                   </tr>
                 ))}
