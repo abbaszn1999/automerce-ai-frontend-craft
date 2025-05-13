@@ -139,7 +139,13 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ ...props }: Toast) {
+interface ToastAPI {
+  id: string
+  dismiss: () => void
+  update: (props: ToasterToast) => void
+}
+
+function toast(props: Toast): ToastAPI {
   const id = genId()
 
   const update = (props: ToasterToast) =>
