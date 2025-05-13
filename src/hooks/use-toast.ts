@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import {
   ToastAction,
   type ToastActionElement,
-  type Toast as ToastType
+  type ToastProps as ToastType
 } from "@/components/ui/toast";
 
 export type ToastProps = ToastType & {
@@ -87,6 +87,6 @@ export const useToast = (): ToastHookResult => {
   return { toast, toasts, dismissToast };
 };
 
-// Make toast accessible globally
+// Create a singleton instance for global use
 const { toast } = useToast();
 export { toast };
