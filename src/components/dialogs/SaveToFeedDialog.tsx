@@ -32,19 +32,12 @@ const SaveToFeedDialog: React.FC<SaveToFeedDialogProps> = ({
 
   const handleSave = () => {
     if (!feedName.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a name for the feed",
-        variant: "destructive"
-      });
+      toast.error("Please enter a name for the feed");
       return;
     }
 
     addFeedToList(feedName, feedType, source);
-    toast({
-      title: "Success",
-      description: "Feed saved successfully",
-    });
+    toast.success("Feed saved successfully");
     setFeedName("");
     onOpenChange(false);
   };
