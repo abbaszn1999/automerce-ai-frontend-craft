@@ -13,6 +13,8 @@ export interface FileUploadProps {
   onColumnMappingComplete?: (columnMapping: Record<string, string>) => void;
   foundationColumns?: string[];
   onColumnsExtracted?: (columns: string[]) => void;
+  maxFileSize?: number; // Max file size in MB
+  showValidationFeedback?: boolean;
 }
 
 export interface ColumnMappingProps {
@@ -25,4 +27,10 @@ export interface ColumnMappingProps {
   requiredColumns?: string[];
 }
 
-export type FileUploadStatus = "pending" | "uploaded" | "error" | "mapping";
+export type FileUploadStatus = "pending" | "uploading" | "uploaded" | "error" | "mapping";
+
+export interface FileValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}

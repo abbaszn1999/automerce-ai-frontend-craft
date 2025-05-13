@@ -1,11 +1,11 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import * as XLSX from 'xlsx';
 import { validateFile } from "@/utils/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Download } from "lucide-react";
-import { FileUploadProps, FileUploadStatus } from "./types";
+import { FileUploadProps, FileUploadStatus, FileValidationResult } from "./types";
 import FileDropzone from "./FileDropzone";
 import FileStatus from "./FileStatus";
 import ColumnMappingForm from "./ColumnMappingForm";
@@ -23,34 +23,184 @@ const FileUpload: React.FC<FileUploadProps> = ({
   onSelectFeed = () => {},
   onColumnMappingComplete,
   foundationColumns,
-  onColumnsExtracted
+  onColumnsExtracted,
+  maxFileSize = 10, // Default max file size is 10MB
+  showValidationFeedback = true
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<FileUploadStatus>("pending");
+  const [progress, setProgress] = useState<number>(0);
   const [selectedColumn, setSelectedColumn] = useState<string>("");
   const [sampleColumns, setSampleColumns] = useState<string[]>([]);
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
   const [showColumnMapping, setShowColumnMapping] = useState<boolean>(false);
+  const [validation, setValidation] = useState<FileValidationResult>({
+    isValid: true,
+    errors: [],
+    warnings: []
+  });
+
+  // Reset validation state when file changes
+  useEffect(() => {
+    if (!file) {
+      setValidation({
+        isValid: true,
+        errors: [],
+        warnings: []
+      });
+    }
+  }, [file]);
+
+  // Simulate upload progress
+  useEffect(() => {
+    let progressTimer: NodeJS.Timeout;
+    
+    if (status === "uploading" && progress < 100) {
+      progressTimer = setInterval(() => {
+        setProgress(prev => {
+          const newProgress = prev + (10 - prev / 10);
+          if (newProgress >= 100) {
+            clearInterval(progressTimer);
+            return 100;
+          }
+          return newProgress;
+        });
+      }, 200);
+    }
+    
+    return () => {
+      if (progressTimer) clearInterval(progressTimer);
+    };
+  }, [status, progress]);
+
+  const validateFileContent = async (selectedFile: File): Promise<FileValidationResult> => {
+    const result: FileValidationResult = {
+      isValid: true,
+      errors: [],
+      warnings: []
+    };
+    
+    // Check file size
+    if (selectedFile.size > maxFileSize * 1024 * 1024) {
+      result.isValid = false;
+      result.errors.push(`File is too large. Maximum size is ${maxFileSize}MB.`);
+    }
+    
+    // Additional file type validation
+    const fileExtension = `.${selectedFile.name.split('.').pop()?.toLowerCase()}`;
+    if (!acceptedTypes.includes(fileExtension)) {
+      result.isValid = false;
+      result.errors.push(`Invalid file type. Please upload ${acceptedTypes.join(", ")} files only.`);
+    }
+    
+    try {
+      // Try to read the file contents for spreadsheet validation
+      if (fileExtension === '.csv' || fileExtension === '.xlsx' || fileExtension === '.xls') {
+        const reader = new FileReader();
+        const fileData = await new Promise<ArrayBuffer>((resolve, reject) => {
+          reader.onload = (e) => resolve(e.target?.result as ArrayBuffer);
+          reader.onerror = reject;
+          reader.readAsArrayBuffer(selectedFile);
+        });
+        
+        const data = new Uint8Array(fileData);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        // Check if workbook has sheets
+        if (workbook.SheetNames.length === 0) {
+          result.isValid = false;
+          result.errors.push("The spreadsheet file contains no sheets.");
+          return result;
+        }
+        
+        // Get the first worksheet
+        const worksheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[worksheetName];
+        
+        // Convert to JSON to get headers
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        if (!jsonData || jsonData.length === 0) {
+          result.warnings.push("No data found in the spreadsheet.");
+        } else {
+          // Check row count
+          if (jsonData.length > 10000) {
+            result.warnings.push(`File contains ${jsonData.length} rows. Large files may process slowly.`);
+          }
+          
+          // Extract column headers
+          const extractedColumns = Object.keys(jsonData[0]);
+          
+          // Check for required columns if specified
+          if (requiredColumns && requiredColumns.length > 0) {
+            const missingColumns = requiredColumns.filter(col => {
+              // Clean up required columns (remove * if present)
+              const cleanCol = col.endsWith('*') ? col.replace('*', '') : col;
+              return !extractedColumns.some(extracted => 
+                extracted.toLowerCase() === cleanCol.toLowerCase()
+              );
+            });
+            
+            if (missingColumns.length > 0) {
+              result.warnings.push(`The following required columns may be missing: ${missingColumns.join(", ")}`);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error validating file:", error);
+      result.warnings.push("Could not fully validate file contents. The file may be corrupted.");
+    }
+    
+    return result;
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
     
-    if (selectedFile && validateFile(selectedFile, acceptedTypes)) {
-      setFile(selectedFile);
-      setStatus("uploaded");
-      onFileChange(selectedFile);
-      
-      // Reset previous mapping data when a new file is uploaded
-      setSampleColumns([]);
-      setColumnMapping({});
-      
-      // Extract columns from the file
-      await extractColumnsFromFile(selectedFile);
-    } else if (selectedFile) {
-      setStatus("error");
-      setFile(null);
-      onFileChange(null);
-      toast.error(`Invalid file type. Please upload ${acceptedTypes.join(", ")}`);
+    if (selectedFile) {
+      // Basic validation
+      if (validateFile(selectedFile, acceptedTypes)) {
+        setFile(selectedFile);
+        setStatus("uploading");
+        setProgress(0);
+        
+        // Simulate upload and validate content
+        setTimeout(async () => {
+          try {
+            // Validate file content
+            const validationResult = await validateFileContent(selectedFile);
+            setValidation(validationResult);
+            
+            if (validationResult.errors.length === 0) {
+              setStatus("uploaded");
+              onFileChange(selectedFile);
+              
+              // Reset previous mapping data when a new file is uploaded
+              setSampleColumns([]);
+              setColumnMapping({});
+              
+              // Extract columns from the file
+              await extractColumnsFromFile(selectedFile);
+            } else {
+              setStatus("error");
+              setFile(null);
+              onFileChange(null);
+              toast.error("File validation failed");
+            }
+          } catch (error) {
+            console.error("Error processing file:", error);
+            setStatus("error");
+            setFile(null);
+            onFileChange(null);
+            toast.error("Error processing file");
+          }
+        }, 1500); // Simulate a short delay for upload
+      } else {
+        setStatus("error");
+        setFile(null);
+        onFileChange(null);
+      }
     }
   };
 
@@ -106,6 +256,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const handleRemoveFile = () => {
     setFile(null);
     setStatus("pending");
+    setProgress(0);
     setShowColumnMapping(false);
     setSampleColumns([]);
     setColumnMapping({});
@@ -158,9 +309,16 @@ const FileUpload: React.FC<FileUploadProps> = ({
           </div>
         )}
         
-        <div className="file-upload-area">
+        <div className="file-upload-area border rounded-md p-4 bg-white">
           {file && !showColumnMapping ? (
-            <FileStatus file={file} status={status} onRemove={handleRemoveFile}>
+            <FileStatus 
+              file={file} 
+              status={status} 
+              onRemove={handleRemoveFile} 
+              progress={progress}
+              validation={validation}
+              showValidationFeedback={showValidationFeedback}
+            >
               {mapColumn && (
                 <div className="mt-2">
                   <label className="block text-sm font-medium text-gray-700">
