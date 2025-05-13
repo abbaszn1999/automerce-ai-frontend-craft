@@ -2,6 +2,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ColumnMapping } from "./types";
 
 interface MappingStepProps {
@@ -36,18 +37,21 @@ const MappingStep: React.FC<MappingStepProps> = ({
                   </label>
                 </div>
                 <div className="w-2/3">
-                  <select
-                    className="w-full p-2 border rounded"
-                    onChange={(e) => onColumnMapping(e.target.value, targetCol)}
+                  <Select
                     value={mappedColumns.find(c => c.targetColumn === targetCol)?.sourceColumn || ""}
+                    onValueChange={(value) => onColumnMapping(value, targetCol)}
                   >
-                    <option value="">-- Select column from your file --</option>
-                    {sampleColumns.map((sourceCol) => (
-                      <option key={sourceCol} value={sourceCol}>
-                        {sourceCol}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="-- Select column from your file --" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sampleColumns.map((sourceCol) => (
+                        <SelectItem key={sourceCol} value={sourceCol}>
+                          {sourceCol}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             ))}

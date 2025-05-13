@@ -174,4 +174,3 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
 };
 
 export default ProductInputSheet;
-
