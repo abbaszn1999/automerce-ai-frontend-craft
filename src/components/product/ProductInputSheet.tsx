@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import FileUpload from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import {
 import { useAttributeExtractionService, ColumnMapping as ServiceColumnMapping } from '@/hooks/api/useAttributeExtractionService';
 
 interface ProductInputSheetProps {
-  onProcessComplete?: (data: any[]) => void;
+  onProcessComplete?: (data: any[], mapping: any) => void;
   onSaveComplete?: (runId: string) => void;
   projectId?: string;
 }
@@ -75,6 +76,12 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
       setSaveProgress(null);
     }
   }, [uploadedFile]);
+
+  // Debug logging for projectId and processed data
+  useEffect(() => {
+    console.log("ProjectId provided:", projectId);
+    console.log("Processed data available:", processedData ? processedData.length : 0);
+  }, [projectId, processedData]);
 
   const handleFileChange = (file: File | null) => {
     console.log("File changed:", file?.name);
@@ -150,7 +157,7 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
         setProcessedData(processedData);
 
         if (onProcessComplete) {
-          onProcessComplete(processedData);
+          onProcessComplete(processedData, columnMapping);
         }
         
         toast.success("Product data processed successfully");
@@ -170,6 +177,9 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
   const handleSaveToDatabase = async () => {
     if (!processedData || !uploadedFile || !projectId) {
       toast.error("Please process your data first");
+      console.error("Cannot save: processedData:", processedData ? "yes" : "no", 
+                    "uploadedFile:", uploadedFile ? "yes" : "no", 
+                    "projectId:", projectId);
       return;
     }
 

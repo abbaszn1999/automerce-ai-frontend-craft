@@ -9,17 +9,29 @@ import { toast } from '@/hooks/use-toast';
 const ProductInput: React.FC = () => {
   const [processedData, setProcessedData] = useState<any[] | null>(null);
   const [savedRunId, setSavedRunId] = useState<string | null>(null);
+  const [columnMapping, setColumnMapping] = useState<any | null>(null);
   const navigate = useNavigate();
   
   // Normally, this would come from a route param or context
   // For demo purposes, we're using a hardcoded project ID
   const projectId = "ae-demo-project-id"; // Replace with actual project ID in a real app
 
-  const handleProcessComplete = (data: any[]) => {
+  // Define required columns with display names - all are required
+  const requiredColumns = [
+    { key: "product_id", display: "Product ID", required: true },
+    { key: "product_title", display: "Product Title", required: true },
+    { key: "product_url", display: "Product URL", required: true },
+    { key: "product_image_url", display: "Product Image URL", required: true },
+    { key: "product_description", display: "Product Description", required: true }
+  ];
+
+  const handleProcessComplete = (data: any[], mapping: any) => {
     setProcessedData(data);
+    setColumnMapping(mapping);
     toast.success(`Processed ${data.length} products successfully`);
     // In a real application, you would save this data to context or send it to the server
     console.log("Processed data:", data);
+    console.log("Column mapping:", mapping);
   };
 
   const handleSaveComplete = (runId: string) => {
@@ -37,6 +49,23 @@ const ProductInput: React.FC = () => {
     // In a real application, you would navigate to the attribute extraction page with the run ID
     toast.info(`Navigating to attribute extraction with run ID: ${savedRunId}`);
     // navigate(`/attribute-extraction/${savedRunId}`);
+  };
+
+  // Generate mapped data for preview display (using required field names)
+  const getMappedDataForDisplay = () => {
+    if (!processedData || !columnMapping) return [];
+    
+    return processedData.map(row => {
+      const mappedRow: Record<string, any> = {};
+      
+      // Map each required column to the corresponding source column
+      requiredColumns.forEach(col => {
+        const sourceColumn = columnMapping[col.key];
+        mappedRow[col.key] = sourceColumn && row[sourceColumn] ? row[sourceColumn] : '';
+      });
+      
+      return mappedRow;
+    });
   };
 
   return (
@@ -73,18 +102,18 @@ const ProductInput: React.FC = () => {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-100">
-                  {Object.keys(processedData[0]).map((header, index) => (
+                  {requiredColumns.map((col, index) => (
                     <th key={index} className="border p-2 text-left">
-                      {header.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      {col.display}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {processedData.map((row, rowIndex) => (
+                {getMappedDataForDisplay().map((row, rowIndex) => (
                   <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    {Object.values(row).map((cell: any, cellIndex) => (
-                      <td key={cellIndex} className="border p-2">{String(cell)}</td>
+                    {requiredColumns.map((col, colIndex) => (
+                      <td key={colIndex} className="border p-2">{String(row[col.key] || '')}</td>
                     ))}
                   </tr>
                 ))}
