@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "@/context/AppContext";
 import { useProjectSettings, AEConfigType } from "@/hooks/useProjectSettings";
@@ -318,6 +317,14 @@ const AttributeExtraction: React.FC = () => {
       attributes: prev.attributes.filter(attr => attr.id !== id)
     }));
   };
+
+  // Required columns for product data
+  const requiredColumns = [
+    { key: "product_id", display: "Product ID", required: true },
+    { key: "product_name", display: "Product Name", required: true },
+    { key: "description", display: "Description", required: false },
+    { key: "image_url", display: "Image URL", required: true }
+  ];
 
   if (isLoadingSettings) {
     return (
@@ -667,7 +674,7 @@ const AttributeExtraction: React.FC = () => {
             <h2 className="text-xl font-semibold mb-4">Input Product Data</h2>
             
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 text-blue-700">
-              <p>Upload your product data file to begin the attribute extraction process. The file should contain product information including names, descriptions, and images.</p>
+              <p>Upload your product data file to begin the attribute extraction process. The file should contain product information including IDs, names, descriptions, and images.</p>
             </div>
             
             <FileUpload 
@@ -688,32 +695,35 @@ const AttributeExtraction: React.FC = () => {
             
             <div className="card">
               <h3 className="text-lg font-medium mb-3">Column Mapping</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-medium mb-2">Source Columns (Your File)</h4>
-                  {sourceColumns.length > 0 ? (
-                    <ul className="bg-gray-50 p-3 rounded text-sm">
-                      {sourceColumns.map((column, index) => (
-                        <li key={index} className="py-1">{column}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="bg-gray-50 p-3 rounded text-sm text-gray-500 italic">
-                      {uploadedFile ? "Processing columns..." : "No file uploaded yet. Columns will appear here after upload."}
+              <div className="space-y-4">
+                {requiredColumns.map((col) => (
+                  <div key={col.key} className="flex items-center gap-4">
+                    <div className="w-1/3">
+                      <label className="block text-sm font-medium">
+                        {col.display}{col.required ? "*" : ""}
+                      </label>
                     </div>
-                  )}
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">Required Fields (Autommerce.ai)</h4>
-                  <ul className="bg-gray-50 p-3 rounded text-sm">
-                    <li className="py-1">product_id*</li>
-                    <li className="py-1">product_name*</li>
-                    <li className="py-1">description</li>
-                    <li className="py-1">image_url*</li>
-                  </ul>
-                  <p className="text-xs text-gray-500 mt-2">* Required fields</p>
-                </div>
+                    <div className="w-2/3">
+                      <select
+                        className="w-full p-2 border rounded"
+                        disabled={sourceColumns.length === 0}
+                      >
+                        <option value="">
+                          {sourceColumns.length > 0 
+                            ? "-- Select column from your file --" 
+                            : "Upload a file first"}
+                        </option>
+                        {sourceColumns.map((sourceCol) => (
+                          <option key={sourceCol} value={sourceCol}>
+                            {sourceCol}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ))}
               </div>
+              <p className="text-xs text-gray-500 mt-2">* Required fields</p>
             </div>
             
             {/* Buttons */}

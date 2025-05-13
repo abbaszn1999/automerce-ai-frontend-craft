@@ -54,7 +54,9 @@ const ProductInput: React.FC = () => {
               <thead>
                 <tr className="bg-gray-100">
                   {Object.keys(processedData[0]).map((header, index) => (
-                    <th key={index} className="border p-2 text-left">{header}</th>
+                    <th key={index} className="border p-2 text-left">
+                      {header.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </th>
                   ))}
                 </tr>
               </thead>

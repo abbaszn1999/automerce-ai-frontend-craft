@@ -18,33 +18,38 @@ interface ProductInputSheetProps {
   onProcessComplete?: (data: any[]) => void;
 }
 
+interface ColumnMapping {
+  product_id: string;
+  product_title: string;
+  url: string;
+  image_url: string;
+  product_description: string;
+}
+
 const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete }) => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+  const [columnMapping, setColumnMapping] = useState<ColumnMapping>({
+    product_id: '',
+    product_title: '',
+    url: '',
+    image_url: '',
+    product_description: ''
+  });
   const [isReady, setIsReady] = useState<boolean>(false);
   const [sourceColumns, setSourceColumns] = useState<string[]>([]);
   
-  // Define required columns
+  // Define required columns with display names
   const requiredColumns = [
-    "product_id", 
-    "product_title", 
-    "url", 
-    "image_url", 
-    "product_description"
+    { key: "product_id", display: "Product ID" },
+    { key: "product_title", display: "Product Title" },
+    { key: "url", display: "URL" },
+    { key: "image_url", display: "Image URL" },
+    { key: "product_description", display: "Product Description" }
   ];
-
-  // Display names for required columns
-  const columnDisplayNames: Record<string, string> = {
-    "product_id": "Product ID",
-    "product_title": "Product Title",
-    "url": "URL",
-    "image_url": "Image URL",
-    "product_description": "Product Description"
-  };
   
   // Check if all required columns are mapped
   const areAllRequiredColumnsMapped = () => {
-    return requiredColumns.every(col => columnMapping[col] && columnMapping[col].length > 0);
+    return Object.values(columnMapping).every(value => value !== '');
   };
 
   useEffect(() => {
@@ -60,7 +65,13 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
     // Reset columns and mapping when file changes
     if (!file) {
       setSourceColumns([]);
-      setColumnMapping({});
+      setColumnMapping({
+        product_id: '',
+        product_title: '',
+        url: '',
+        image_url: '',
+        product_description: ''
+      });
     }
   };
 
@@ -69,7 +80,7 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
     setSourceColumns(columns);
   };
 
-  const handleColumnMappingChange = (requiredColumn: string, sourceColumn: string) => {
+  const handleColumnMappingChange = (requiredColumn: keyof ColumnMapping, sourceColumn: string) => {
     console.log(`Mapping ${requiredColumn} to ${sourceColumn}`);
     setColumnMapping(prev => ({
       ...prev,
@@ -175,10 +186,10 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
         </CardHeader>
         <CardContent>
           <div className="text-sm text-gray-600 mb-4">
-            <p>Upload your product data sheet containing the following information:</p>
+            <p>Upload your product data sheet containing the following required columns:</p>
             <ul className="list-disc pl-5 mt-2">
-              {requiredColumns.map((col, index) => (
-                <li key={index}>{columnDisplayNames[col]}</li>
+              {requiredColumns.map((col) => (
+                <li key={col.key}>{col.display}</li>
               ))}
             </ul>
           </div>
@@ -191,39 +202,41 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
             onColumnsExtracted={handleColumnsExtracted}
           />
 
-          {sourceColumns.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-lg font-medium mb-4">Column Mapping</h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Match each required column to the corresponding column in your uploaded file:
-              </p>
-              
-              <div className="space-y-4">
-                {requiredColumns.map((requiredCol) => (
-                  <div key={requiredCol} className="flex items-center gap-4">
-                    <div className="w-1/3">
-                      <label className="block text-sm font-medium">{columnDisplayNames[requiredCol]}</label>
-                    </div>
-                    <div className="w-2/3">
-                      <Select 
-                        value={columnMapping[requiredCol] || ""} 
-                        onValueChange={(value) => handleColumnMappingChange(requiredCol, value)}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select column from your file" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {sourceColumns.map((sourceCol) => (
-                            <SelectItem key={sourceCol} value={sourceCol}>{sourceCol}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+          {/* Always show column mapping section, but with appropriate state */}
+          <div className="mt-6">
+            <h3 className="text-lg font-medium mb-4">Column Mapping</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              {sourceColumns.length > 0 
+                ? "Match each required column to the corresponding column in your uploaded file:"
+                : "Upload a file to map the columns from your sheet."}
+            </p>
+            
+            <div className="space-y-4">
+              {requiredColumns.map((col) => (
+                <div key={col.key} className="flex items-center gap-4">
+                  <div className="w-1/3">
+                    <label className="block text-sm font-medium">{col.display}</label>
                   </div>
-                ))}
-              </div>
+                  <div className="w-2/3">
+                    <Select 
+                      value={columnMapping[col.key as keyof ColumnMapping] || ""} 
+                      onValueChange={(value) => handleColumnMappingChange(col.key as keyof ColumnMapping, value)}
+                      disabled={sourceColumns.length === 0}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={sourceColumns.length > 0 ? "Select column from your file" : "Upload a file first"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sourceColumns.map((sourceCol) => (
+                          <SelectItem key={sourceCol} value={sourceCol}>{sourceCol}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
 
           <div className="flex justify-between mt-6">
             <Button 
@@ -237,7 +250,7 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
             
             <Button 
               onClick={handleProcess}
-              disabled={!isReady}
+              disabled={!isReady || !uploadedFile}
               className="flex items-center gap-1"
             >
               <span>Process Sheet</span>
@@ -262,10 +275,10 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.entries(columnMapping).map(([required, source], index) => (
-                    <tr key={index} className="border-t">
-                      <td className="p-2">{columnDisplayNames[required]}</td>
-                      <td className="p-2">{source}</td>
+                  {requiredColumns.map((col) => (
+                    <tr key={col.key} className="border-t">
+                      <td className="p-2">{col.display}</td>
+                      <td className="p-2">{columnMapping[col.key as keyof ColumnMapping] || "-"}</td>
                     </tr>
                   ))}
                 </tbody>

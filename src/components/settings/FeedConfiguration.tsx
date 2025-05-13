@@ -141,23 +141,31 @@ const FeedConfiguration: React.FC = () => {
           <Card className="mb-6">
             <CardContent className="pt-6">
               <h3 className="font-medium mb-4">Map your columns</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Match each required column to the corresponding column in your uploaded file:
+              </p>
               <div className="space-y-4">
-                {sampleColumns.map((column, index) => (
+                {targetColumns.map((targetCol, index) => (
                   <div key={index} className="flex items-center gap-4">
-                    <div className="w-1/3 p-2 bg-gray-100 rounded">{column}</div>
-                    <ArrowDown className="text-gray-400" />
-                    <select
-                      className="w-1/3 p-2 border rounded"
-                      onChange={(e) => handleColumnMapping(column, e.target.value)}
-                      value={mappedColumns.find(c => c.sourceColumn === column)?.targetColumn || ""}
-                    >
-                      <option value="">-- Select target column --</option>
-                      {targetColumns.map((target) => (
-                        <option key={target} value={target}>
-                          {target.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="w-1/3">
+                      <label className="block text-sm font-medium">
+                        {targetCol.replace("_", " ").replace(/\b\w/g, l => l.toUpperCase())}
+                      </label>
+                    </div>
+                    <div className="w-2/3">
+                      <select
+                        className="w-full p-2 border rounded"
+                        onChange={(e) => handleColumnMapping(e.target.value, targetCol)}
+                        value={mappedColumns.find(c => c.targetColumn === targetCol)?.sourceColumn || ""}
+                      >
+                        <option value="">-- Select column from your file --</option>
+                        {sampleColumns.map((sourceCol) => (
+                          <option key={sourceCol} value={sourceCol}>
+                            {sourceCol}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -167,7 +175,7 @@ const FeedConfiguration: React.FC = () => {
           <div className="flex justify-end">
             <Button 
               onClick={handleSaveMapping} 
-              disabled={mappedColumns.length < Math.min(3, sampleColumns.length)}
+              disabled={mappedColumns.length < Math.min(3, targetColumns.length)}
               className="btn-primary"
             >
               Save Column Mapping
