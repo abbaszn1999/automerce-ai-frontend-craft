@@ -12,6 +12,7 @@ interface FileUploadProps {
   statusId?: string;
   acceptedTypes: string[];
   label: string;
+  requiredColumns?: string[];
   onFileChange: (file: File | null) => void;
   downloadTemplateLink?: string;
   onColumnsExtracted?: (columns: string[]) => void;
@@ -23,6 +24,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   statusId,
   acceptedTypes,
   label,
+  requiredColumns,
   onFileChange,
   downloadTemplateLink,
   onColumnsExtracted,
@@ -102,6 +104,22 @@ const FileUpload: React.FC<FileUploadProps> = ({
           if (jsonData && jsonData.length > 0) {
             // Extract column headers from first row
             const extractedColumns = Object.keys(jsonData[0]);
+            
+            // Check if required columns are present
+            if (requiredColumns && requiredColumns.length > 0) {
+              const missingColumns = requiredColumns.filter(
+                col => !extractedColumns.some(
+                  extractedCol => extractedCol.toLowerCase() === col.toLowerCase()
+                )
+              );
+              
+              if (missingColumns.length > 0) {
+                toast.error(`File is missing required columns: ${missingColumns.join(', ')}`);
+                setStatus("error");
+                onFileChange(null);
+                return;
+              }
+            }
             
             // Notify parent component about the extracted columns
             if (onColumnsExtracted) {
