@@ -1,25 +1,51 @@
 
-// This file contains the toast hook implementation
+import React from "react";
 import {
   Toast,
   ToastActionElement,
   ToastProps
 } from "@/components/ui/toast";
+import { toast as toastPrimitive } from "@radix-ui/react-toast";
 
-import {
-  useToast as useToastShadcn,
-} from "@/components/ui/use-toast";
+// This defines the primary toast hook that the app will use
+export function useToast() {
+  const [toasts, setToasts] = React.useState<ToastProps[]>([]);
 
-export const useToast = useToastShadcn;
+  const dismiss = React.useCallback((id: string) => {
+    setToasts((toasts) => toasts.filter((toast) => toast.id !== id));
+  }, []);
 
-export interface ToastOptions extends Omit<ToastProps, "variant"> {
-  action?: ToastActionElement;
+  const toast = React.useCallback(
+    (props: ToastProps) => {
+      const id = props.id || String(Math.random());
+      setToasts((toasts) => [...toasts, { ...props, id }]);
+      return {
+        id,
+        dismiss: () => dismiss(id),
+        update: (props: ToastProps) => {
+          setToasts((toasts) =>
+            toasts.map((toast) =>
+              toast.id === id ? { ...toast, ...props } : toast
+            )
+          );
+        },
+      };
+    },
+    [dismiss]
+  );
+
+  return {
+    toast,
+    toasts,
+    dismiss,
+  };
 }
 
 // Create a more user-friendly toast API
 export const toast = {
   success: (message: string) => {
-    useToastShadcn().toast({
+    const { toast: toastFn } = useToast();
+    toastFn({
       title: "Success",
       description: message,
       variant: "default",
@@ -27,14 +53,16 @@ export const toast = {
     });
   },
   error: (message: string) => {
-    useToastShadcn().toast({
+    const { toast: toastFn } = useToast();
+    toastFn({
       title: "Error",
       description: message,
       variant: "destructive",
     });
   },
   warning: (message: string) => {
-    useToastShadcn().toast({
+    const { toast: toastFn } = useToast();
+    toastFn({
       title: "Warning",
       description: message,
       variant: "default",
@@ -42,7 +70,8 @@ export const toast = {
     });
   },
   info: (message: string) => {
-    useToastShadcn().toast({
+    const { toast: toastFn } = useToast();
+    toastFn({
       title: "Info",
       description: message,
       variant: "default",
@@ -50,7 +79,8 @@ export const toast = {
     });
   },
   default: (message: string) => {
-    useToastShadcn().toast({
+    const { toast: toastFn } = useToast();
+    toastFn({
       description: message,
     });
   },

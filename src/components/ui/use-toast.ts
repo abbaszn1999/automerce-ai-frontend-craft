@@ -1,6 +1,6 @@
 
-// Re-export from the hooks location
-import { useToast as importedUseToast, toast as importedToast } from "@/hooks/use-toast";
+// Re-export the toast hook from the hooks location
+import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 
-export const useToast = importedUseToast;
-export const toast = importedToast;
+export { useToast, toast };

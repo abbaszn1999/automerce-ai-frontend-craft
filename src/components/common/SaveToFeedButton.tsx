@@ -1,49 +1,40 @@
 
-import React, { useState } from "react";
-import { Button, ButtonProps } from "@/components/ui/button";
-import { BookmarkPlus } from "lucide-react";
-import SaveToFeedDialog from "@/components/dialogs/SaveToFeedDialog";
-import { toast } from "@/hooks/use-toast";
+import React from "react";
+import { Button } from "../ui/button";
+import { SaveIcon } from "lucide-react";
+import SaveToFeedDialog from "../dialogs/SaveToFeedDialog";
+import { useProjectSettings } from "@/hooks/useProjectSettings";
+import { toast } from "@/components/ui/use-toast";
 
-interface SaveToFeedButtonProps extends ButtonProps {
-  feedType: "plp" | "product";
-  source?: string;
-  variant?: "default" | "outline" | "link";
-  size?: "default" | "sm" | "lg" | "icon";
-  iconOnly?: boolean;
+interface SaveToFeedButtonProps {
+  data: any[];
+  source: string;
 }
 
-const SaveToFeedButton: React.FC<SaveToFeedButtonProps> = ({ 
-  feedType, 
-  source, 
-  variant = "outline",
-  size = "default",
-  iconOnly = false,
-  ...props 
-}) => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  
-  const handleOpenDialog = () => {
-    setDialogOpen(true);
+const SaveToFeedButton: React.FC<SaveToFeedButtonProps> = ({ data, source }) => {
+  const [open, setOpen] = React.useState(false);
+  const { addFeedToProjectSettings } = useProjectSettings();
+
+  const handleAddFeed = (name: string, type: string, source: string) => {
+    if (!data || data.length === 0) {
+      toast.error("No data to save to feed");
+      return;
+    }
+
+    addFeedToProjectSettings(name, type, source, data);
   };
 
   return (
     <>
-      <Button 
-        onClick={handleOpenDialog} 
-        variant={variant} 
-        size={size}
-        {...props}
-      >
-        <BookmarkPlus className={iconOnly ? "" : "mr-2"} size={16} />
-        {!iconOnly && "Save to Feed List"}
+      <Button onClick={() => setOpen(true)} className="ml-auto flex items-center gap-2">
+        <SaveIcon className="h-4 w-4" />
+        Save to Feed
       </Button>
-      
       <SaveToFeedDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        feedType={feedType}
         source={source}
+        open={open}
+        onOpenChange={setOpen}
+        addFeedToList={handleAddFeed}
       />
     </>
   );
