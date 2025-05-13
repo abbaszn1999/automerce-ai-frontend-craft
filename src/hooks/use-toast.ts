@@ -5,11 +5,14 @@ import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 const TOAST_LIMIT = 20;
 const TOAST_REMOVE_DELAY = 1000;
 
+type ToastType = "default" | "destructive" | "success" | "info" | "warning";
+
 type ToasterToast = ToastProps & {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: ToastActionElement;
+  type?: ToastType;
 };
 
 const actionTypes = {
@@ -120,7 +123,7 @@ function dispatch(action: Action) {
 
 interface Toast extends Omit<ToasterToast, "id"> {}
 
-function toast({ ...props }: Toast) {
+function createToast(props: Toast) {
   const id = genId();
 
   const update = (props: Toast) =>
@@ -152,6 +155,45 @@ function toast({ ...props }: Toast) {
     update,
   };
 }
+
+// Enhanced toast function with convenience methods
+const toast = Object.assign(
+  (props: Toast) => createToast(props),
+  {
+    // Basic toast methods
+    default: (props: Omit<Toast, "variant">) => createToast({ ...props, variant: "default" }),
+    destructive: (props: Omit<Toast, "variant">) => createToast({ ...props, variant: "destructive" }),
+    
+    // Aliases for common toast types
+    error: (message: string) => createToast({ 
+      variant: "destructive", 
+      title: "Error",
+      description: message 
+    }),
+    success: (message: string) => createToast({ 
+      variant: "default",
+      className: "bg-green-500 border-green-600 text-white",
+      title: "Success",
+      description: message
+    }),
+    info: (message: string) => createToast({ 
+      variant: "default",
+      className: "bg-blue-500 border-blue-600 text-white", 
+      title: "Information",
+      description: message
+    }),
+    warning: (message: string) => createToast({ 
+      variant: "default", 
+      className: "bg-yellow-500 border-yellow-600 text-white",
+      title: "Warning",
+      description: message
+    }),
+    
+    // Dismissal methods
+    dismiss: (toastId?: string) => dispatch({ type: actionTypes.DISMISS_TOAST, toastId }),
+    remove: (toastId?: string) => dispatch({ type: actionTypes.REMOVE_TOAST, toastId })
+  }
+);
 
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState);
