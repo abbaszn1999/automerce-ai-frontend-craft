@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +10,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Workspaces from "./pages/Workspaces";
 import NotFound from "./pages/NotFound";
+import ProductInput from "./pages/ProductInput";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useState, useEffect } from "react";
 
@@ -40,6 +40,7 @@ const App = () => {
                       <Workspaces />
                     </ProtectedRoute>
                   } />
+                  <Route path="/product-input" element={<ProductInput />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

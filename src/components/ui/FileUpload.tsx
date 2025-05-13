@@ -1,8 +1,10 @@
 
 import React, { useState } from "react";
-import { Upload, Check, X } from "lucide-react";
+import { Upload, Check, X, FileInput, ArrowDown } from "lucide-react";
 import { validateFile } from "../../utils/utils";
 import ChooseFromFeedButton from "@/components/common/ChooseFromFeedButton";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 interface FileUploadProps {
   id: string;
@@ -15,6 +17,8 @@ interface FileUploadProps {
   mapColumn?: boolean;
   showFeedListOption?: boolean;
   onSelectFeed?: (feedId: string) => void;
+  onColumnMappingComplete?: (columnMapping: Record<string, string>) => void;
+  foundationColumns?: string[];
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -27,19 +31,43 @@ const FileUpload: React.FC<FileUploadProps> = ({
   downloadTemplateLink,
   mapColumn,
   showFeedListOption = true,
-  onSelectFeed = () => {}
+  onSelectFeed = () => {},
+  onColumnMappingComplete,
+  foundationColumns
 }) => {
   const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<"pending" | "uploaded" | "error">("pending");
+  const [status, setStatus] = useState<"pending" | "uploaded" | "error" | "mapping">("pending");
   const [selectedColumn, setSelectedColumn] = useState<string>("");
+  const [sampleColumns, setSampleColumns] = useState<string[]>([]);
+  const [columnMapping, setColumnMapping] = useState<Record<string, string>>({});
+  const [showColumnMapping, setShowColumnMapping] = useState<boolean>(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] || null;
     
     if (selectedFile && validateFile(selectedFile, acceptedTypes)) {
       setFile(selectedFile);
       setStatus("uploaded");
       onFileChange(selectedFile);
+      
+      // If we have foundation columns defined, read sample columns from file
+      if (foundationColumns && foundationColumns.length > 0) {
+        try {
+          // In a real implementation, we would parse the file to extract column names
+          // For now, we'll simulate this with a timeout
+          setStatus("mapping");
+          
+          // Simulate reading column headers from the file
+          setTimeout(() => {
+            const mockColumns = ['pr_id', 'title', 'product_url', 'img', 'desc', 'price', 'stock'];
+            setSampleColumns(mockColumns);
+            setShowColumnMapping(true);
+          }, 500);
+        } catch (error) {
+          toast.error("Failed to read columns from file");
+          setStatus("error");
+        }
+      }
     } else if (selectedFile) {
       setStatus("error");
       setFile(null);
@@ -50,6 +78,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const handleRemoveFile = () => {
     setFile(null);
     setStatus("pending");
+    setShowColumnMapping(false);
+    setSampleColumns([]);
+    setColumnMapping({});
     onFileChange(null);
     
     // Reset the file input
@@ -63,6 +94,33 @@ const FileUpload: React.FC<FileUploadProps> = ({
     if (onSelectFeed) {
       onSelectFeed(feedId);
     }
+  };
+
+  const handleColumnMappingChange = (sourceColumn: string, targetColumn: string) => {
+    setColumnMapping(prev => ({
+      ...prev,
+      [sourceColumn]: targetColumn
+    }));
+  };
+
+  const handleColumnMappingComplete = () => {
+    // Check if all required columns are mapped
+    if (foundationColumns) {
+      const requiredMapped = foundationColumns.every(col => 
+        Object.values(columnMapping).includes(col)
+      );
+      
+      if (!requiredMapped) {
+        toast.warning("Not all required columns have been mapped");
+        return;
+      }
+    }
+    
+    if (onColumnMappingComplete) {
+      onColumnMappingComplete(columnMapping);
+    }
+    setStatus("uploaded");
+    setShowColumnMapping(false);
   };
 
   return (
@@ -91,7 +149,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         )}
         
         <div className="file-upload-area">
-          {file ? (
+          {file && !showColumnMapping ? (
             <div className="w-full">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-2">
@@ -124,6 +182,40 @@ const FileUpload: React.FC<FileUploadProps> = ({
                   </select>
                 </div>
               )}
+            </div>
+          ) : showColumnMapping ? (
+            <div className="w-full">
+              <h3 className="font-medium mb-4">Map Your Sheet Columns</h3>
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {sampleColumns.map((sourceColumn, index) => (
+                  <div key={index} className="flex items-center gap-4">
+                    <div className="w-1/3 p-2 bg-gray-100 rounded">
+                      <span className="text-sm font-medium">{sourceColumn}</span>
+                    </div>
+                    <ArrowDown className="text-gray-400" />
+                    <select
+                      className="w-1/3 p-2 border rounded"
+                      value={columnMapping[sourceColumn] || ""}
+                      onChange={(e) => handleColumnMappingChange(sourceColumn, e.target.value)}
+                    >
+                      <option value="">-- Select target column --</option>
+                      {foundationColumns?.map((col) => (
+                        <option key={col} value={col}>
+                          {col}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end mt-4 gap-2">
+                <Button variant="outline" onClick={handleRemoveFile}>
+                  Cancel
+                </Button>
+                <Button onClick={handleColumnMappingComplete}>
+                  Complete Mapping
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col items-center">
