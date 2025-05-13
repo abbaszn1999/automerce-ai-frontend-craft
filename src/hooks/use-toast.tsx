@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import { Cross2Icon } from "@radix-ui/react-icons"
 import * as ToastPrimitives from "@radix-ui/react-toast"
@@ -116,23 +115,19 @@ type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
 
 type ToastActionElement = React.ReactElement<typeof ToastAction>
 
-export type ToastT = {
+export interface ToastT {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
   variant?: "default" | "destructive" | "success" | "info"
+  onOpenChange?: (open: boolean) => void
 }
 
 const TOAST_LIMIT = 5
 const TOAST_REMOVE_DELAY = 5000
 
-type ToasterToast = ToastT & {
-  id: string
-  title?: React.ReactNode
-  description?: React.ReactNode
-  action?: ToastActionElement
-}
+type ToasterToast = ToastT
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -213,7 +208,7 @@ const reducer = (state: State, action: Action): State => {
           t.id === toastId || toastId === undefined
             ? {
                 ...t,
-                open: false,
+                onOpenChange: undefined,
               }
             : t
         ),
@@ -262,7 +257,6 @@ function toast({ ...props }: Toast) {
     toast: {
       ...props,
       id,
-      open: true,
       onOpenChange: (open) => {
         if (!open) dismiss()
       },
