@@ -1,5 +1,11 @@
 
 // Re-export the toast hook and toast API from the hooks location
-import { useToast, toast, ToastEvent } from "@/hooks/use-toast";
+import { useToast, toast } from "@/hooks/use-toast";
+import type { ToastProps } from "@/components/ui/toast";
 
-export { useToast, toast, ToastEvent };
+// Re-export the types correctly
+export { useToast, toast };
+export type { ToastProps };
+export type ToastEvent = {
+  detail: ToastProps;
+};

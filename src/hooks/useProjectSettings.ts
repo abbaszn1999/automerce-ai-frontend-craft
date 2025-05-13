@@ -1,18 +1,14 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { defaultSettings } from "./projectSettings/defaultSettings";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "@/components/ui/use-toast";
-import { Json } from "@/integrations/supabase/types";
+import { getDefaultSettings } from "./projectSettings/defaultSettings";
 
-// Extend the AEConfigType to include column mappings and attribute definitions
-export interface AEConfigType {
+// Export type keyword for isolated modules
+export type AEConfigType = {
   columnMappings: Record<string, string>;
   attributeDefinitions: any[];
-  feeds: any[];
-  [key: string]: any; // Allow for other properties
-}
+  feeds?: any[];
+  [key: string]: any;
+};
 
 export interface ProjectSettings {
   id?: string;
@@ -35,7 +31,7 @@ export const useProjectSettings = (
   const cacheKey = [`projectSettings`, solutionPrefix, projectName];
 
   // Fetch project settings
-  const fetchProjectSettings = async () => {
+  const fetchProjectSettings = useCallback(async () => {
     if (!projectName) {
       return null;
     }
@@ -54,7 +50,7 @@ export const useProjectSettings = (
       // If no settings found, create default settings
       if (!data) {
         // Get default settings from the defaultSettings object
-        const initialSettings = defaultSettings[solutionPrefix || ""] || {};
+        const initialSettings = getDefaultSettings(solutionPrefix || "default") || {};
         
         // Ensure we have columnMappings and attributeDefinitions in the settings
         const settingsWithAEConfig: AEConfigType = {
@@ -87,7 +83,7 @@ export const useProjectSettings = (
       console.error("Error in fetchProjectSettings:", err);
       throw err;
     }
-  };
+  }, [solutionPrefix, projectName]);
 
   // Use React Query to fetch and cache the settings
   const query = useQuery({

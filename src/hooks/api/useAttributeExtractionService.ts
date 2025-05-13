@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -191,6 +190,28 @@ export const useAttributeExtractionService = () => {
       });
       throw error;
     }
+  };
+
+  // Fix the extraction process function by properly typing the data
+  const extractAttributes = async (data: any[]): Promise<any[]> => {
+    // Simulate extraction with a delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Process each product to extract attributes
+    const processedData = data.map(item => {
+      // This is where we'd normally perform actual attribute extraction
+      // For now, let's just add a mock "extracted_attributes" field
+      return {
+        ...item,
+        extracted_attributes: {
+          color: ["Red", "Blue"].filter(() => Math.random() > 0.5),
+          size: ["Small", "Medium", "Large"].filter(() => Math.random() > 0.5),
+          material: ["Cotton", "Polyester", "Wool"].filter(() => Math.random() > 0.5),
+        }
+      };
+    });
+    
+    return processedData;
   };
 
   // Get all extraction runs for a project

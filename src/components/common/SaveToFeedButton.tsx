@@ -26,11 +26,7 @@ const SaveToFeedButton: React.FC<SaveToFeedButtonProps> = ({
 
   const handleAddFeed = (name: string, type: string, source: string) => {
     if (!data || data.length === 0) {
-      toast({
-        title: "Error", 
-        description: "No data to save to feed", 
-        variant: "destructive" 
-      });
+      toast.error("No data to save to feed");
       return;
     }
 
@@ -54,24 +50,13 @@ const SaveToFeedButton: React.FC<SaveToFeedButtonProps> = ({
         
         // Save the updated settings
         saveProjectSettings(updatedSettings);
-        toast({
-          title: "Success", 
-          description: "Feed saved successfully"
-        });
+        toast.success("Feed saved successfully");
       } else {
-        toast({
-          title: "Error", 
-          description: "Project settings not available", 
-          variant: "destructive" 
-        });
+        toast.error("Project settings not available");
       }
     } catch (error) {
       console.error("Error saving feed:", error);
-      toast({
-        title: "Error", 
-        description: "Failed to save feed", 
-        variant: "destructive" 
-      });
+      toast.error("Failed to save feed");
     }
   };
 
