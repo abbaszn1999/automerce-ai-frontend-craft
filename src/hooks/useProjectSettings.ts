@@ -38,6 +38,12 @@ export const useProjectSettings = (solutionPrefix: string, projectName: string |
         projectName
       );
 
+      if (!projectData) {
+        toast.error("Project not found");
+        setIsLoading(false);
+        return;
+      }
+
       // Then get the project settings
       const settingsData = await fetchProjectSettings(projectData.id);
 
@@ -51,7 +57,7 @@ export const useProjectSettings = (solutionPrefix: string, projectName: string |
       }
     } catch (error) {
       console.error("Error in loadProjectSettings:", error);
-      toast.error("An unexpected error occurred");
+      toast.error("Failed to load project settings");
     } finally {
       setIsLoading(false);
     }
@@ -72,17 +78,20 @@ export const useProjectSettings = (solutionPrefix: string, projectName: string |
         projectName
       );
 
+      if (!projectData) {
+        toast.error("Project not found");
+        return false;
+      }
+
       // Save the settings
       await saveProjectSettingsToDb(projectData.id, updatedSettings);
       
       // Update local state
       setSettings(updatedSettings);
-      toast.success("Project settings saved successfully");
       
       return true;
     } catch (error) {
       console.error("Error in saveProjectSettings:", error);
-      toast.error("An unexpected error occurred");
       return false;
     } finally {
       setIsSaving(false);
