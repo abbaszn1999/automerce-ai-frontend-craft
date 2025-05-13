@@ -1,169 +1,110 @@
 
-import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useWorkspace } from "@/context/WorkspaceContext";
 import { toast } from "@/components/ui/use-toast";
+import { AEConfigType } from "./projectSettings/types";
+import { getDefaultProjectSettings } from "./projectSettings/defaultSettings";
+import { 
+  fetchProjectId, 
+  fetchProjectSettings, 
+  saveProjectSettingsToDb 
+} from "./projectSettings/projectSettingsService";
 
-// Export type keyword for isolated modules
-export type AEConfigType = {
-  columnMappings: Record<string, string>;
-  attributeDefinitions: any[];
-  feeds?: any[];
-  [key: string]: any;
-};
+// Re-export the type for backward compatibility
+export type { AEConfigType } from "./projectSettings/types";
 
-export interface ProjectSettings {
-  id?: string;
-  project_id?: string;
-  settings: AEConfigType;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export const useProjectSettings = (
-  solutionPrefix?: string,
-  projectName?: string
-) => {
+export const useProjectSettings = (solutionPrefix?: string, projectName?: string | null) => {
+  const { currentWorkspace } = useWorkspace();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const [settings, setSettings] = useState<AEConfigType | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
-  const queryClient = useQueryClient();
 
-  // Generate a unique cache key based on solution prefix and project name
-  const cacheKey = [`projectSettings`, solutionPrefix, projectName];
+  // Load project settings when the component mounts or when projectName changes
+  useEffect(() => {
+    if (currentWorkspace && projectName && solutionPrefix) {
+      loadProjectSettings();
+    }
+  }, [currentWorkspace, projectName, solutionPrefix]);
 
-  // Get default settings based on solution prefix
-  const getDefaultSettings = (prefix: string): AEConfigType => {
-    switch (prefix) {
-      case 'cb':
-        return {
-          columnMappings: {},
-          attributeDefinitions: [],
-          feeds: []
-        };
-      case 'ae':
-        return {
-          columnMappings: {},
-          attributeDefinitions: [],
-          feeds: []
-        };
-      default:
-        return {
-          columnMappings: {},
-          attributeDefinitions: [],
-          feeds: []
-        };
+  const loadProjectSettings = async () => {
+    if (!currentWorkspace || !projectName || !solutionPrefix) return;
+
+    setIsLoading(true);
+    try {
+      // First, get the project ID
+      const projectData = await fetchProjectId(
+        currentWorkspace.id, 
+        solutionPrefix, 
+        projectName
+      );
+
+      if (!projectData) {
+        toast.error("Project not found");
+        setIsLoading(false);
+        return;
+      }
+
+      // Then get the project settings
+      const settingsData = await fetchProjectSettings(projectData.id);
+
+      if (settingsData && settingsData.length > 0) {
+        // We have settings
+        setSettings(settingsData[0].settings as AEConfigType);
+      } else {
+        // No settings yet, create default settings
+        const defaultSettings = getDefaultProjectSettings();
+        // Ensure feeds array exists
+        defaultSettings.feeds = [];
+        setSettings(defaultSettings);
+      }
+    } catch (error) {
+      console.error("Error in loadProjectSettings:", error);
+      toast.error("Failed to load project settings");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Fetch project settings
-  const fetchProjectSettings = useCallback(async () => {
-    if (!projectName) {
-      return null;
+  const saveProjectSettings = async (updatedSettings: AEConfigType) => {
+    if (!currentWorkspace || !projectName || !solutionPrefix) {
+      toast.error("No project selected");
+      return false;
     }
 
+    setIsSaving(true);
     try {
-      const { data, error } = await supabase
-        .from("project_settings")
-        .select("*")
-        .eq("project_id", projectName)
-        .maybeSingle();
+      // Get the project ID
+      const projectData = await fetchProjectId(
+        currentWorkspace.id, 
+        solutionPrefix, 
+        projectName
+      );
 
-      if (error) {
-        throw new Error(`Error fetching project settings: ${error.message}`);
+      if (!projectData) {
+        toast.error("Project not found");
+        return false;
       }
 
-      // If no settings found, create default settings
-      if (!data) {
-        // Get default settings from the getDefaultSettings function
-        const initialSettings = getDefaultSettings(solutionPrefix || "default");
-        
-        // Create new settings
-        const { data: newData, error: createError } = await supabase
-          .from("project_settings")
-          .insert({
-            project_id: projectName,
-            settings: initialSettings as unknown as any,
-          })
-          .select()
-          .single();
-
-        if (createError) {
-          throw new Error(`Error creating project settings: ${createError.message}`);
-        }
-
-        return initialSettings;
-      }
-
-      // Cast the JSON data to our AEConfigType
-      return data.settings as unknown as AEConfigType;
-    } catch (err) {
-      console.error("Error in fetchProjectSettings:", err);
-      throw err;
+      // Save the settings
+      await saveProjectSettingsToDb(projectData.id, updatedSettings);
+      
+      // Update local state
+      setSettings(updatedSettings);
+      
+      return true;
+    } catch (error) {
+      console.error("Error in saveProjectSettings:", error);
+      return false;
+    } finally {
+      setIsSaving(false);
     }
-  }, [solutionPrefix, projectName]);
-
-  // Use React Query to fetch and cache the settings
-  const query = useQuery({
-    queryKey: cacheKey,
-    queryFn: fetchProjectSettings,
-    enabled: !!projectName,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
-
-  // Update settings function using React Query mutation
-  const saveProjectSettingsMutation = useMutation({
-    mutationFn: async (newSettings: AEConfigType) => {
-      if (!projectName) {
-        throw new Error("Project name is required to save settings");
-      }
-
-      const { data, error } = await supabase
-        .from("project_settings")
-        .update({
-          settings: newSettings as unknown as any,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("project_id", projectName)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(`Error updating project settings: ${error.message}`);
-      }
-
-      return data;
-    },
-    onSuccess: () => {
-      // Invalidate the query to refetch the updated settings
-      queryClient.invalidateQueries({ queryKey: cacheKey });
-      toast({
-        title: "Success",
-        description: "Settings saved successfully",
-      });
-    },
-    onError: (error) => {
-      console.error("Error saving settings:", error);
-      toast({
-        title: "Error",
-        description: `Failed to save settings: ${error instanceof Error ? error.message : "Unknown error"}`,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Update local state when the query data changes
-  useEffect(() => {
-    setIsLoading(query.isLoading);
-    setError(query.error instanceof Error ? query.error : null);
-    setSettings(query.data || null);
-  }, [query.data, query.isLoading, query.error]);
+  };
 
   return {
     settings,
     isLoading,
-    error,
-    saveProjectSettings: saveProjectSettingsMutation.mutate,
-    isSaving: saveProjectSettingsMutation.isPending,
+    isSaving,
+    loadProjectSettings,
+    saveProjectSettings
   };
 };

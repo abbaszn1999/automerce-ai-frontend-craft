@@ -31,6 +31,4 @@ export type AEConfigType = {
     data: any[];
     createdAt: string;
   }>;
-  columnMappings?: Record<string, string>;
-  attributeDefinitions?: Array<any>;
 };

@@ -1,386 +1,660 @@
+import React, { useState, useEffect } from "react";
+import { useAppContext } from "../../../context/AppContext";
+import ToolViewHeader from "../../common/ToolViewHeader";
+import FileUpload from "../../ui/FileUpload";
+import ProgressBar from "../../ui/ProgressBar";
+import LogDisplay from "../../ui/LogDisplay";
+import DataTable from "../../ui/DataTable";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { simulateProcessing } from "../../../utils/utils";
+import { toast } from "@/components/ui/sonner";
+import SaveToFeedButton from "../../common/SaveToFeedButton";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useAppContext } from "@/context/AppContext";
-import { useProjectSettings } from "@/hooks/useProjectSettings";
-import { useWorkspace } from "@/context/WorkspaceContext";
-import { toast } from "@/components/ui/use-toast";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { PlusCircle, CheckCircle, XCircle } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useCollectionBuilderService } from "@/hooks/api/useCollectionBuilderService";
-import { Progress } from "@/components/ui/progress";
-import { useDropzone } from "react-dropzone";
-import { cn } from "@/lib/utils";
-
-type CollectionBuilderProps = {
-  solutionPrefix: string;
-};
-
-const CollectionBuilder: React.FC<CollectionBuilderProps> = ({
-  solutionPrefix,
-}) => {
-  const { currentProject } = useAppContext();
-  const { currentWorkspace } = useWorkspace();
-  const { settings, isLoading: isLoadingSettings, saveProjectSettings } =
-    useProjectSettings(solutionPrefix, currentProject?.name);
-  const {
-    useGetStages,
-    useCreateStageMutation,
-    useUpdateStageMutation,
-    useDeleteStageMutation,
-    useRunCollectionBuilderMutation,
-    progress,
-    isProcessing,
-  } = useCollectionBuilderService();
-
-  const {
-    data: stages = [],
-    isLoading: isLoadingStages,
-    refetch: refetchStages,
-  } = useGetStages(currentProject?.id);
-  const createStageMutation = useCreateStageMutation();
-  const updateStageMutation = useUpdateStageMutation();
-  const deleteStageMutation = useDeleteStageMutation();
-  const runCollectionBuilderMutation = useRunCollectionBuilderMutation();
-
-  const [stageName, setStageName] = useState("");
-  const [stageDescription, setStageDescription] = useState("");
-  const [stageIndex, setStageIndex] = useState(stages.length + 1);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [selectedStage, setSelectedStage] = useState<any>(null);
+const CollectionBuilder: React.FC = () => {
+  const { cbCurrentStage, setCbCurrentStage } = useAppContext();
   
-  // Simplified state management - removed excessive state variables
-  const [stageConfig, setStageConfig] = useState<Record<string, string>>({});
+  // File upload states
+  const [productFeedFile, setProductFeedFile] = useState<File | null>(null);
+  const [keywordsFile, setKeywordsFile] = useState<File | null>(null);
+  const [performanceFile, setPerformanceFile] = useState<File | null>(null);
+  const [mappedColumn, setMappedColumn] = useState("");
+  
+  // Processing states
+  const [process1Progress, setProcess1Progress] = useState(0);
+  const [process1Logs, setProcess1Logs] = useState<string[]>([]);
+  const [process1Complete, setProcess1Complete] = useState(false);
+  
+  // Mock data states
+  const [potentialCollections, setPotentialCollections] = useState<any[]>([]);
+  const [wellPerformingCategories, setWellPerformingCategories] = useState<any[]>([]);
+  const [underperformingCategories, setUnderperformingCategories] = useState<any[]>([]);
+  const [replacementSuggestions, setReplacementSuggestions] = useState<any[]>([]);
+  const [approvedReplacements, setApprovedReplacements] = useState<any[]>([]);
 
-  // Handle form submission
-  const handleCreateStage = async () => {
-    if (!stageName) {
-      toast({
-        title: "Error",
-        description: "Please provide a stage name",
-        variant: "destructive",
-      });
+  // Stage navigation
+  const goToStage = (stage: number) => {
+    // Only allow moving forward one stage at a time or backward from any stage
+    if (stage > cbCurrentStage && stage !== cbCurrentStage + 1) {
+      toast.error("Please complete the current stage first.");
       return;
     }
+    
+    setCbCurrentStage(stage);
+    
+    // If moving to stage 3, simulate process1
+    if (stage === 3 && cbCurrentStage === 2) {
+      startCollectionAnalysis();
+    } 
+    
+    // If moving to stage 4, generate performance data
+    if (stage === 4) {
+      generateMockPerformanceData();
+    }
+    
+    // If moving to stage 5, generate replacement suggestions
+    if (stage === 5) {
+      generateMockReplacements();
+    }
+    
+    // If moving to stage 6, process approved replacements
+    if (stage === 6) {
+      processApprovedReplacements();
+    }
+  };
 
-    try {
-      if (isEditMode && selectedStage) {
-        await updateStageMutation.mutateAsync({
-          id: selectedStage.id,
-          name: stageName,
-          description: stageDescription,
-          index: Number(stageIndex),
-          projectId: currentProject?.id || "",
-        });
-        toast({
-          title: "Success",
-          description: "Stage updated successfully",
-        });
+  // Check if all files are uploaded for proceeding to analysis
+  useEffect(() => {
+    const allUploaded = productFeedFile && keywordsFile && performanceFile;
+    const startButton = document.getElementById("cb-start-analysis-btn");
+    if (startButton) {
+      if (allUploaded) {
+        startButton.removeAttribute("disabled");
+        startButton.classList.remove("opacity-50", "cursor-not-allowed");
       } else {
-        await createStageMutation.mutateAsync({
-          name: stageName,
-          description: stageDescription,
-          index: Number(stageIndex),
-          projectId: currentProject?.id || "",
-        });
-        toast({
-          title: "Success",
-          description: "Stage created successfully",
-        });
+        startButton.setAttribute("disabled", "true");
+        startButton.classList.add("opacity-50", "cursor-not-allowed");
       }
+    }
+  }, [productFeedFile, keywordsFile, performanceFile]);
+
+  // Handle file uploads
+  const handleProductFeedChange = (file: File | null) => {
+    setProductFeedFile(file);
+  };
+  
+  const handleKeywordsChange = (file: File | null) => {
+    setKeywordsFile(file);
+  };
+  
+  const handlePerformanceChange = (file: File | null) => {
+    setPerformanceFile(file);
+  };
+
+  // Simulate collection analysis process
+  const startCollectionAnalysis = () => {
+    // Reset states
+    setProcess1Progress(0);
+    setProcess1Logs([]);
+    setProcess1Complete(false);
+    setPotentialCollections([]);
+    
+    simulateProcessing(
+      (progress) => {
+        setProcess1Progress(progress);
+        if (progress === 100) {
+          setProcess1Complete(true);
+          generateMockCollections();
+          
+          // Enable the next button
+          const nextButton = document.getElementById("cb-goto-process2-btn");
+          if (nextButton) {
+            nextButton.removeAttribute("disabled");
+            nextButton.classList.remove("opacity-50", "cursor-not-allowed");
+          }
+        }
+      },
+      (message) => {
+        setProcess1Logs(prev => [...prev, message]);
+      },
+      () => {
+        toast.success("Collection analysis completed successfully!");
+      },
+      10000
+    );
+  };
+
+  // Generate mock data
+  const generateMockCollections = () => {
+    const mockCollections = [
+      { name: "Summer Essentials", keywords: "summer clothing, beach wear, summer fashion", matchingProducts: 24, searchVolume: 8500 },
+      { name: "Office Attire", keywords: "business casual, office clothes, professional wear", matchingProducts: 36, searchVolume: 6200 },
+      { name: "Winter Collection", keywords: "winter coats, scarves, winter fashion", matchingProducts: 18, searchVolume: 5400 },
+      { name: "Active Sportswear", keywords: "gym clothes, workout gear, sports apparel", matchingProducts: 42, searchVolume: 7800 },
+      { name: "Evening Wear", keywords: "formal dresses, evening gowns, tuxedo", matchingProducts: 15, searchVolume: 4100 },
+      { name: "Casual Basics", keywords: "t-shirts, jeans, casual clothing", matchingProducts: 56, searchVolume: 9300 },
+      { name: "Kids Playground", keywords: "children's play clothes, kids outdoor wear", matchingProducts: 28, searchVolume: 3600 },
+      { name: "Sustainable Fashion", keywords: "eco-friendly clothing, sustainable fashion", matchingProducts: 21, searchVolume: 4800 }
+    ];
+    
+    setPotentialCollections(mockCollections);
+  };
+  
+  const generateMockPerformanceData = () => {
+    const wellPerforming = [
+      { name: "Summer Dresses", metrics: "CTR: 4.2%, Conv Rate: 2.8%", revenue: "$24,560" },
+      { name: "Men's Sneakers", metrics: "CTR: 3.8%, Conv Rate: 3.1%", revenue: "$31,240" },
+      { name: "Women's Activewear", metrics: "CTR: 4.5%, Conv Rate: 2.5%", revenue: "$19,780" },
+      { name: "Designer Watches", metrics: "CTR: 3.6%, Conv Rate: 4.2%", revenue: "$45,620" }
+    ];
+    
+    const underperforming = [
+      { name: "Winter Accessories", metrics: "CTR: 1.2%, Conv Rate: 0.8%", revenue: "$5,390" },
+      { name: "Formal Suits", metrics: "CTR: 1.5%, Conv Rate: 1.1%", revenue: "$8,720" },
+      { name: "Kids' Pajamas", metrics: "CTR: 1.8%, Conv Rate: 0.7%", revenue: "$3,450" },
+      { name: "Home Decor", metrics: "CTR: 1.3%, Conv Rate: 0.5%", revenue: "$2,890" }
+    ];
+    
+    setWellPerformingCategories(wellPerforming);
+    setUnderperformingCategories(underperforming);
+  };
+  
+  const generateMockReplacements = () => {
+    const replacements = [
+      { 
+        underperforming: "Winter Accessories", 
+        replacements: "Winter Essentials, Cold Weather Gear", 
+        reason: "Broader appeal, higher search volume",
+        approved: false
+      },
+      { 
+        underperforming: "Formal Suits", 
+        replacements: "Professional Attire, Business Wear", 
+        reason: "More inclusive terminology, matches search trends",
+        approved: false
+      },
+      { 
+        underperforming: "Kids' Pajamas", 
+        replacements: "Children's Sleepwear, Kids' Bedtime Collection", 
+        reason: "Expanded product range, aligns with search intent",
+        approved: false
+      },
+      { 
+        underperforming: "Home Decor", 
+        replacements: "Home Accents, Interior Styling", 
+        reason: "Modern terminology, matches higher-performing keywords",
+        approved: false
+      }
+    ];
+    
+    setReplacementSuggestions(replacements);
+  };
+  
+  const handleApprovalChange = (index: number, approved: boolean) => {
+    const updatedSuggestions = [...replacementSuggestions];
+    updatedSuggestions[index].approved = approved;
+    setReplacementSuggestions(updatedSuggestions);
+  };
+  
+  const processApprovedReplacements = () => {
+    const approved = replacementSuggestions.filter(item => item.approved);
+    setApprovedReplacements(approved);
+    
+    toast.success(`${approved.length} replacements approved for processing.`);
+  };
+
+  // Stage components
+  const renderSetupStage = () => (
+    <div id="cb-setup-content">
+      <h2 className="text-xl font-semibold mb-4">Collection Builder Setup</h2>
       
-      // Reset form fields
-      setStageName("");
-      setStageDescription("");
-      setStageIndex(stages.length + 1);
-      setIsEditMode(false);
-      setSelectedStage(null);
-      setIsDialogOpen(false);
+      {/* API Keys */}
+      <div className="card">
+        <h3 className="text-lg font-medium mb-3">API Keys</h3>
+        <div>
+          <label htmlFor="openai-api-key-cb" className="block text-sm font-medium mb-1">OpenAI API Key</label>
+          <input type="password" id="openai-api-key-cb" className="w-full p-2 border rounded" placeholder="Enter your OpenAI API key" />
+        </div>
+      </div>
       
-      // Refresh stages list
-      refetchStages();
-    } catch (error) {
-      console.error("Error creating/updating stage:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save stage",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Handle stage deletion
-  const handleDeleteStage = async (stageId: string) => {
-    try {
-      await deleteStageMutation.mutateAsync(stageId);
-      toast({
-        title: "Success",
-        description: "Stage deleted successfully",
-      });
-      refetchStages();
-    } catch (error) {
-      console.error("Error deleting stage:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete stage",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Handle stage selection for editing
-  const handleEditStage = (stage: any) => {
-    setSelectedStage(stage);
-    setStageName(stage.name);
-    setStageDescription(stage.description || "");
-    setStageIndex(stage.index);
-    setIsEditMode(true);
-    setIsDialogOpen(true);
-  };
-
-  // Handle file drop
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    console.log("Accepted files:", acceptedFiles);
-    // Handle file upload logic here
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
-
-  // Run collection builder process
-  const handleRunCollectionBuilder = async () => {
-    if (!currentProject?.id) {
-      toast({
-        title: "Error",
-        description: "No project selected",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      await runCollectionBuilderMutation.mutateAsync(currentProject.id);
-      toast({
-        title: "Success",
-        description: "Collection builder process started",
-      });
-    } catch (error) {
-      console.error("Error running collection builder:", error);
-      toast({
-        title: "Error",
-        description: "Failed to start collection builder process",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Reset form
-  const handleResetForm = () => {
-    setStageName("");
-    setStageDescription("");
-    setStageIndex(stages.length + 1);
-    setIsEditMode(false);
-    setSelectedStage(null);
-    setIsDialogOpen(false);
+      {/* Parameters */}
+      <div className="card">
+        <h3 className="text-lg font-medium mb-3">Parameters</h3>
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="max-collections" className="block text-sm font-medium mb-1">Max New Collections to Suggest</label>
+            <input type="number" id="max-collections" className="w-full p-2 border rounded" defaultValue="50" />
+          </div>
+          <div>
+            <label htmlFor="min-products" className="block text-sm font-medium mb-1">Minimum Products Per New Collection</label>
+            <input type="number" id="min-products" className="w-full p-2 border rounded" defaultValue="5" />
+          </div>
+          <div>
+            <label htmlFor="keyword-source" className="block text-sm font-medium mb-1">Keyword Source for Analysis</label>
+            <select id="keyword-source" className="w-full p-2 border rounded">
+              <option>Search Console Data</option>
+              <option>Product Feed Analysis</option>
+              <option>Both</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      {/* Buttons */}
+      <div className="flex justify-end mt-6">
+        <button 
+          className="btn btn-primary flex items-center gap-1"
+          onClick={() => goToStage(2)}
+        >
+          <span>Save & Proceed to Input</span>
+          <ArrowRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+  
+  const renderInputStage = () => (
+    <div id="cb-input-content">
+      <h2 className="text-xl font-semibold mb-4">Input Required Data Sheets</h2>
+      
+      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 text-blue-700">
+        <p>Please upload the following data files to begin the collection building process.</p>
+      </div>
+      
+      {/* Product Feed */}
+      <FileUpload 
+        id="cb-file-product-feed"
+        statusId="status-feed"
+        acceptedTypes={[".csv", ".xlsx"]}
+        label="1. Product Feed"
+        requiredColumns={["Name", "URL Slug", "Description", "Short description", "Featured Image", "record_id"]}
+        onFileChange={handleProductFeedChange}
+        downloadTemplateLink="#template-feed"
+        mapColumn={true}
+      />
+      
+      {/* Keywords */}
+      <FileUpload 
+        id="cb-file-keywords"
+        statusId="status-keywords"
+        acceptedTypes={[".csv", ".xlsx"]}
+        label="2. Search Console Data (Keywords)"
+        onFileChange={handleKeywordsChange}
+        downloadTemplateLink="#template-keywords"
+      />
+      
+      {/* Performance */}
+      <FileUpload 
+        id="cb-file-performance"
+        statusId="status-performance"
+        acceptedTypes={[".csv", ".xlsx"]}
+        label="3. Category Performance Data"
+        onFileChange={handlePerformanceChange}
+        downloadTemplateLink="#template-performance"
+      />
+      
+      {/* Buttons */}
+      <div className="flex justify-between mt-6">
+        <button 
+          className="btn btn-outline flex items-center gap-1"
+          onClick={() => goToStage(1)}
+        >
+          <ArrowLeft size={16} />
+          <span>Back to Setup</span>
+        </button>
+        <button 
+          id="cb-start-analysis-btn"
+          className="btn btn-primary flex items-center gap-1 opacity-50 cursor-not-allowed"
+          disabled
+          onClick={() => goToStage(3)}
+        >
+          <span>Start Collection Analysis</span>
+          <ArrowRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+  
+  const renderProcess1Stage = () => (
+    <div id="cb-process1-content">
+      <h2 className="text-xl font-semibold mb-4">Process 1: Collection Analysis</h2>
+      
+      {/* Progress */}
+      <div className="card">
+        <h3 className="text-lg font-medium mb-3">Analyzing Keywords & Product Data</h3>
+        <ProgressBar progress={process1Progress} id="cb-process1-progress" />
+        <div className="text-sm mt-1">Progress: {process1Progress}%</div>
+        
+        <div className="mt-4">
+          <h4 className="text-base font-medium mb-2">Process Log</h4>
+          <LogDisplay logs={process1Logs} id="cb-process1-log" />
+        </div>
+      </div>
+      
+      {/* Results */}
+      {potentialCollections.length > 0 && (
+        <div className="card">
+          <h3 className="text-lg font-medium mb-3">Preliminary Results: Potential New Collections</h3>
+          <DataTable 
+            data={potentialCollections} 
+            columns={[
+              { key: 'name', label: 'Potential Collection Name' },
+              { key: 'keywords', label: 'Based on Keywords' },
+              { key: 'matchingProducts', label: 'Matching Products' },
+              { key: 'searchVolume', label: 'Est. Search Volume' }
+            ]} 
+          />
+        </div>
+      )}
+      
+      {/* Buttons */}
+      <div className="flex justify-between mt-6">
+        <button 
+          className="btn btn-outline flex items-center gap-1"
+          onClick={() => goToStage(2)}
+        >
+          <ArrowLeft size={16} />
+          <span>Back to Input</span>
+        </button>
+        <button 
+          id="cb-goto-process2-btn"
+          className="btn btn-primary flex items-center gap-1 opacity-50 cursor-not-allowed"
+          disabled={!process1Complete}
+          onClick={() => goToStage(4)}
+        >
+          <span>Proceed to Performance Analysis</span>
+          <ArrowRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+  
+  const renderProcess2Stage = () => (
+    <div id="cb-process2-content">
+      <h2 className="text-xl font-semibold mb-4">Process 2: Performance Analysis</h2>
+      
+      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 text-blue-700">
+        <p>Analysis of your current collection performance. This data will inform the collection replacement strategy.</p>
+      </div>
+      
+      <div className="split-view">
+        {/* Well Performing */}
+        <div className="card" id="cb-well-performing">
+          <h3 className="text-lg font-medium mb-3">Well-Performing Categories</h3>
+          <ul className="divide-y">
+            {wellPerformingCategories.map((category, index) => (
+              <li key={index} className="py-3">
+                <div className="font-medium">{category.name}</div>
+                <div className="text-sm text-gray-500">{category.metrics}</div>
+                <div className="text-sm text-green-600 font-medium mt-1">Revenue: {category.revenue}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+        
+        {/* Underperforming */}
+        <div className="card" id="cb-underperforming">
+          <h3 className="text-lg font-medium mb-3">Underperforming / Cannibalizing</h3>
+          <ul className="divide-y">
+            {underperformingCategories.map((category, index) => (
+              <li key={index} className="py-3">
+                <div className="font-medium">{category.name}</div>
+                <div className="text-sm text-gray-500">{category.metrics}</div>
+                <div className="text-sm text-red-600 font-medium mt-1">Revenue: {category.revenue}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      
+      {/* Buttons */}
+      <div className="flex justify-between mt-6">
+        <button 
+          className="btn btn-outline flex items-center gap-1"
+          onClick={() => goToStage(3)}
+        >
+          <ArrowLeft size={16} />
+          <span>Back to Collection Analysis</span>
+        </button>
+        <button 
+          className="btn btn-primary flex items-center gap-1"
+          onClick={() => goToStage(5)}
+        >
+          <span>Proceed to Replacement Optimization</span>
+          <ArrowRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+  
+  const renderProcess3Stage = () => (
+    <div id="cb-process3-content">
+      <h2 className="text-xl font-semibold mb-4">Process 3: Replacement Optimization</h2>
+      
+      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 text-blue-700">
+        <p>Review and approve suggested replacements for underperforming collections.</p>
+      </div>
+      
+      <div className="card">
+        <h3 className="text-lg font-medium mb-3">Suggested Replacements</h3>
+        <div className="overflow-x-auto">
+          <table className="data-table" id="cb-replacements-table">
+            <thead>
+              <tr>
+                <th>Underperforming Category</th>
+                <th>Suggested Replacement(s)</th>
+                <th>Reason</th>
+                <th>Approve?</th>
+              </tr>
+            </thead>
+            <tbody>
+              {replacementSuggestions.map((item, index) => (
+                <tr key={index}>
+                  <td>{item.underperforming}</td>
+                  <td>{item.replacements}</td>
+                  <td>{item.reason}</td>
+                  <td>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={item.approved}
+                        onChange={(e) => handleApprovalChange(index, e.target.checked)}
+                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                    </label>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      {/* Buttons */}
+      <div className="flex justify-between mt-6">
+        <button 
+          className="btn btn-outline flex items-center gap-1"
+          onClick={() => goToStage(4)}
+        >
+          <ArrowLeft size={16} />
+          <span>Back to Performance Analysis</span>
+        </button>
+        <button 
+          className="btn btn-primary flex items-center gap-1"
+          onClick={() => goToStage(6)}
+        >
+          <span>Finalize and View Results</span>
+          <ArrowRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+  
+  const renderResultsStage = () => (
+    <div id="cb-results-content">
+      <h2 className="text-xl font-semibold mb-4">Collection Builder Results</h2>
+      
+      <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6 text-green-700 flex items-start gap-2">
+        <Check className="h-5 w-5 mt-0.5" />
+        <p>Collection building process completed successfully. The suggested collections and replacements are ready for implementation.</p>
+      </div>
+      
+      <div className="results-grid">
+        {/* New Collections */}
+        <div className="card">
+          <h3 className="text-lg font-medium mb-3">New Collections to Add</h3>
+          <div className="text-3xl font-bold text-primary mb-3">{potentialCollections.length}</div>
+          <ul className="text-sm divide-y max-h-40 overflow-y-auto mb-3">
+            {potentialCollections.map((collection, index) => (
+              <li key={index} className="py-1.5">{collection.name}</li>
+            ))}
+          </ul>
+          <div className="space-y-2">
+            <button className="btn btn-sm btn-outline w-full">Export List</button>
+            <SaveToFeedButton 
+              feedType="plp"
+              source="cb"
+              variant="outline"
+              size="sm"
+              className="w-full"
+            />
+          </div>
+        </div>
+        
+        {/* Replacements */}
+        <div className="card">
+          <h3 className="text-lg font-medium mb-3">Replacements Approved</h3>
+          <div className="text-3xl font-bold text-primary mb-3">{approvedReplacements.length}</div>
+          <ul className="text-sm divide-y max-h-40 overflow-y-auto mb-3">
+            {approvedReplacements.map((replacement, index) => (
+              <li key={index} className="py-1.5">
+                {replacement.underperforming} → {replacement.replacements.split(',')[0]}
+              </li>
+            ))}
+          </ul>
+          <div className="space-y-2">
+            <button className="btn btn-sm btn-outline w-full">Export List</button>
+            <SaveToFeedButton 
+              feedType="plp"
+              source="cb"
+              variant="outline"
+              size="sm"
+              className="w-full"
+            />
+          </div>
+        </div>
+        
+        {/* Updated Product Feed */}
+        <div className="card">
+          <h3 className="text-lg font-medium mb-3">Updated Product Feed</h3>
+          <div className="text-3xl font-bold text-primary mb-3">
+            {Math.floor(Math.random() * 500) + 500} Products
+          </div>
+          <div className="space-y-2">
+            <button className="btn btn-sm btn-outline w-full">Download Updated Feed</button>
+            <SaveToFeedButton 
+              feedType="product"
+              source="cb"
+              variant="outline"
+              size="sm"
+              className="w-full"
+            />
+            <button className="btn btn-sm btn-primary w-full">Push to CMS</button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Buttons */}
+      <div className="flex justify-between mt-6">
+        <button 
+          className="btn btn-outline flex items-center gap-1"
+          onClick={() => goToStage(5)}
+        >
+          <ArrowLeft size={16} />
+          <span>Back to Optimization</span>
+        </button>
+        <button 
+          className="btn btn-outline"
+          onClick={() => {
+            // Reset the process and go back to stage 1
+            setCbCurrentStage(1);
+            
+            // Reset all state
+            setProductFeedFile(null);
+            setKeywordsFile(null);
+            setPerformanceFile(null);
+            setProcess1Progress(0);
+            setProcess1Logs([]);
+            setPotentialCollections([]);
+            setWellPerformingCategories([]);
+            setUnderperformingCategories([]);
+            setReplacementSuggestions([]);
+            setApprovedReplacements([]);
+          }}
+        >
+          Start New Collection Build
+        </button>
+      </div>
+    </div>
+  );
+  
+  // Stage indicator component
+  const renderStageIndicator = () => {
+    const stages = [
+      { num: 1, name: "Setup" },
+      { num: 2, name: "Input Data" },
+      { num: 3, name: "Collection Analysis" },
+      { num: 4, name: "Performance Analysis" },
+      { num: 5, name: "Replacement Optimization" },
+      { num: 6, name: "Results" }
+    ];
+    
+    return (
+      <div id="cb-stages" className="mb-8">
+        <div className="flex flex-wrap gap-2">
+          {stages.map((stage, index) => {
+            const isActive = cbCurrentStage === stage.num;
+            const isCompleted = cbCurrentStage > stage.num;
+            const isPending = cbCurrentStage < stage.num;
+            
+            const stageClass = isActive ? "stage-active" : isCompleted ? "stage-completed" : "stage-pending";
+            
+            return (
+              <div key={stage.num} className="relative">
+                <div 
+                  className={`stage-item ${stageClass} cursor-pointer`}
+                  onClick={() => goToStage(stage.num)}
+                >
+                  <div className="stage-number">{stage.num}</div>
+                  <div className="stage-label">{stage.name}</div>
+                </div>
+                {index < stages.length - 1 && (
+                  <div className={`stage-line ${isCompleted ? "bg-green-500" : "bg-gray-200"}`}></div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Collection Builder</CardTitle>
-          <CardDescription>
-            Define stages for building product collections
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Stages</h3>
-              <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" onClick={() => setIsDialogOpen(true)}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Stage
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      {isEditMode ? "Edit Stage" : "Add New Stage"}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {isEditMode
-                        ? "Update the details for this stage."
-                        : "Create a new stage for your collection building process."}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="stageName">Stage Name</Label>
-                      <Input
-                        id="stageName"
-                        value={stageName}
-                        onChange={(e) => setStageName(e.target.value)}
-                        placeholder="Enter stage name"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="stageDescription">Description</Label>
-                      <Input
-                        id="stageDescription"
-                        value={stageDescription}
-                        onChange={(e) => setStageDescription(e.target.value)}
-                        placeholder="Enter stage description"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="stageIndex">Order</Label>
-                      <Input
-                        id="stageIndex"
-                        type="number"
-                        value={stageIndex}
-                        onChange={(e) => setStageIndex(parseInt(e.target.value))}
-                        placeholder="Stage order"
-                      />
-                    </div>
-                  </div>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel onClick={handleResetForm}>
-                      Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction onClick={handleCreateStage}>
-                      {isEditMode ? "Update" : "Create"}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
+    <div>
+      <ToolViewHeader 
+        solutionPrefix="cb" 
+        solutionName="Collection Builder" 
+      />
 
-            {isLoadingStages ? (
-              <div className="text-center py-4">Loading stages...</div>
-            ) : stages.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
-                No stages defined yet. Click "Add Stage" to create one.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {stages
-                  .slice()
-                  .sort((a, b) => Number(a.index) - Number(b.index))
-                  .map((stage: any) => (
-                    <div
-                      key={stage.id}
-                      className="flex items-center justify-between border p-4 rounded-md"
-                    >
-                      <div>
-                        <h4 className="font-medium">{stage.name}</h4>
-                        {stage.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {stage.description}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditStage(stage)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteStage(stage.id)}
-                          className="text-destructive"
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
+      {/* Stage Indicator */}
+      {renderStageIndicator()}
 
-            <Separator />
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Upload Feed File</h3>
-              <div
-                {...getRootProps()}
-                className={cn(
-                  "border-2 border-dashed rounded-md p-6 text-center cursor-pointer",
-                  isDragActive
-                    ? "border-primary bg-primary/5"
-                    : "border-gray-300"
-                )}
-              >
-                <input {...getInputProps()} />
-                {isDragActive ? (
-                  <p>Drop the files here...</p>
-                ) : (
-                  <div className="space-y-2">
-                    <p>Drag & drop files here, or click to select files</p>
-                    <p className="text-xs text-muted-foreground">
-                      Supported formats: CSV, Excel
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Run Collection Builder</h3>
-              <Button
-                disabled={isProcessing || stages.length === 0}
-                onClick={handleRunCollectionBuilder}
-                className="w-full"
-              >
-                {isProcessing ? "Processing..." : "Run Collection Builder"}
-              </Button>
-
-              {isProcessing && (
-                <div className="space-y-2">
-                  <Progress value={progress} className="w-full" />
-                  <p className="text-sm text-center text-muted-foreground">
-                    {progress}% complete
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Stage Content */}
+      {cbCurrentStage === 1 && renderSetupStage()}
+      {cbCurrentStage === 2 && renderInputStage()}
+      {cbCurrentStage === 3 && renderProcess1Stage()}
+      {cbCurrentStage === 4 && renderProcess2Stage()}
+      {cbCurrentStage === 5 && renderProcess3Stage()}
+      {cbCurrentStage === 6 && renderResultsStage()}
     </div>
   );
 };
