@@ -205,6 +205,11 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
           {/* Column mapping section */}
           <div className="mt-6">
             <h3 className="text-lg font-medium mb-4">Column Mapping</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              {sourceColumns.length > 0 
+                ? "Match each required column to the corresponding column in your uploaded file:"
+                : "Upload a file to map the columns from your sheet."}
+            </p>
             
             <div className="space-y-4">
               {requiredColumns.map((col) => (
