@@ -38,7 +38,7 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
   const [isReady, setIsReady] = useState<boolean>(false);
   const [sourceColumns, setSourceColumns] = useState<string[]>([]);
   
-  // Define required columns with display names
+  // Define required columns with display names - all columns are required
   const requiredColumns = [
     { key: "product_id", display: "Product ID", required: true },
     { key: "product_title", display: "Product Title", required: true },
