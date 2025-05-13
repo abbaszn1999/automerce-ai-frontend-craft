@@ -93,8 +93,12 @@ export const toast = {
   error: (message: string) => message,
   warning: (message: string) => message,
   info: (message: string) => message,
-  // Basic toast function
-  (props: ToastProps): void => {},
+} as {
+  (props: ToastProps): void;
+  success: (message: string) => string;
+  error: (message: string) => string;
+  warning: (message: string) => string;
+  info: (message: string) => string;
 };
 
 // Update the global toast object when a real instance is available
