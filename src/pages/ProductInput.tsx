@@ -12,7 +12,9 @@ const ProductInput: React.FC = () => {
 
   const handleProcessComplete = (data: any[]) => {
     setProcessedData(data);
+    toast.success(`Processed ${data.length} products successfully`);
     // In a real application, you would save this data to context or send it to the server
+    console.log("Processed data:", data);
   };
 
   const handleGoToAttributeExtraction = () => {
@@ -44,7 +46,7 @@ const ProductInput: React.FC = () => {
 
       <ProductInputSheet onProcessComplete={handleProcessComplete} />
       
-      {processedData && (
+      {processedData && processedData.length > 0 && (
         <div className="mt-8">
           <h2 className="text-xl font-semibold mb-4">Preview of Processed Data</h2>
           <div className="overflow-x-auto">

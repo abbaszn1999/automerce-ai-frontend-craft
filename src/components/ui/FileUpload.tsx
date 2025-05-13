@@ -5,6 +5,7 @@ import { validateFile } from "../../utils/utils";
 import ChooseFromFeedButton from "@/components/common/ChooseFromFeedButton";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import * as XLSX from 'xlsx';
 
 interface FileUploadProps {
   id: string;
@@ -19,6 +20,7 @@ interface FileUploadProps {
   onSelectFeed?: (feedId: string) => void;
   onColumnMappingComplete?: (columnMapping: Record<string, string>) => void;
   foundationColumns?: string[];
+  onColumnsExtracted?: (columns: string[]) => void;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -33,7 +35,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
   showFeedListOption = true,
   onSelectFeed = () => {},
   onColumnMappingComplete,
-  foundationColumns
+  foundationColumns,
+  onColumnsExtracted
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"pending" | "uploaded" | "error" | "mapping">("pending");
@@ -50,20 +53,49 @@ const FileUpload: React.FC<FileUploadProps> = ({
       setStatus("uploaded");
       onFileChange(selectedFile);
       
-      // If we have foundation columns defined, read sample columns from file
+      // If we have foundation columns defined, read columns from the file
       if (foundationColumns && foundationColumns.length > 0) {
         try {
-          // In a real implementation, we would parse the file to extract column names
-          // For now, we'll simulate this with a timeout
           setStatus("mapping");
           
-          // Simulate reading column headers from the file
-          setTimeout(() => {
-            const mockColumns = ['pr_id', 'title', 'product_url', 'img', 'desc', 'price', 'stock'];
-            setSampleColumns(mockColumns);
-            setShowColumnMapping(true);
-          }, 500);
+          // Actually read the spreadsheet file to extract column headers
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            const data = new Uint8Array(e.target?.result as ArrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            // Get the first worksheet
+            const worksheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[worksheetName];
+            
+            // Convert to JSON to get headers
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+            
+            if (jsonData && jsonData.length > 0) {
+              // Extract column headers from first row
+              const extractedColumns = Object.keys(jsonData[0]);
+              setSampleColumns(extractedColumns);
+              
+              // Notify parent component about the extracted columns
+              if (onColumnsExtracted) {
+                onColumnsExtracted(extractedColumns);
+              }
+              
+              setShowColumnMapping(true);
+            } else {
+              toast.error("No data found in the spreadsheet");
+              setStatus("error");
+            }
+          };
+          
+          reader.onerror = () => {
+            toast.error("Failed to read file");
+            setStatus("error");
+          };
+          
+          reader.readAsArrayBuffer(selectedFile);
         } catch (error) {
+          console.error("Error reading spreadsheet:", error);
           toast.error("Failed to read columns from file");
           setStatus("error");
         }
@@ -72,6 +104,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       setStatus("error");
       setFile(null);
       onFileChange(null);
+      toast.error(`Invalid file type. Please upload ${acceptedTypes.join(", ")}`);
     }
   };
 
@@ -106,12 +139,15 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const handleColumnMappingComplete = () => {
     // Check if all required columns are mapped
     if (foundationColumns) {
-      const requiredMapped = foundationColumns.every(col => 
-        Object.values(columnMapping).includes(col)
-      );
+      const requiredMapped = foundationColumns
+        .filter(col => col.endsWith('*'))
+        .map(col => col.replace('*', ''))
+        .every(col => 
+          Object.values(columnMapping).includes(col)
+        );
       
       if (!requiredMapped) {
-        toast.warning("Not all required columns have been mapped");
+        toast.error("Not all required columns have been mapped");
         return;
       }
     }
@@ -121,6 +157,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
     }
     setStatus("uploaded");
     setShowColumnMapping(false);
+  };
+
+  // Helper function to check if a column is required
+  const isRequired = (column: string) => {
+    return foundationColumns?.some(col => col === column || col === `${column}*`);
   };
 
   return (
@@ -199,11 +240,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
                       onChange={(e) => handleColumnMappingChange(sourceColumn, e.target.value)}
                     >
                       <option value="">-- Select target column --</option>
-                      {foundationColumns?.map((col) => (
-                        <option key={col} value={col}>
-                          {col}
-                        </option>
-                      ))}
+                      {foundationColumns?.map((col) => {
+                        const cleanCol = col.endsWith('*') ? col.replace('*', '') : col;
+                        return (
+                          <option key={col} value={cleanCol}>
+                            {cleanCol}{col.endsWith('*') ? '*' : ''}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                 ))}
