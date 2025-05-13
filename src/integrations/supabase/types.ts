@@ -349,6 +349,44 @@ export type Database = {
           },
         ]
       }
+      solution_projects: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          last_updated: string | null
+          name: string
+          solution_prefix: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_updated?: string | null
+          name: string
+          solution_prefix: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_updated?: string | null
+          name?: string
+          solution_prefix?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solution_projects_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspace_users: {
         Row: {
           created_at: string
