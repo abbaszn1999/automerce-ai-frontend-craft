@@ -6,6 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { ArrowRight, Download, FileInput } from "lucide-react";
 import * as XLSX from 'xlsx';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue 
+} from "@/components/ui/select";
 
 interface ProductInputSheetProps {
   onProcessComplete?: (data: any[]) => void;
@@ -17,14 +24,33 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
   const [isReady, setIsReady] = useState<boolean>(false);
   const [sourceColumns, setSourceColumns] = useState<string[]>([]);
   
-  // Define foundation columns (your required structure)
-  const foundationColumns = [
-    "product_id*", 
-    "product_title*", 
+  // Define required columns
+  const requiredColumns = [
+    "product_id", 
+    "product_title", 
     "url", 
-    "image_url*", 
+    "image_url", 
     "product_description"
   ];
+
+  // Display names for required columns
+  const columnDisplayNames: Record<string, string> = {
+    "product_id": "Product ID",
+    "product_title": "Product Title",
+    "url": "URL",
+    "image_url": "Image URL",
+    "product_description": "Product Description"
+  };
+  
+  // Check if all required columns are mapped
+  const areAllRequiredColumnsMapped = () => {
+    return requiredColumns.every(col => columnMapping[col] && columnMapping[col].length > 0);
+  };
+
+  useEffect(() => {
+    // Set isReady state based on whether all required columns are mapped
+    setIsReady(areAllRequiredColumnsMapped());
+  }, [columnMapping]);
 
   const handleFileChange = (file: File | null) => {
     console.log("File changed:", file?.name);
@@ -43,11 +69,12 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
     setSourceColumns(columns);
   };
 
-  const handleColumnMappingComplete = (mapping: Record<string, string>) => {
-    console.log("Column mapping completed:", mapping);
-    setColumnMapping(mapping);
-    setIsReady(true);
-    toast.success("Column mapping completed successfully");
+  const handleColumnMappingChange = (requiredColumn: string, sourceColumn: string) => {
+    console.log(`Mapping ${requiredColumn} to ${sourceColumn}`);
+    setColumnMapping(prev => ({
+      ...prev,
+      [requiredColumn]: sourceColumn
+    }));
   };
 
   const handleProcess = async () => {
@@ -75,10 +102,12 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
         const processedData = rawData.map(row => {
           const processedRow: Record<string, any> = {};
           
-          // Map each source column to the target column
-          Object.entries(columnMapping).forEach(([source, target]) => {
-            if (source in row) {
-              processedRow[target] = row[source];
+          // Map each required column to the corresponding source column
+          Object.entries(columnMapping).forEach(([required, source]) => {
+            if (source && source in row) {
+              processedRow[required] = row[source];
+            } else {
+              processedRow[required] = ''; // Set empty string for unmapped columns
             }
           });
           
@@ -108,24 +137,21 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
     // Create workbook and worksheet
     const wb = XLSX.utils.book_new();
     
-    // Create headers for the template
-    const requiredColumns = foundationColumns.map(col => col.replace('*', ''));
-    
-    // Create sample data
+    // Create sample data using our required columns
     const sampleData = [
       {
-        'product_id': 'PROD001',
-        'product_title': 'Example Product 1',
-        'url': 'https://example.com/product1',
-        'image_url': 'https://example.com/images/product1.jpg',
-        'product_description': 'This is a sample product description.'
+        'Product ID': 'PROD001',
+        'Product Title': 'Example Product 1',
+        'URL': 'https://example.com/product1',
+        'Image URL': 'https://example.com/images/product1.jpg',
+        'Product Description': 'This is a sample product description.'
       },
       {
-        'product_id': 'PROD002',
-        'product_title': 'Example Product 2',
-        'url': 'https://example.com/product2',
-        'image_url': 'https://example.com/images/product2.jpg',
-        'product_description': 'Another sample product description.'
+        'Product ID': 'PROD002',
+        'Product Title': 'Example Product 2',
+        'URL': 'https://example.com/product2',
+        'Image URL': 'https://example.com/images/product2.jpg',
+        'Product Description': 'Another sample product description.'
       }
     ];
     
@@ -151,8 +177,8 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
           <div className="text-sm text-gray-600 mb-4">
             <p>Upload your product data sheet containing the following information:</p>
             <ul className="list-disc pl-5 mt-2">
-              {foundationColumns.map((col, index) => (
-                <li key={index}>{col}</li>
+              {requiredColumns.map((col, index) => (
+                <li key={index}>{columnDisplayNames[col]}</li>
               ))}
             </ul>
           </div>
@@ -162,11 +188,42 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
             acceptedTypes={[".csv", ".xlsx", ".xls"]}
             label="Upload Product Sheet"
             onFileChange={handleFileChange}
-            requiredColumns={foundationColumns}
-            foundationColumns={foundationColumns}
-            onColumnMappingComplete={handleColumnMappingComplete}
             onColumnsExtracted={handleColumnsExtracted}
           />
+
+          {sourceColumns.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-medium mb-4">Column Mapping</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Match each required column to the corresponding column in your uploaded file:
+              </p>
+              
+              <div className="space-y-4">
+                {requiredColumns.map((requiredCol) => (
+                  <div key={requiredCol} className="flex items-center gap-4">
+                    <div className="w-1/3">
+                      <label className="block text-sm font-medium">{columnDisplayNames[requiredCol]}</label>
+                    </div>
+                    <div className="w-2/3">
+                      <Select 
+                        value={columnMapping[requiredCol] || ""} 
+                        onValueChange={(value) => handleColumnMappingChange(requiredCol, value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select column from your file" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sourceColumns.map((sourceCol) => (
+                            <SelectItem key={sourceCol} value={sourceCol}>{sourceCol}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-between mt-6">
             <Button 
@@ -190,7 +247,7 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
         </CardContent>
       </Card>
       
-      {isReady && sourceColumns.length > 0 && (
+      {isReady && (
         <Card>
           <CardHeader>
             <CardTitle>Column Mapping Summary</CardTitle>
@@ -200,15 +257,15 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-100">
+                    <th className="text-left p-2">Required Column</th>
                     <th className="text-left p-2">Your Sheet Column</th>
-                    <th className="text-left p-2">System Column</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.entries(columnMapping).map(([source, target], index) => (
+                  {Object.entries(columnMapping).map(([required, source], index) => (
                     <tr key={index} className="border-t">
+                      <td className="p-2">{columnDisplayNames[required]}</td>
                       <td className="p-2">{source}</td>
-                      <td className="p-2">{target}</td>
                     </tr>
                   ))}
                 </tbody>
