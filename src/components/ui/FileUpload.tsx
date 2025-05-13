@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Upload, Check, X, FileInput, ArrowDown } from "lucide-react";
+import { Upload, Check, X, FileInput } from "lucide-react";
 import { validateFile } from "../../utils/utils";
 import ChooseFromFeedButton from "@/components/common/ChooseFromFeedButton";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,12 @@ interface FileUploadProps {
   onColumnsExtracted?: (columns: string[]) => void;
   className?: string;
   showFeedButton?: boolean;
+  // Add the missing props
+  requiredColumns?: string[];
+  downloadTemplateLink?: string;
+  statusId?: string;
+  showFeedListOption?: boolean;
+  mapColumn?: boolean;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -26,7 +32,13 @@ const FileUpload: React.FC<FileUploadProps> = ({
   onFileChange,
   onColumnsExtracted,
   className = "",
-  showFeedButton = false
+  showFeedButton = false,
+  // Default values for new props
+  requiredColumns,
+  downloadTemplateLink,
+  statusId,
+  showFeedListOption,
+  mapColumn
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [isValid, setIsValid] = useState<boolean | null>(null);
@@ -97,6 +109,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
     if (onFileChange) onFileChange(null);
   };
 
+  // Handle empty selection for feed
+  const handleSelectFeed = (feedId: string) => {
+    console.log("Feed selected:", feedId);
+    // This would normally do something with the selected feed
+  };
+
   return (
     <div className={`mb-6 ${className}`}>
       <div className="flex justify-between items-center mb-2">
@@ -104,7 +122,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
           {label}
         </label>
         
-        {showFeedButton && <ChooseFromFeedButton />}
+        {showFeedButton && (
+          <ChooseFromFeedButton 
+            onSelectFeed={handleSelectFeed}
+          />
+        )}
       </div>
 
       {!file ? (
@@ -175,6 +197,29 @@ const FileUpload: React.FC<FileUploadProps> = ({
               <X className="w-4 h-4" />
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* Optional display of required columns if provided */}
+      {requiredColumns && requiredColumns.length > 0 && (
+        <div className="mt-2">
+          <p className="text-xs text-gray-500">
+            Required columns: {requiredColumns.join(", ")}
+          </p>
+        </div>
+      )}
+      
+      {/* Optional template download link */}
+      {downloadTemplateLink && (
+        <div className="mt-2 text-center">
+          <a 
+            href={downloadTemplateLink} 
+            className="text-xs text-blue-600 hover:underline"
+            target="_blank" 
+            rel="noopener noreferrer"
+          >
+            Download template
+          </a>
         </div>
       )}
     </div>
