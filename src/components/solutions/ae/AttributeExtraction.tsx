@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "@/context/AppContext";
 import { useProjectSettings, AEConfigType } from "@/hooks/useProjectSettings";
@@ -12,6 +11,12 @@ import { ArrowLeft, ArrowRight, Pause, Play, XCircle, Save } from "lucide-react"
 import { simulateProcessing } from "../../../utils/utils";
 import { toast } from "@/hooks/use-toast";
 import ModuleOutputActions from "../../common/ModuleOutputActions";
+import { 
+  useAttributeExtractionService, 
+  ColumnMapping, 
+  ProductData 
+} from "@/hooks/api/useAttributeExtractionService";
+import { supabase } from "@/integrations/supabase/client";
 
 const AttributeExtraction: React.FC = () => {
   const { 
