@@ -15,6 +15,9 @@ interface FileUploadProps {
   requiredColumns?: string[];
   onFileChange: (file: File | null) => void;
   downloadTemplateLink?: string;
+  mapColumn?: boolean;
+  showFeedListOption?: boolean;
+  onSelectFeed?: (feedId: string) => void;
   onColumnsExtracted?: (columns: string[]) => void;
   maxFileSize?: number; // Max file size in MB
 }
@@ -27,6 +30,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
   requiredColumns,
   onFileChange,
   downloadTemplateLink,
+  mapColumn,
+  showFeedListOption,
+  onSelectFeed,
   onColumnsExtracted,
   maxFileSize = 10
 }) => {
@@ -166,6 +172,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
     const fileInput = document.getElementById(id) as HTMLInputElement;
     if (fileInput) {
       fileInput.value = "";
+    }
+  };
+
+  const handleSelectFeed = () => {
+    if (onSelectFeed) {
+      onSelectFeed("feed-id"); // This would be replaced with actual feed selection logic
     }
   };
 
