@@ -4,7 +4,7 @@ import FileUpload from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { ArrowRight, Download, FileInput } from "lucide-react";
+import { ArrowRight, Download } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { 
   Select,
@@ -202,14 +202,9 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
             onColumnsExtracted={handleColumnsExtracted}
           />
 
-          {/* Always show column mapping section, but with appropriate state */}
+          {/* Column mapping section */}
           <div className="mt-6">
             <h3 className="text-lg font-medium mb-4">Column Mapping</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              {sourceColumns.length > 0 
-                ? "Match each required column to the corresponding column in your uploaded file:"
-                : "Upload a file to map the columns from your sheet."}
-            </p>
             
             <div className="space-y-4">
               {requiredColumns.map((col) => (
