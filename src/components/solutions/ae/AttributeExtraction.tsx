@@ -17,6 +17,8 @@ import {
   ProductData 
 } from "@/hooks/api/useAttributeExtractionService";
 import { supabase } from "@/integrations/supabase/client";
+import * as XLSX from 'xlsx';
+import { Button } from "@/components/ui/button";
 
 const AttributeExtraction: React.FC = () => {
   const { 
@@ -50,6 +52,9 @@ const AttributeExtraction: React.FC = () => {
   
   // Add state for tracking source columns from the uploaded file
   const [sourceColumns, setSourceColumns] = useState<string[]>([]);
+  
+  // Add state for tracking processed data
+  const [processedData, setProcessedData] = useState<any[] | null>(null);
   
   // Form state for configuration
   const [formData, setFormData] = useState<AEConfigType>({
@@ -155,6 +160,51 @@ const AttributeExtraction: React.FC = () => {
   const handleColumnsExtracted = (columns: string[]) => {
     setSourceColumns(columns);
     console.log("Source columns extracted:", columns);
+  };
+
+  const handleProcess = () => {
+    if (!uploadedFile) {
+      toast.error("Please upload a file before processing");
+      return;
+    }
+    
+    toast.info("Processing file...");
+    
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        // Get the first worksheet
+        const worksheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[worksheetName];
+        
+        // Convert to JSON
+        const rawData = XLSX.utils.sheet_to_json(worksheet) as any[];
+        
+        // Process data based on column mapping
+        const processedData = rawData.map(row => {
+          const mappedRow: Record<string, any> = {};
+          
+          // For demo purposes, just keep the original data
+          // In a real implementation, you would map columns based on user selection
+          return row;
+        });
+        
+        setProcessedData(processedData);
+        toast.success(`Processed ${processedData.length} products successfully`);
+      };
+      
+      reader.onerror = () => {
+        toast.error("Failed to read file");
+      };
+      
+      reader.readAsArrayBuffer(uploadedFile);
+    } catch (error) {
+      console.error("Error processing file:", error);
+      toast.error("Failed to process file");
+    }
   };
 
   const handleStartProcess = () => {
@@ -692,7 +742,7 @@ const AttributeExtraction: React.FC = () => {
               onColumnsExtracted={handleColumnsExtracted}
             />
             
-            <div className="card">
+            <div className="card mt-6">
               <h3 className="text-lg font-medium mb-3">Connect to Store</h3>
               <p className="text-gray-600 mb-3">Import your product data directly from your e-commerce store.</p>
               <button disabled className="btn btn-outline opacity-50 cursor-not-allowed">
@@ -700,7 +750,7 @@ const AttributeExtraction: React.FC = () => {
               </button>
             </div>
             
-            <div className="card">
+            <div className="card mt-6">
               <h3 className="text-lg font-medium mb-3">Column Mapping</h3>
               <div className="space-y-4">
                 {requiredColumns.map((col) => (
@@ -733,24 +783,81 @@ const AttributeExtraction: React.FC = () => {
               <p className="text-xs text-gray-500 mt-2">* Required fields</p>
             </div>
             
-            {/* Buttons */}
-            <div className="flex justify-between mt-6">
-              <button 
-                className="btn btn-outline flex items-center gap-1"
+            {/* Add Process Sheet Button */}
+            <div className="flex justify-between mt-6 mb-4">
+              <Button
+                variant="outline"
                 onClick={() => goToTab("attr-setup-content")}
+                className="flex items-center gap-1"
               >
                 <ArrowLeft size={16} />
                 <span>Back to Setup</span>
-              </button>
-              <button 
-                className="btn btn-primary flex items-center gap-1"
-                onClick={handleStartProcess}
+              </Button>
+              
+              <Button
+                onClick={handleProcess}
                 disabled={!uploadedFile}
+                className="flex items-center gap-1"
               >
-                <span>Start Extraction Process</span>
+                <span>Process Sheet</span>
                 <ArrowRight size={16} />
-              </button>
+              </Button>
             </div>
+            
+            {/* Show processed data preview */}
+            {processedData && processedData.length > 0 && (
+              <div className="card mt-6">
+                <h3 className="text-lg font-medium mb-3">Data Preview</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        {Object.keys(processedData[0]).slice(0, 5).map((header, index) => (
+                          <th key={index} className="border p-2 text-left">
+                            {header}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {processedData.slice(0, 5).map((row, rowIndex) => (
+                        <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          {Object.values(row).slice(0, 5).map((cell: any, cellIndex) => (
+                            <td key={cellIndex} className="border p-2">{String(cell)}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {processedData.length > 5 && (
+                    <p className="text-sm text-gray-500 mt-2">Showing 5 of {processedData.length} records</p>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Save to Database and Start Process Buttons */}
+            {processedData && processedData.length > 0 && (
+              <div className="flex justify-between mt-6">
+                <Button 
+                  variant="outline"
+                  onClick={() => toast.info("Save to database feature coming soon")}
+                  className="flex items-center gap-1"
+                >
+                  <Save size={16} />
+                  <span>Save to Database</span>
+                </Button>
+                
+                <Button 
+                  onClick={handleStartProcess}
+                  disabled={true} // Disabled until saved to database
+                  className="flex items-center gap-1"
+                >
+                  <span>Start Extraction Process</span>
+                  <ArrowRight size={16} />
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
