@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "@/context/AppContext";
 import { useProjectSettings, AEConfigType } from "@/hooks/useProjectSettings";
@@ -327,9 +326,13 @@ const AttributeExtraction: React.FC<AttributeExtractionProps> = ({ solutionPrefi
                 </CardHeader>
                 <CardContent>
                   <FileUpload
+                    id="product-data-upload"
+                    label="Upload product data"
+                    acceptedTypes={[".csv", ".xlsx", ".json"]}
                     onFileChange={handleFileUpload}
-                    acceptedTypes={[".csv", ".xlsx", ".xls"]}
-                    maxFileSizeMB={10}
+                    onColumnsExtracted={handleColumnsExtracted}
+                    downloadTemplateLink="#"
+                    showFeedListOption={true}
                   />
                 </CardContent>
               </Card>

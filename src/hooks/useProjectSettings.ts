@@ -1,14 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { defaultSettings } from './projectSettings/defaultSettings';
+import { getDefaultProjectSettings } from './projectSettings/defaultSettings';
+import { AEConfigType } from './projectSettings/types';
+import { Json } from '@/integrations/supabase/types';
 
-export interface AEConfigType {
-  columnMappings: Record<string, string>;
-  attributeDefinitions: Array<any>;
-  // Other potential configuration values
-}
-
-export const useProjectSettings = (solutionPrefix: string, projectName?: string) => {
+export const useProjectSettings = (solutionPrefix: string = "ae", projectName?: string) => {
   const [settings, setSettings] = useState<AEConfigType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,13 +50,11 @@ export const useProjectSettings = (solutionPrefix: string, projectName?: string)
 
         // Set settings or default values
         if (settingsData?.settings) {
-          setSettings(settingsData.settings as AEConfigType);
+          // Need to cast the JSON to our type
+          setSettings(settingsData.settings as unknown as AEConfigType);
         } else {
           // Initialize with default settings
-          setSettings(defaultSettings[solutionPrefix] as AEConfigType || {
-            columnMappings: {},
-            attributeDefinitions: []
-          });
+          setSettings(getDefaultProjectSettings());
         }
       } catch (error) {
         setError(error instanceof Error ? error.message : 'Unknown error');
@@ -105,16 +100,19 @@ export const useProjectSettings = (solutionPrefix: string, projectName?: string)
       let result;
       
       if (existingSettings) {
-        // Update existing settings
+        // Update existing settings - need to cast to Json type for Supabase
         result = await supabase
           .from('project_settings')
-          .update({ settings: updatedSettings })
+          .update({ settings: updatedSettings as unknown as Json })
           .eq('project_id', projectData.id);
       } else {
-        // Insert new settings
+        // Insert new settings - need to cast to Json type for Supabase
         result = await supabase
           .from('project_settings')
-          .insert({ project_id: projectData.id, settings: updatedSettings });
+          .insert({ 
+            project_id: projectData.id, 
+            settings: updatedSettings as unknown as Json 
+          });
       }
 
       if (result.error) {

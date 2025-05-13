@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -202,11 +201,11 @@ export const useAttributeExtractionService = () => {
       throw new Error(`Failed to fetch extraction runs: ${error.message}`);
     }
 
-    // Convert the string status to ExtractionRunStatus type
+    // Convert the data to the correct type
     return data.map(run => ({
       ...run,
       status: run.status as ExtractionRunStatus,
-      column_mapping: run.column_mapping as ProductColumnMapping
+      column_mapping: run.column_mapping as unknown as ProductColumnMapping
     }));
   };
 
@@ -225,7 +224,7 @@ export const useAttributeExtractionService = () => {
     // Convert Json type to Record<string, any>
     return data.map(product => ({
       ...product,
-      attributes: product.attributes as Record<string, any>
+      attributes: product.attributes as unknown as Record<string, any>
     }));
   };
 
