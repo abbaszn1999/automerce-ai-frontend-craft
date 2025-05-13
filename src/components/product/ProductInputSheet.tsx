@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import FileUpload from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { ArrowRight, Download, Save, Loader2 } from "lucide-react";
-// Fix the XLSX import to use named exports instead of default export
 import * as XLSX from 'xlsx';
 import { 
   Select,
@@ -14,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue 
 } from "@/components/ui/select";
-import { useAttributeExtractionService } from '@/hooks/api/useAttributeExtractionService';
+import { useAttributeExtractionService, ColumnMapping as ServiceColumnMapping } from '@/hooks/api/useAttributeExtractionService';
 
 interface ProductInputSheetProps {
   onProcessComplete?: (data: any[]) => void;
@@ -22,13 +20,8 @@ interface ProductInputSheetProps {
   projectId?: string;
 }
 
-interface ColumnMapping {
-  product_id: string;
-  product_title: string;
-  product_url: string;
-  product_image_url: string;
-  product_description: string;
-}
+// Use the ColumnMapping type from the service
+type ColumnMapping = ServiceColumnMapping;
 
 const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete, onSaveComplete, projectId }) => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
