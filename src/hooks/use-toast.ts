@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { Cross2Icon } from "@radix-ui/react-icons"
 import * as ToastPrimitives from "@radix-ui/react-toast"
@@ -277,15 +278,15 @@ function toast({ ...props }: Toast) {
 
 // Add toast variants
 toast.success = (description: string) => {
-  return toast({ description, variant: "success" });
+  return toast({ description, variant: "success" })
 }
 
 toast.error = (description: string) => {
-  return toast({ description, variant: "destructive" });
+  return toast({ description, variant: "destructive" })
 }
 
 toast.info = (description: string) => {
-  return toast({ description, variant: "info" });
+  return toast({ description, variant: "info" })
 }
 
 function useToast() {
