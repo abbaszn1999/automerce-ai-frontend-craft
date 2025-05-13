@@ -1,21 +1,12 @@
 
 import React, { useState } from "react";
-import { toast } from "@/hooks/use-toast";
+import { useAppContext } from "../../../context/AppContext";
+import { toast } from "@/components/ui/sonner";
 import { Plus, Edit, Trash, X, CheckCircle, XCircle } from "lucide-react";
 
-interface AttributeManagerProps {
-  attributes: Array<{ id: string; name: string; values: string[] }>;
-  addAttribute: (name: string, values: string[]) => void;
-  updateAttribute: (id: string, name: string, values: string[]) => void;
-  deleteAttribute: (id: string) => void;
-}
-
-const AttributeManager: React.FC<AttributeManagerProps> = ({ 
-  attributes, 
-  addAttribute, 
-  updateAttribute,
-  deleteAttribute
-}) => {
+const AttributeManager: React.FC = () => {
+  const { aeAttributes, addAttribute, updateAttribute, deleteAttribute } = useAppContext();
+  
   const [newAttributeName, setNewAttributeName] = useState("");
   const [newAttributeValues, setNewAttributeValues] = useState("");
   
@@ -114,12 +105,12 @@ const AttributeManager: React.FC<AttributeManagerProps> = ({
       
       {/* Attribute List */}
       <div id="attribute-list-container" className="mb-6">
-        {attributes.length === 0 ? (
+        {aeAttributes.length === 0 ? (
           <div id="no-attributes-message" className="text-gray-500 mb-4">
             No attributes have been defined yet. Add your first attribute below.
           </div>
         ) : (
-          attributes.map(attribute => (
+          aeAttributes.map(attribute => (
             <div key={attribute.id} className="attribute-block">
               {editMode && editMode.id === attribute.id ? (
                 // Edit Mode

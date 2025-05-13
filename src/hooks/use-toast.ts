@@ -1,92 +1,42 @@
 
-import { useState, useEffect } from 'react';
-import {
-  ToastAction,
-  type ToastActionElement,
-  type ToastProps as ToastType
-} from "@/components/ui/toast";
+import { useToast as useShadcnToast } from "@/components/ui/use-toast";
 
-export type ToastProps = ToastType & {
-  action?: ToastActionElement;
+export const useToast = () => {
+  return useShadcnToast();
 };
 
-export type ToastHookResult = {
-  toast: {
-    (props: ToastProps): void;
-    success: (message: string) => void;
-    error: (message: string) => void;
-    warning: (message: string) => void;
-    info: (message: string) => void;
-  };
-  toasts: ToastProps[];
-  dismissToast: (toastId?: string) => void;
-};
-
-export const useToast = (): ToastHookResult => {
-  const [toasts, setToasts] = useState<ToastProps[]>([]);
-
-  const dismissToast = (toastId?: string) => {
-    setToasts((toasts) => {
-      if (toastId) {
-        return toasts.filter((toast) => toast.id !== toastId);
-      }
-      return [];
-    });
-  };
-
-  const toast = (props: ToastProps) => {
-    const id = props.id || String(Math.random() * 10000);
-    const newToast = { ...props, id };
-    
-    setToasts((toasts) => [...toasts, newToast]);
-    
-    if (props.duration !== Infinity) {
-      setTimeout(() => {
-        dismissToast(id);
-      }, props.duration || 5000);
-    }
-    
-    return id;
-  };
-
-  toast.success = (message: string) => {
-    return toast({ 
-      title: "Success", 
-      description: message, 
-      variant: "default",
-      className: "bg-green-100 border-green-500 text-green-900"
-    });
-  };
-  
-  toast.error = (message: string) => {
-    return toast({ 
-      title: "Error", 
-      description: message, 
-      variant: "destructive" 
-    });
-  };
-  
-  toast.warning = (message: string) => {
-    return toast({ 
-      title: "Warning", 
+export const toast = {
+  success: (message: string) => {
+    const { toast } = useShadcnToast();
+    toast({
+      title: "Success",
       description: message,
       variant: "default",
-      className: "bg-amber-100 border-amber-500 text-amber-900"
     });
-  };
-  
-  toast.info = (message: string) => {
-    return toast({ 
-      title: "Info", 
+  },
+  error: (message: string) => {
+    const { toast } = useShadcnToast();
+    toast({
+      title: "Error",
+      description: message,
+      variant: "destructive",
+    });
+  },
+  warning: (message: string) => {
+    const { toast } = useShadcnToast();
+    toast({
+      title: "Warning",
       description: message,
       variant: "default",
-      className: "bg-blue-100 border-blue-500 text-blue-900"
+      className: "bg-amber-500",
     });
-  };
-
-  return { toast, toasts, dismissToast };
+  },
+  info: (message: string) => {
+    const { toast } = useShadcnToast();
+    toast({
+      title: "Info",
+      description: message,
+      variant: "default",
+    });
+  },
 };
-
-// Create a singleton instance for global use
-const { toast } = useToast();
-export { toast };

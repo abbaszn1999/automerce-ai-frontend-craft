@@ -1,33 +1,18 @@
-
 import React, { useState, useEffect } from "react";
-import { useAppContext } from "@/context/AppContext";
-import { useProjectSettings, AEConfigType } from "@/hooks/useProjectSettings";
+import { useAppContext } from "../../../context/AppContext";
 import ToolViewHeader from "../../common/ToolViewHeader";
 import AttributeManager from "./AttributeManager";
 import FileUpload from "../../ui/FileUpload";
 import ProgressBar from "../../ui/ProgressBar";
 import LogDisplay from "../../ui/LogDisplay";
 import DataTable from "../../ui/DataTable";
-import { ArrowLeft, ArrowRight, Pause, Play, XCircle, Save } from "lucide-react";
+import { ArrowLeft, ArrowRight, Pause, Play, XCircle } from "lucide-react";
 import { simulateProcessing } from "../../../utils/utils";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 import ModuleOutputActions from "../../common/ModuleOutputActions";
 
 const AttributeExtraction: React.FC = () => {
-  const { 
-    aeCurrentTab, 
-    setAeCurrentTab, 
-    setCurrentView, 
-    setSelectedProjectName, 
-    selectedProjectName 
-  } = useAppContext();
-  
-  const { 
-    settings, 
-    isLoading: isLoadingSettings, 
-    isSaving, 
-    saveProjectSettings 
-  } = useProjectSettings("ae", selectedProjectName);
+  const { aeCurrentTab, setAeCurrentTab, aeAttributes, setCurrentView, setSelectedProjectName } = useAppContext();
   
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
@@ -43,39 +28,8 @@ const AttributeExtraction: React.FC = () => {
     resume: () => void;
   } | null>(null);
   
-  // Form state for configuration
-  const [formData, setFormData] = useState<AEConfigType>({
-    aiSettings: {
-      embeddingModel: "text-embedding-3-small",
-      embeddingDimensions: 256,
-      maxResultsFilter: 7,
-      model2: "gpt-4o",
-      maxTokens2: 8000,
-      prompt2: "You are an AI assistant identifying product attributes.",
-      batchSize: 100,
-      model3: "gpt-4o",
-      maxTokens3: 2000,
-      prompt3: "Analyze and categorize the extracted product attributes into their respective attribute types."
-    },
-    searchApiSettings: {
-      results: 10
-    },
-    scrapingSettings: {
-      maxConcurrentRequests1: 5,
-      maxConcurrentRequests2: 5
-    },
-    attributes: []
-  });
-  
   // Mock data for results
   const [resultsData, setResultsData] = useState<any[]>([]);
-
-  // Load settings when they're available
-  useEffect(() => {
-    if (settings) {
-      setFormData(settings);
-    }
-  }, [settings]);
 
   // Effect to update ETA based on progress
   useEffect(() => {
@@ -116,11 +70,9 @@ const AttributeExtraction: React.FC = () => {
         };
         
         // Add attribute values to products
-        formData.attributes.forEach(attr => {
-          if (attr.values.length > 0) {
-            const randomValueIndex = Math.floor(Math.random() * attr.values.length);
-            product[attr.name.toLowerCase()] = attr.values[randomValueIndex];
-          }
+        aeAttributes.forEach(attr => {
+          const randomValueIndex = Math.floor(Math.random() * attr.values.length);
+          product[attr.name.toLowerCase()] = attr.values[randomValueIndex];
         });
         
         mockResults.push(product);
@@ -128,7 +80,7 @@ const AttributeExtraction: React.FC = () => {
       
       setResultsData(mockResults);
     }
-  }, [isComplete, formData.attributes]);
+  }, [isComplete, aeAttributes]);
 
   const goToTab = (tabId: string) => {
     setAeCurrentTab(tabId);
@@ -222,7 +174,7 @@ const AttributeExtraction: React.FC = () => {
     ];
     
     // Add a column for each attribute
-    const attributeColumns = formData.attributes.map(attr => ({
+    const attributeColumns = aeAttributes.map(attr => ({
       key: attr.name.toLowerCase(),
       label: attr.name
     }));
@@ -256,65 +208,6 @@ const AttributeExtraction: React.FC = () => {
   const handlePushToCMS = () => {
     toast.success("Pushing attributes to CMS...");
   };
-
-  // Form handlers
-  const handleInputChange = (section: keyof AEConfigType, field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value
-      }
-    }));
-  };
-
-  // Handle saving configuration
-  const handleSaveConfiguration = async () => {
-    if (await saveProjectSettings(formData)) {
-      toast.success("Configuration saved successfully");
-    }
-  };
-
-  // Handle attributes updates
-  const addAttribute = (name: string, values: string[]) => {
-    const newAttribute = {
-      id: `attr${Date.now()}`,
-      name,
-      values
-    };
-    
-    setFormData(prev => ({
-      ...prev,
-      attributes: [...prev.attributes, newAttribute]
-    }));
-  };
-  
-  const updateAttribute = (id: string, name: string, values: string[]) => {
-    setFormData(prev => ({
-      ...prev,
-      attributes: prev.attributes.map(attr => 
-        attr.id === id ? { ...attr, name, values } : attr
-      )
-    }));
-  };
-  
-  const deleteAttribute = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      attributes: prev.attributes.filter(attr => attr.id !== id)
-    }));
-  };
-
-  if (isLoadingSettings) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-          <p className="mt-2">Loading project settings...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div>
@@ -375,26 +268,7 @@ const AttributeExtraction: React.FC = () => {
         {/* Setup Tab */}
         {aeCurrentTab === "attr-setup-content" && (
           <div id="attr-setup-content">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Attribute Extraction - Configuration</h2>
-              <button 
-                className="btn btn-primary flex items-center gap-2"
-                onClick={handleSaveConfiguration}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></div>
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save size={16} />
-                    <span>Save Configuration</span>
-                  </>
-                )}
-              </button>
-            </div>
+            <h2 className="text-xl font-semibold mb-4">Attribute Extraction - Configuration</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* AI Integration - Filtering SERP */}
@@ -403,44 +277,19 @@ const AttributeExtraction: React.FC = () => {
                 <div className="space-y-3">
                   <div>
                     <label htmlFor="openai-api-key" className="block text-sm font-medium mb-1">OPENAI_API_KEY</label>
-                    <input 
-                      type="password" 
-                      id="openai-api-key" 
-                      className="w-full p-2 border rounded" 
-                      placeholder="Enter your OpenAI API key" 
-                      value={formData.aiSettings.openAiApiKey || ""}
-                      onChange={(e) => handleInputChange("aiSettings", "openAiApiKey", e.target.value)}
-                    />
+                    <input type="password" id="openai-api-key" className="w-full p-2 border rounded" placeholder="Enter your OpenAI API key" />
                   </div>
                   <div>
                     <label htmlFor="embedding-model" className="block text-sm font-medium mb-1">embedding_model</label>
-                    <input 
-                      type="text" 
-                      id="embedding-model" 
-                      className="w-full p-2 border rounded" 
-                      value={formData.aiSettings.embeddingModel || "text-embedding-3-small"}
-                      onChange={(e) => handleInputChange("aiSettings", "embeddingModel", e.target.value)}
-                    />
+                    <input type="text" id="embedding-model" className="w-full p-2 border rounded" defaultValue="text-embedding-3-small" />
                   </div>
                   <div>
                     <label htmlFor="embedding-dimensions" className="block text-sm font-medium mb-1">embedding_dimensions</label>
-                    <input 
-                      type="number" 
-                      id="embedding-dimensions" 
-                      className="w-full p-2 border rounded" 
-                      value={formData.aiSettings.embeddingDimensions || 256}
-                      onChange={(e) => handleInputChange("aiSettings", "embeddingDimensions", parseInt(e.target.value))}
-                    />
+                    <input type="number" id="embedding-dimensions" className="w-full p-2 border rounded" defaultValue="256" />
                   </div>
                   <div>
                     <label htmlFor="max-results-filter" className="block text-sm font-medium mb-1">max_results_filter</label>
-                    <input 
-                      type="number" 
-                      id="max-results-filter" 
-                      className="w-full p-2 border rounded" 
-                      value={formData.aiSettings.maxResultsFilter || 7}
-                      onChange={(e) => handleInputChange("aiSettings", "maxResultsFilter", parseInt(e.target.value))}
-                    />
+                    <input type="number" id="max-results-filter" className="w-full p-2 border rounded" defaultValue="7" />
                   </div>
                 </div>
               </div>
@@ -451,24 +300,11 @@ const AttributeExtraction: React.FC = () => {
                 <div className="space-y-3">
                   <div>
                     <label htmlFor="searchapi-api-key" className="block text-sm font-medium mb-1">SEARCHAPI_API_KEY</label>
-                    <input 
-                      type="password" 
-                      id="searchapi-api-key" 
-                      className="w-full p-2 border rounded" 
-                      placeholder="Enter your SearchAPI API key" 
-                      value={formData.searchApiSettings.searchApiKey || ""}
-                      onChange={(e) => handleInputChange("searchApiSettings", "searchApiKey", e.target.value)}
-                    />
+                    <input type="password" id="searchapi-api-key" className="w-full p-2 border rounded" placeholder="Enter your SearchAPI API key" />
                   </div>
                   <div>
                     <label htmlFor="results" className="block text-sm font-medium mb-1">results</label>
-                    <input 
-                      type="number" 
-                      id="results" 
-                      className="w-full p-2 border rounded" 
-                      value={formData.searchApiSettings.results || 10}
-                      onChange={(e) => handleInputChange("searchApiSettings", "results", parseInt(e.target.value))}
-                    />
+                    <input type="number" id="results" className="w-full p-2 border rounded" defaultValue="10" />
                   </div>
                 </div>
               </div>
@@ -479,24 +315,11 @@ const AttributeExtraction: React.FC = () => {
                 <div className="space-y-3">
                   <div>
                     <label htmlFor="scrapingbee-api-key" className="block text-sm font-medium mb-1">SCRAPINGBEE_API_KEY</label>
-                    <input 
-                      type="password" 
-                      id="scrapingbee-api-key" 
-                      className="w-full p-2 border rounded" 
-                      placeholder="Enter your ScrapingBee API key" 
-                      value={formData.scrapingSettings.scrapingBeeApiKey || ""}
-                      onChange={(e) => handleInputChange("scrapingSettings", "scrapingBeeApiKey", e.target.value)}
-                    />
+                    <input type="password" id="scrapingbee-api-key" className="w-full p-2 border rounded" placeholder="Enter your ScrapingBee API key" />
                   </div>
                   <div>
                     <label htmlFor="max-concurrent-1" className="block text-sm font-medium mb-1">MAX_CONCURRENT_REQUESTS-1</label>
-                    <input 
-                      type="number" 
-                      id="max-concurrent-1" 
-                      className="w-full p-2 border rounded" 
-                      value={formData.scrapingSettings.maxConcurrentRequests1 || 5}
-                      onChange={(e) => handleInputChange("scrapingSettings", "maxConcurrentRequests1", parseInt(e.target.value))}
-                    />
+                    <input type="number" id="max-concurrent-1" className="w-full p-2 border rounded" defaultValue="5" />
                   </div>
                 </div>
               </div>
@@ -507,12 +330,7 @@ const AttributeExtraction: React.FC = () => {
                 <div className="space-y-3">
                   <div>
                     <label htmlFor="model-2" className="block text-sm font-medium mb-1">model-2</label>
-                    <select 
-                      id="model-2" 
-                      className="w-full p-2 border rounded"
-                      value={formData.aiSettings.model2 || "gpt-4o"}
-                      onChange={(e) => handleInputChange("aiSettings", "model2", e.target.value)}
-                    >
+                    <select id="model-2" className="w-full p-2 border rounded">
                       <option>gpt-4o</option>
                       <option>gpt-4-turbo</option>
                       <option>gpt-3.5-turbo</option>
@@ -520,33 +338,15 @@ const AttributeExtraction: React.FC = () => {
                   </div>
                   <div>
                     <label htmlFor="max-tokens-2" className="block text-sm font-medium mb-1">max_tokens-2</label>
-                    <input 
-                      type="number" 
-                      id="max-tokens-2" 
-                      className="w-full p-2 border rounded" 
-                      value={formData.aiSettings.maxTokens2 || 8000}
-                      onChange={(e) => handleInputChange("aiSettings", "maxTokens2", parseInt(e.target.value))}
-                    />
+                    <input type="number" id="max-tokens-2" className="w-full p-2 border rounded" defaultValue="8000" />
                   </div>
                   <div>
                     <label htmlFor="prompt-2" className="block text-sm font-medium mb-1">prompt-2</label>
-                    <textarea 
-                      id="prompt-2" 
-                      className="w-full p-2 border rounded" 
-                      rows={3} 
-                      value={formData.aiSettings.prompt2 || "You are an AI assistant identifying product attributes."}
-                      onChange={(e) => handleInputChange("aiSettings", "prompt2", e.target.value)}
-                    />
+                    <textarea id="prompt-2" className="w-full p-2 border rounded" rows={3} defaultValue="You are an AI assistant identifying product attributes." />
                   </div>
                   <div>
                     <label htmlFor="batch-size" className="block text-sm font-medium mb-1">batch_size</label>
-                    <input 
-                      type="number" 
-                      id="batch-size" 
-                      className="w-full p-2 border rounded" 
-                      value={formData.aiSettings.batchSize || 100}
-                      onChange={(e) => handleInputChange("aiSettings", "batchSize", parseInt(e.target.value))}
-                    />
+                    <input type="number" id="batch-size" className="w-full p-2 border rounded" defaultValue="100" />
                   </div>
                 </div>
               </div>
@@ -557,13 +357,7 @@ const AttributeExtraction: React.FC = () => {
                 <div className="space-y-3">
                   <div>
                     <label htmlFor="max-concurrent-2" className="block text-sm font-medium mb-1">MAX_CONCURRENT_REQUESTS-2</label>
-                    <input 
-                      type="number" 
-                      id="max-concurrent-2" 
-                      className="w-full p-2 border rounded" 
-                      value={formData.scrapingSettings.maxConcurrentRequests2 || 5}
-                      onChange={(e) => handleInputChange("scrapingSettings", "maxConcurrentRequests2", parseInt(e.target.value))}
-                    />
+                    <input type="number" id="max-concurrent-2" className="w-full p-2 border rounded" defaultValue="5" />
                   </div>
                 </div>
               </div>
@@ -574,12 +368,7 @@ const AttributeExtraction: React.FC = () => {
                 <div className="space-y-3">
                   <div>
                     <label htmlFor="model-3" className="block text-sm font-medium mb-1">model-3</label>
-                    <select 
-                      id="model-3" 
-                      className="w-full p-2 border rounded"
-                      value={formData.aiSettings.model3 || "gpt-4o"}
-                      onChange={(e) => handleInputChange("aiSettings", "model3", e.target.value)}
-                    >
+                    <select id="model-3" className="w-full p-2 border rounded">
                       <option>gpt-4o</option>
                       <option>gpt-4-turbo</option>
                       <option>gpt-3.5-turbo</option>
@@ -587,55 +376,22 @@ const AttributeExtraction: React.FC = () => {
                   </div>
                   <div>
                     <label htmlFor="max-tokens-3" className="block text-sm font-medium mb-1">max_tokens-3</label>
-                    <input 
-                      type="number" 
-                      id="max-tokens-3" 
-                      className="w-full p-2 border rounded" 
-                      value={formData.aiSettings.maxTokens3 || 2000}
-                      onChange={(e) => handleInputChange("aiSettings", "maxTokens3", parseInt(e.target.value))}
-                    />
+                    <input type="number" id="max-tokens-3" className="w-full p-2 border rounded" defaultValue="2000" />
                   </div>
                   <div>
                     <label htmlFor="prompt-3" className="block text-sm font-medium mb-1">prompt-3</label>
-                    <textarea 
-                      id="prompt-3" 
-                      className="w-full p-2 border rounded" 
-                      rows={3} 
-                      value={formData.aiSettings.prompt3 || "Analyze and categorize the extracted product attributes into their respective attribute types."}
-                      onChange={(e) => handleInputChange("aiSettings", "prompt3", e.target.value)}
-                    />
+                    <textarea id="prompt-3" className="w-full p-2 border rounded" rows={3} defaultValue="Analyze and categorize the extracted product attributes into their respective attribute types." />
                   </div>
                 </div>
               </div>
             </div>
             
             {/* Attribute Management */}
-            <AttributeManager 
-              attributes={formData.attributes} 
-              addAttribute={addAttribute}
-              updateAttribute={updateAttribute}
-              deleteAttribute={deleteAttribute}
-            />
+            <AttributeManager />
             
             {/* Buttons */}
             <div className="flex justify-between mt-6">
-              <button 
-                className="btn btn-secondary flex items-center gap-2"
-                onClick={handleSaveConfiguration}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></div>
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save size={16} />
-                    <span>Save Configuration</span>
-                  </>
-                )}
-              </button>
+              <button className="btn btn-secondary">Save Configuration</button>
               <button 
                 className="btn btn-primary flex items-center gap-1"
                 onClick={() => goToTab("attr-input-content")}
@@ -808,7 +564,7 @@ const AttributeExtraction: React.FC = () => {
                   <div className="text-sm text-green-700">Products Processed</div>
                 </div>
                 <div className="bg-blue-50 p-4 rounded-lg text-center">
-                  <div className="text-3xl font-bold text-blue-600 mb-1">{formData.attributes.length}</div>
+                  <div className="text-3xl font-bold text-blue-600 mb-1">{aeAttributes.length}</div>
                   <div className="text-sm text-blue-700">Attributes Extracted</div>
                 </div>
                 <div className="bg-yellow-50 p-4 rounded-lg text-center">
