@@ -5,6 +5,8 @@ import { getDefaultProjectSettings } from './projectSettings/defaultSettings';
 import { AEConfigType } from './projectSettings/types';
 import { Json } from '@/integrations/supabase/types';
 
+export { AEConfigType } from './projectSettings/types';
+
 export const useProjectSettings = (solutionPrefix: string = "ae", projectName?: string) => {
   const [settings, setSettings] = useState<AEConfigType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,7 +52,7 @@ export const useProjectSettings = (solutionPrefix: string = "ae", projectName?: 
 
         // Set settings or default values
         if (settingsData?.settings) {
-          // Need to cast the JSON to our type
+          // Correctly cast JSON to our type with proper type assertion
           setSettings(settingsData.settings as unknown as AEConfigType);
         } else {
           // Initialize with default settings
@@ -100,13 +102,13 @@ export const useProjectSettings = (solutionPrefix: string = "ae", projectName?: 
       let result;
       
       if (existingSettings) {
-        // Update existing settings - need to cast to Json type for Supabase
+        // Update existing settings with proper type casting
         result = await supabase
           .from('project_settings')
           .update({ settings: updatedSettings as unknown as Json })
           .eq('project_id', projectData.id);
       } else {
-        // Insert new settings - need to cast to Json type for Supabase
+        // Insert new settings with proper type casting
         result = await supabase
           .from('project_settings')
           .insert({ 

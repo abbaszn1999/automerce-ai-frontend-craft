@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -183,7 +184,11 @@ export const useAttributeExtractionService = () => {
       return await saveProductsToDatabase(projectId, runId, processedProducts);
     } catch (error) {
       console.error('Error processing data:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to process data');
+      toast({
+        title: "Error", 
+        description: error instanceof Error ? error.message : 'Failed to process data',
+        variant: "destructive"
+      });
       throw error;
     }
   };
@@ -201,11 +206,13 @@ export const useAttributeExtractionService = () => {
       throw new Error(`Failed to fetch extraction runs: ${error.message}`);
     }
 
-    // Convert the data to the correct type
+    // Convert the data to the correct type with proper assertions
     return data.map(run => ({
       ...run,
       status: run.status as ExtractionRunStatus,
-      column_mapping: run.column_mapping as unknown as ProductColumnMapping
+      column_mapping: run.column_mapping as unknown as ProductColumnMapping,
+      total_products: Number(run.total_products),
+      processed_products: Number(run.processed_products)
     }));
   };
 
@@ -221,11 +228,11 @@ export const useAttributeExtractionService = () => {
       throw new Error(`Failed to fetch products: ${error.message}`);
     }
 
-    // Convert Json type to Record<string, any>
+    // Convert Json type to Record<string, any> with proper assertions
     return data.map(product => ({
       ...product,
       attributes: product.attributes as unknown as Record<string, any>
-    }));
+    })) as ProductData[];
   };
 
   // Fetch extraction runs for a project using React Query

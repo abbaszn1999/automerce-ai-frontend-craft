@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "@/context/AppContext";
 import { useProjectSettings, AEConfigType } from "@/hooks/useProjectSettings";
@@ -86,10 +87,17 @@ const AttributeExtraction: React.FC<AttributeExtractionProps> = ({ solutionPrefi
         setAvailableColumns(columns);
       }
       
-      toast.info(`File processed: ${fileName} (${data.length} rows)`);
+      toast({
+        title: "Info", 
+        description: `File processed: ${fileName} (${data.length} rows)`
+      });
     } catch (error) {
       console.error("Error processing file:", error);
-      toast.error("Failed to process file. Please try again.");
+      toast({
+        title: "Error", 
+        description: "Failed to process file. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -115,17 +123,29 @@ const AttributeExtraction: React.FC<AttributeExtractionProps> = ({ solutionPrefi
   // Start the extraction process
   const handleStartExtraction = async () => {
     if (!currentProject?.id) {
-      toast.error("No project selected");
+      toast({
+        title: "Error", 
+        description: "No project selected",
+        variant: "destructive"
+      });
       return;
     }
     
     if (!isMappingValid) {
-      toast.error("Please map all required columns before starting extraction");
+      toast({
+        title: "Error", 
+        description: "Please map all required columns before starting extraction",
+        variant: "destructive"
+      });
       return;
     }
     
     if (fileData.length === 0) {
-      toast.error("No data to process. Please upload a file first.");
+      toast({
+        title: "Error", 
+        description: "No data to process. Please upload a file first.",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -138,13 +158,20 @@ const AttributeExtraction: React.FC<AttributeExtractionProps> = ({ solutionPrefi
         columnMapping: columnMappings as ProductColumnMapping
       });
       
-      toast.success("Extraction completed successfully!");
+      toast({
+        title: "Success", 
+        description: "Extraction completed successfully!"
+      });
       
       // Switch to the Results tab
       setActiveTabIndex(1);
     } catch (error) {
       console.error("Error during extraction:", error);
-      toast.error("Failed to complete extraction. Please try again.");
+      toast({
+        title: "Error", 
+        description: "Failed to complete extraction. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -330,7 +357,6 @@ const AttributeExtraction: React.FC<AttributeExtractionProps> = ({ solutionPrefi
                     label="Upload product data"
                     acceptedTypes={[".csv", ".xlsx", ".json"]}
                     onFileChange={handleFileUpload}
-                    onColumnsExtracted={handleColumnsExtracted}
                     downloadTemplateLink="#"
                     showFeedListOption={true}
                   />

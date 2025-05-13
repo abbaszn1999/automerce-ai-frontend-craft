@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../../context/AppContext";
 import ToolViewHeader from "../../common/ToolViewHeader";
@@ -12,6 +13,9 @@ import SaveToFeedButton from "../../common/SaveToFeedButton";
 
 const CollectionBuilder: React.FC = () => {
   const { cbCurrentStage, setCbCurrentStage } = useAppContext();
+  
+  // Convert cbCurrentStage to number for proper comparisons
+  const currentStage = typeof cbCurrentStage === 'string' ? parseInt(cbCurrentStage, 10) : cbCurrentStage || 1;
   
   // File upload states
   const [productFeedFile, setProductFeedFile] = useState<File | null>(null);
@@ -34,7 +38,7 @@ const CollectionBuilder: React.FC = () => {
   // Stage navigation
   const goToStage = (stage: number) => {
     // Only allow moving forward one stage at a time or backward from any stage
-    if (stage > cbCurrentStage && stage !== cbCurrentStage + 1) {
+    if (stage > currentStage && stage !== currentStage + 1) {
       toast.error("Please complete the current stage first.");
       return;
     }
@@ -42,7 +46,7 @@ const CollectionBuilder: React.FC = () => {
     setCbCurrentStage(stage);
     
     // If moving to stage 3, simulate process1
-    if (stage === 3 && cbCurrentStage === 2) {
+    if (stage === 3 && currentStage === 2) {
       startCollectionAnalysis();
     } 
     
@@ -612,9 +616,9 @@ const CollectionBuilder: React.FC = () => {
       <div id="cb-stages" className="mb-8">
         <div className="flex flex-wrap gap-2">
           {stages.map((stage, index) => {
-            const isActive = cbCurrentStage === stage.num;
-            const isCompleted = cbCurrentStage > stage.num;
-            const isPending = cbCurrentStage < stage.num;
+            const isActive = currentStage === stage.num;
+            const isCompleted = currentStage > stage.num;
+            const isPending = currentStage < stage.num;
             
             const stageClass = isActive ? "stage-active" : isCompleted ? "stage-completed" : "stage-pending";
             
@@ -649,12 +653,12 @@ const CollectionBuilder: React.FC = () => {
       {renderStageIndicator()}
 
       {/* Stage Content */}
-      {cbCurrentStage === 1 && renderSetupStage()}
-      {cbCurrentStage === 2 && renderInputStage()}
-      {cbCurrentStage === 3 && renderProcess1Stage()}
-      {cbCurrentStage === 4 && renderProcess2Stage()}
-      {cbCurrentStage === 5 && renderProcess3Stage()}
-      {cbCurrentStage === 6 && renderResultsStage()}
+      {currentStage === 1 && renderSetupStage()}
+      {currentStage === 2 && renderInputStage()}
+      {currentStage === 3 && renderProcess1Stage()}
+      {currentStage === 4 && renderProcess2Stage()}
+      {currentStage === 5 && renderProcess3Stage()}
+      {currentStage === 6 && renderResultsStage()}
     </div>
   );
 };
