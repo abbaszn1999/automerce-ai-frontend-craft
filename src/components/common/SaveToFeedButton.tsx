@@ -30,14 +30,13 @@ const SaveToFeedButton: React.FC<SaveToFeedButtonProps> = ({
       return;
     }
 
-    // Since addFeedToProjectSettings doesn't exist, we'll create a function to update settings
-    // and save the feed data
+    // Create a function to update settings and save the feed data
     try {
       if (settings) {
-        // Assume settings has a feeds property, if not, we'll create it
+        // Create a copy of the settings
         const updatedSettings = {
           ...settings,
-          feeds: settings.feeds || [],
+          feeds: settings.feeds || []
         };
         
         // Add the new feed

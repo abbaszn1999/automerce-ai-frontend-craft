@@ -10,21 +10,8 @@ import {
   saveProjectSettingsToDb 
 } from "./projectSettings/projectSettingsService";
 
-// Re-export the types for backward compatibility
+// Re-export the type for backward compatibility
 export type { AEConfigType } from "./projectSettings/types";
-
-// Extend the AEConfigType to include feeds (if it doesn't already)
-declare module "./projectSettings/types" {
-  interface AEConfigType {
-    feeds?: Array<{
-      name: string;
-      type: string;
-      source: string;
-      data: any[];
-      createdAt: string;
-    }>;
-  }
-}
 
 export const useProjectSettings = (solutionPrefix?: string, projectName?: string | null) => {
   const { currentWorkspace } = useWorkspace();

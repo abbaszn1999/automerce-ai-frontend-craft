@@ -24,4 +24,11 @@ export type AEConfigType = {
     maxConcurrentRequests2?: number;
   };
   attributes: Array<{ id: string; name: string; values: string[] }>;
+  feeds?: Array<{
+    name: string;
+    type: string;
+    source: string;
+    data: any[];
+    createdAt: string;
+  }>;
 };
