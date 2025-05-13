@@ -76,13 +76,6 @@ const CollectionBuilder: React.FC<CollectionBuilderProps> = ({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedStage, setSelectedStage] = useState<any>(null);
-  const [feedMappingColumns, setFeedMappingColumns] = useState<string>("");
-  const [feedType, setFeedType] = useState<string>("");
-  const [feedSource, setFeedSource] = useState<string>("");
-  const [feedColumn, setFeedColumn] = useState<string>("");
-  const [feedCondition, setFeedCondition] = useState<string>("");
-  const [feedValue, setFeedValue] = useState<string>("");
-  const [feedAction, setFeedAction] = useState<string>("");
   
   // Simplified state management - removed excessive state variables
   const [stageConfig, setStageConfig] = useState<Record<string, string>>({});

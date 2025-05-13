@@ -1,6 +1,8 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getDefaultSettings } from "./projectSettings/defaultSettings";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/components/ui/use-toast";
 
 // Export type keyword for isolated modules
 export type AEConfigType = {
@@ -30,6 +32,30 @@ export const useProjectSettings = (
   // Generate a unique cache key based on solution prefix and project name
   const cacheKey = [`projectSettings`, solutionPrefix, projectName];
 
+  // Get default settings based on solution prefix
+  const getDefaultSettings = (prefix: string): AEConfigType => {
+    switch (prefix) {
+      case 'cb':
+        return {
+          columnMappings: {},
+          attributeDefinitions: [],
+          feeds: []
+        };
+      case 'ae':
+        return {
+          columnMappings: {},
+          attributeDefinitions: [],
+          feeds: []
+        };
+      default:
+        return {
+          columnMappings: {},
+          attributeDefinitions: [],
+          feeds: []
+        };
+    }
+  };
+
   // Fetch project settings
   const fetchProjectSettings = useCallback(async () => {
     if (!projectName) {
@@ -49,23 +75,15 @@ export const useProjectSettings = (
 
       // If no settings found, create default settings
       if (!data) {
-        // Get default settings from the defaultSettings object
-        const initialSettings = getDefaultSettings(solutionPrefix || "default") || {};
-        
-        // Ensure we have columnMappings and attributeDefinitions in the settings
-        const settingsWithAEConfig: AEConfigType = {
-          ...initialSettings,
-          columnMappings: initialSettings.columnMappings || {},
-          attributeDefinitions: initialSettings.attributeDefinitions || [],
-          feeds: initialSettings.feeds || []
-        };
+        // Get default settings from the getDefaultSettings function
+        const initialSettings = getDefaultSettings(solutionPrefix || "default");
         
         // Create new settings
         const { data: newData, error: createError } = await supabase
           .from("project_settings")
           .insert({
             project_id: projectName,
-            settings: settingsWithAEConfig as unknown as Json,
+            settings: initialSettings as unknown as any,
           })
           .select()
           .single();
@@ -74,7 +92,7 @@ export const useProjectSettings = (
           throw new Error(`Error creating project settings: ${createError.message}`);
         }
 
-        return settingsWithAEConfig;
+        return initialSettings;
       }
 
       // Cast the JSON data to our AEConfigType
@@ -103,7 +121,7 @@ export const useProjectSettings = (
       const { data, error } = await supabase
         .from("project_settings")
         .update({
-          settings: newSettings as unknown as Json,
+          settings: newSettings as unknown as any,
           updated_at: new Date().toISOString(),
         })
         .eq("project_id", projectName)
