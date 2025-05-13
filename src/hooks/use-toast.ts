@@ -1,12 +1,12 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   ToastAction,
   type ToastActionElement,
-  type Toast as ToastType
+  type ToastProps as ToastPrimitive
 } from "@/components/ui/toast";
 
-export type ToastProps = ToastType & {
+export type ToastProps = ToastPrimitive & {
   action?: ToastActionElement;
 };
 
@@ -87,6 +87,18 @@ export const useToast = (): ToastHookResult => {
   return { toast, toasts, dismissToast };
 };
 
-// Make toast accessible globally
-const { toast } = useToast();
-export { toast };
+// Create a toast instance that can be imported
+export const toast = {
+  success: (message: string) => message,
+  error: (message: string) => message,
+  warning: (message: string) => message,
+  info: (message: string) => message,
+  // Basic toast function
+  (props: ToastProps): void => {},
+};
+
+// Update the global toast object when a real instance is available
+if (typeof window !== 'undefined') {
+  const { toast: hookToast } = useToast();
+  Object.assign(toast, hookToast);
+}
