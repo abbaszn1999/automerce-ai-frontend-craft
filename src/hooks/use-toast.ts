@@ -168,6 +168,42 @@ function toast({ ...props }: Toast) {
   }
 }
 
+// Add variant methods to toast
+toast.success = (message: string) => {
+  return toast({
+    title: "Success",
+    description: message,
+    variant: "default",
+    className: "bg-green-500 text-white"
+  });
+};
+
+toast.error = (message: string) => {
+  return toast({
+    title: "Error",
+    description: message,
+    variant: "destructive"
+  });
+};
+
+toast.info = (message: string) => {
+  return toast({
+    title: "Info",
+    description: message,
+    variant: "default",
+    className: "bg-blue-500 text-white"
+  });
+};
+
+toast.warning = (message: string) => {
+  return toast({
+    title: "Warning",
+    description: message,
+    variant: "default",
+    className: "bg-yellow-500 text-white"
+  });
+};
+
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
 
