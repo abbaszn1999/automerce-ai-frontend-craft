@@ -1,15 +1,17 @@
+
 import React, { useState } from 'react';
 import ProductInputSheet from '@/components/product/ProductInputSheet';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import { ProductData } from '@/components/product/productUtils';
 
 const ProductInput: React.FC = () => {
-  const [processedData, setProcessedData] = useState<any[] | null>(null);
+  const [processedData, setProcessedData] = useState<ProductData[] | null>(null);
   const navigate = useNavigate();
 
-  const handleProcessComplete = (data: any[]) => {
+  const handleProcessComplete = (data: ProductData[]) => {
     setProcessedData(data);
     toast.success(`Processed ${data.length} products successfully`);
     // In a real application, you would save this data to context or send it to the server
