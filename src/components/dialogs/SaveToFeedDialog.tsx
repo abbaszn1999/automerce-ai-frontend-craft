@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { useAppContext } from "@/context/AppContext";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/hooks/use-toast";
 import { 
   Dialog, 
   DialogContent, 
@@ -32,12 +32,19 @@ const SaveToFeedDialog: React.FC<SaveToFeedDialogProps> = ({
 
   const handleSave = () => {
     if (!feedName.trim()) {
-      toast.error("Please enter a name for the feed");
+      toast({
+        title: "Error",
+        description: "Please enter a name for the feed",
+        variant: "destructive"
+      });
       return;
     }
 
     addFeedToList(feedName, feedType, source);
-    toast.success("Feed saved successfully");
+    toast({
+      title: "Success",
+      description: "Feed saved successfully",
+    });
     setFeedName("");
     onOpenChange(false);
   };

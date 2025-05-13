@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Button, ButtonProps } from "@/components/ui/button";
 import { BookmarkPlus } from "lucide-react";
 import SaveToFeedDialog from "@/components/dialogs/SaveToFeedDialog";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/hooks/use-toast";
 
 interface SaveToFeedButtonProps extends ButtonProps {
   feedType: "plp" | "product";
