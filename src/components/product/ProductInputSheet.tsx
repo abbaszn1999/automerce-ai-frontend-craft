@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import FileUpload from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/button";
@@ -93,18 +92,11 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
 
   const handleProcess = async () => {
     if (!uploadedFile || !isReady) {
-      toast({
-        title: "Error",
-        description: "Please upload a file and complete column mapping first",
-        variant: "destructive"
-      });
+      toast.error("Please upload a file and complete column mapping first");
       return;
     }
 
-    toast({
-      title: "Processing",
-      description: "Processing product data...",
-    });
+    toast.info("Processing product data...");
 
     try {
       const reader = new FileReader();
@@ -141,29 +133,17 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
           onProcessComplete(processedData);
         }
         
-        toast({
-          title: "Success",
-          description: "Product data processed successfully",
-          variant: "default"
-        });
+        toast.success("Product data processed successfully");
       };
       
       reader.onerror = () => {
-        toast({
-          title: "Error",
-          description: "Failed to read file",
-          variant: "destructive"
-        });
+        toast.error("Failed to read file");
       };
       
       reader.readAsArrayBuffer(uploadedFile);
     } catch (error) {
       console.error("Error processing file:", error);
-      toast({
-        title: "Error",
-        description: "Failed to process product data",
-        variant: "destructive"
-      });
+      toast.error("Failed to process product data");
     }
   };
 
@@ -199,10 +179,7 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
     // Generate xlsx file
     XLSX.writeFile(wb, "product_template.xlsx");
     
-    toast({
-      title: "Success",
-      description: "Template downloaded",
-    });
+    toast.success("Template downloaded");
   };
 
   return (
