@@ -7,10 +7,11 @@ import {
   SelectTrigger,
   SelectValue 
 } from "@/components/ui/select";
+import { ColumnMapping as ColumnMappingType } from './productUtils';
 
 interface ColumnMappingProps {
   requiredColumns: { key: string; display: string; required: boolean }[];
-  columnMapping: Record<string, string>;
+  columnMapping: ColumnMappingType;
   sourceColumns: string[];
   onColumnMappingChange: (requiredColumn: string, sourceColumn: string) => void;
 }

@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { ColumnMapping as ColumnMappingType } from './productUtils';
 
 interface MappingSummaryProps {
   requiredColumns: { key: string; display: string; required: boolean }[];
-  columnMapping: Record<string, string>;
+  columnMapping: ColumnMappingType;
   isReady: boolean;
 }
 
