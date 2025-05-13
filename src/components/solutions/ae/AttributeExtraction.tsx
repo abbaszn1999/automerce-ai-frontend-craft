@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "@/context/AppContext";
 import { useProjectSettings, AEConfigType } from "@/hooks/useProjectSettings";
@@ -318,12 +319,13 @@ const AttributeExtraction: React.FC = () => {
     }));
   };
 
-  // Required columns for product data
+  // Updated required columns for product data - Changed from 4 to 5 required fields
   const requiredColumns = [
     { key: "product_id", display: "Product ID", required: true },
-    { key: "product_name", display: "Product Name", required: true },
-    { key: "description", display: "Description", required: false },
-    { key: "image_url", display: "Image URL", required: true }
+    { key: "product_title", display: "Product Title", required: true },
+    { key: "product_url", display: "Product URL", required: true },
+    { key: "product_image_url", display: "Product Image URL", required: true },
+    { key: "product_description", display: "Product Description", required: true }
   ];
 
   if (isLoadingSettings) {
