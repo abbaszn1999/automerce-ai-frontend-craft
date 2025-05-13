@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { ArrowRight, Download } from "lucide-react";
+// Fix the XLSX import to use named exports instead of default export
 import * as XLSX from 'xlsx';
 import { 
   Select,

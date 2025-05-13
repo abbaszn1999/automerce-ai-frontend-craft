@@ -1,9 +1,11 @@
+
 import React, { useState } from "react";
 import { Upload, Check, X, FileInput, ArrowDown } from "lucide-react";
 import { validateFile } from "../../utils/utils";
 import ChooseFromFeedButton from "@/components/common/ChooseFromFeedButton";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+// Fix the XLSX import to use named exports instead of default export
 import * as XLSX from 'xlsx';
 
 interface FileUploadProps {
