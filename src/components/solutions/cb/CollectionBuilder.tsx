@@ -8,7 +8,7 @@ import LogDisplay from "../../ui/LogDisplay";
 import DataTable from "../../ui/DataTable";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { simulateProcessing } from "../../../utils/utils";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/components/ui/use-toast";
 import SaveToFeedButton from "../../common/SaveToFeedButton";
 
 const CollectionBuilder: React.FC = () => {
@@ -39,11 +39,14 @@ const CollectionBuilder: React.FC = () => {
   const goToStage = (stage: number) => {
     // Only allow moving forward one stage at a time or backward from any stage
     if (stage > currentStage && stage !== currentStage + 1) {
-      toast.error("Please complete the current stage first.");
+      toast({
+        title: "Error",
+        description: "Please complete the current stage first."
+      });
       return;
     }
     
-    setCbCurrentStage(stage);
+    setCbCurrentStage(stage.toString());
     
     // If moving to stage 3, simulate process1
     if (stage === 3 && currentStage === 2) {
@@ -121,7 +124,10 @@ const CollectionBuilder: React.FC = () => {
         setProcess1Logs(prev => [...prev, message]);
       },
       () => {
-        toast.success("Collection analysis completed successfully!");
+        toast({
+          title: "Success",
+          description: "Collection analysis completed successfully!"
+        });
       },
       10000
     );

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "@/context/AppContext";
-import { useProjectSettings, AEConfigType } from "@/hooks/useProjectSettings";
+import { useProjectSettings } from "@/hooks/useProjectSettings";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
@@ -112,7 +112,7 @@ const AttributeExtraction: React.FC<AttributeExtractionProps> = ({ solutionPrefi
     
     // Save mappings to project settings
     if (settings) {
-      const updatedSettings: AEConfigType = {
+      const updatedSettings = {
         ...settings,
         columnMappings: newMappings
       };

@@ -206,7 +206,7 @@ export const useAttributeExtractionService = () => {
       throw new Error(`Failed to fetch extraction runs: ${error.message}`);
     }
 
-    // Convert the data to the correct type with proper assertions
+    // Convert the data to the correct type with proper assertions for status
     return data.map(run => ({
       ...run,
       status: run.status as ExtractionRunStatus,
