@@ -3,12 +3,11 @@ import { useState } from 'react';
 import {
   ToastAction,
   type ToastActionElement,
-  type ToastProps as ToastPrimitive
+  type ToastProps as ToastPrimitiveProps
 } from "@/components/ui/toast";
 
-export type ToastProps = ToastPrimitive & {
-  action?: ToastActionElement;
-};
+// We're explicitly extending the ToastPrimitiveProps, which now includes title, description, and action
+export type ToastProps = ToastPrimitiveProps;
 
 export type ToastHookResult = {
   toast: {
