@@ -354,6 +354,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
               onFileChange={handleFileChange}
               showFeedListOption={showFeedListOption}
               onSelectFeed={onSelectFeed}
+              selectedFile={file}
             />
           )}
         </div>
