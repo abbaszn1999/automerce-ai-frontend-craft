@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import ProductInputSheet from '@/components/product/ProductInputSheet';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import { requiredProductColumns } from '@/components/product/constants/productColumns';
 
 const ProductInput: React.FC = () => {
   const [processedData, setProcessedData] = useState<any[] | null>(null);
@@ -59,7 +59,7 @@ const ProductInput: React.FC = () => {
       const mappedRow: Record<string, any> = {};
       
       // Map each required column to the corresponding source column
-      requiredColumns.forEach(col => {
+      requiredProductColumns.forEach(col => {
         const sourceColumn = columnMapping[col.key];
         mappedRow[col.key] = sourceColumn && row[sourceColumn] ? row[sourceColumn] : '';
       });

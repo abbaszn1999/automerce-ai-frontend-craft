@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
 import { Button } from "@/components/ui/button";
+import { requiredProductColumns } from "@/components/product/constants/productColumns";
 
 const AttributeExtraction: React.FC = () => {
   const { 
@@ -374,14 +375,8 @@ const AttributeExtraction: React.FC = () => {
     }));
   };
 
-  // Updated required columns for product data - Changed from 4 to 5 required fields
-  const requiredColumns = [
-    { key: "product_id", display: "Product ID", required: true },
-    { key: "product_title", display: "Product Title", required: true },
-    { key: "product_url", display: "Product URL", required: true },
-    { key: "product_image_url", display: "Product Image URL", required: true },
-    { key: "product_description", display: "Product Description", required: true }
-  ];
+  // Updated required columns for product data - now using the imported constant
+  const requiredColumns = requiredProductColumns;
 
   if (isLoadingSettings) {
     return (
