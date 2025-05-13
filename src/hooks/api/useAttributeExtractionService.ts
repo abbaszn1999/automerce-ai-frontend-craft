@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { Json } from '@/integrations/supabase/types';
 
 export type ProductColumnMapping = {
   [key: string]: string; // Maps source columns to required columns
@@ -201,7 +202,12 @@ export const useAttributeExtractionService = () => {
       throw new Error(`Failed to fetch extraction runs: ${error.message}`);
     }
 
-    return data;
+    // Convert the string status to ExtractionRunStatus type
+    return data.map(run => ({
+      ...run,
+      status: run.status as ExtractionRunStatus,
+      column_mapping: run.column_mapping as ProductColumnMapping
+    }));
   };
 
   // Get products for a specific run
@@ -216,7 +222,11 @@ export const useAttributeExtractionService = () => {
       throw new Error(`Failed to fetch products: ${error.message}`);
     }
 
-    return data;
+    // Convert Json type to Record<string, any>
+    return data.map(product => ({
+      ...product,
+      attributes: product.attributes as Record<string, any>
+    }));
   };
 
   // Fetch extraction runs for a project using React Query

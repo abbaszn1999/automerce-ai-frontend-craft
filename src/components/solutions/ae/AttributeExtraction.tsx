@@ -8,7 +8,7 @@ import "react-tabs/style/react-tabs.css";
 import FileUpload from "@/components/ui/FileUpload";
 import { toast } from "@/components/ui/use-toast";
 import AttributeManager from "./AttributeManager";
-import { DataTable } from "@/components/ui/DataTable";
+import DataTable from "@/components/ui/DataTable";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -274,8 +274,8 @@ const AttributeExtraction: React.FC<AttributeExtractionProps> = ({ solutionPrefi
     if (!fileData.length) return null;
     
     const columns = availableColumns.map(col => ({
-      header: col,
-      accessorKey: col
+      key: col,
+      label: col
     }));
     
     return (
@@ -285,7 +285,6 @@ const AttributeExtraction: React.FC<AttributeExtractionProps> = ({ solutionPrefi
           <DataTable 
             columns={columns} 
             data={fileData.slice(0, 10)} 
-            pageSize={5}
           />
           {fileData.length > 10 && (
             <div className="p-2 bg-gray-50 text-sm text-gray-500 text-right">
@@ -328,8 +327,8 @@ const AttributeExtraction: React.FC<AttributeExtractionProps> = ({ solutionPrefi
                 </CardHeader>
                 <CardContent>
                   <FileUpload
-                    onFileUpload={handleFileUpload}
-                    acceptedFileTypes={[".csv", ".xlsx", ".xls"]}
+                    onFileChange={handleFileUpload}
+                    acceptedTypes={[".csv", ".xlsx", ".xls"]}
                     maxFileSizeMB={10}
                   />
                 </CardContent>
@@ -399,9 +398,9 @@ const AttributeExtraction: React.FC<AttributeExtractionProps> = ({ solutionPrefi
         </TabPanel>
 
         <TabPanel>
-          <AttributeManager
-            attributeDefinitions={settings?.attributeDefinitions || []}
-            onSaveAttributeDefinitions={(newDefinitions) => {
+          <AttributeManager 
+            definitions={settings?.attributeDefinitions || []}
+            onSave={(newDefinitions) => {
               if (settings) {
                 saveProjectSettings({
                   ...settings,

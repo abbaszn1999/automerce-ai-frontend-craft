@@ -1,110 +1,133 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { defaultSettings } from './projectSettings/defaultSettings';
 
-import { useState, useEffect } from "react";
-import { useWorkspace } from "@/context/WorkspaceContext";
-import { toast } from "@/components/ui/use-toast";
-import { AEConfigType } from "./projectSettings/types";
-import { getDefaultProjectSettings } from "./projectSettings/defaultSettings";
-import { 
-  fetchProjectId, 
-  fetchProjectSettings, 
-  saveProjectSettingsToDb 
-} from "./projectSettings/projectSettingsService";
+export interface AEConfigType {
+  columnMappings: Record<string, string>;
+  attributeDefinitions: Array<any>;
+  // Other potential configuration values
+}
 
-// Re-export the type for backward compatibility
-export type { AEConfigType } from "./projectSettings/types";
-
-export const useProjectSettings = (solutionPrefix?: string, projectName?: string | null) => {
-  const { currentWorkspace } = useWorkspace();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
+export const useProjectSettings = (solutionPrefix: string, projectName?: string) => {
   const [settings, setSettings] = useState<AEConfigType | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load project settings when the component mounts or when projectName changes
+  // Load project settings
   useEffect(() => {
-    if (currentWorkspace && projectName && solutionPrefix) {
-      loadProjectSettings();
-    }
-  }, [currentWorkspace, projectName, solutionPrefix]);
-
-  const loadProjectSettings = async () => {
-    if (!currentWorkspace || !projectName || !solutionPrefix) return;
-
-    setIsLoading(true);
-    try {
-      // First, get the project ID
-      const projectData = await fetchProjectId(
-        currentWorkspace.id, 
-        solutionPrefix, 
-        projectName
-      );
-
-      if (!projectData) {
-        toast.error("Project not found");
+    const fetchSettings = async () => {
+      if (!projectName) {
         setIsLoading(false);
         return;
       }
 
-      // Then get the project settings
-      const settingsData = await fetchProjectSettings(projectData.id);
+      try {
+        setIsLoading(true);
+        
+        // First, find the project ID by name and solution prefix
+        const { data: projectData, error: projectError } = await supabase
+          .from('solution_projects')
+          .select('id')
+          .eq('solution_prefix', solutionPrefix)
+          .eq('name', projectName)
+          .single();
 
-      if (settingsData && settingsData.length > 0) {
-        // We have settings
-        setSettings(settingsData[0].settings as AEConfigType);
-      } else {
-        // No settings yet, create default settings
-        const defaultSettings = getDefaultProjectSettings();
-        // Ensure feeds array exists
-        defaultSettings.feeds = [];
-        setSettings(defaultSettings);
+        if (projectError) {
+          throw new Error(`Error fetching project: ${projectError.message}`);
+        }
+
+        if (!projectData) {
+          throw new Error(`Project not found: ${projectName}`);
+        }
+
+        // Then, fetch settings for that project
+        const { data: settingsData, error: settingsError } = await supabase
+          .from('project_settings')
+          .select('settings')
+          .eq('project_id', projectData.id)
+          .maybeSingle();
+
+        if (settingsError) {
+          throw new Error(`Error fetching settings: ${settingsError.message}`);
+        }
+
+        // Set settings or default values
+        if (settingsData?.settings) {
+          setSettings(settingsData.settings as AEConfigType);
+        } else {
+          // Initialize with default settings
+          setSettings(defaultSettings[solutionPrefix] as AEConfigType || {
+            columnMappings: {},
+            attributeDefinitions: []
+          });
+        }
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'Unknown error');
+        console.error('Error loading project settings:', error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error in loadProjectSettings:", error);
-      toast.error("Failed to load project settings");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
+    fetchSettings();
+  }, [solutionPrefix, projectName]);
+
+  // Save project settings
   const saveProjectSettings = async (updatedSettings: AEConfigType) => {
-    if (!currentWorkspace || !projectName || !solutionPrefix) {
-      toast.error("No project selected");
-      return false;
+    if (!projectName) {
+      return;
     }
 
-    setIsSaving(true);
     try {
-      // Get the project ID
-      const projectData = await fetchProjectId(
-        currentWorkspace.id, 
-        solutionPrefix, 
-        projectName
-      );
+      // Find the project ID
+      const { data: projectData, error: projectError } = await supabase
+        .from('solution_projects')
+        .select('id')
+        .eq('solution_prefix', solutionPrefix)
+        .eq('name', projectName)
+        .single();
 
-      if (!projectData) {
-        toast.error("Project not found");
-        return false;
+      if (projectError) {
+        throw new Error(`Error fetching project: ${projectError.message}`);
       }
 
-      // Save the settings
-      await saveProjectSettingsToDb(projectData.id, updatedSettings);
+      // Check if settings already exist for this project
+      const { data: existingSettings, error: checkError } = await supabase
+        .from('project_settings')
+        .select('id')
+        .eq('project_id', projectData.id)
+        .maybeSingle();
+
+      if (checkError) {
+        throw new Error(`Error checking settings: ${checkError.message}`);
+      }
+
+      let result;
       
+      if (existingSettings) {
+        // Update existing settings
+        result = await supabase
+          .from('project_settings')
+          .update({ settings: updatedSettings })
+          .eq('project_id', projectData.id);
+      } else {
+        // Insert new settings
+        result = await supabase
+          .from('project_settings')
+          .insert({ project_id: projectData.id, settings: updatedSettings });
+      }
+
+      if (result.error) {
+        throw new Error(`Error saving settings: ${result.error.message}`);
+      }
+
       // Update local state
       setSettings(updatedSettings);
-      
-      return true;
     } catch (error) {
-      console.error("Error in saveProjectSettings:", error);
-      return false;
-    } finally {
-      setIsSaving(false);
+      console.error('Error saving project settings:', error);
+      throw error;
     }
   };
 
-  return {
-    settings,
-    isLoading,
-    isSaving,
-    loadProjectSettings,
-    saveProjectSettings
-  };
+  return { settings, isLoading, error, saveProjectSettings };
 };

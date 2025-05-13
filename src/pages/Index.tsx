@@ -89,7 +89,7 @@ const Index: React.FC = () => {
       // Show Tool View for the current solution
       switch (currentSolution) {
         case "ae":
-          return <AttributeExtraction />;
+          return <AttributeExtraction solutionPrefix="ae" />;
         case "cb":
           return <CollectionBuilder />;
         case "ho":
