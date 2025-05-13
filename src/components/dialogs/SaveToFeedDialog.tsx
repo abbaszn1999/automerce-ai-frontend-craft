@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -11,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "../ui/use-toast";
 
 interface SaveToFeedDialogProps {
   source: string;

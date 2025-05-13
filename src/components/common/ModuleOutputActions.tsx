@@ -2,11 +2,12 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import SaveToFeedButton from "./SaveToFeedButton";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 interface ModuleOutputActionsProps {
   moduleType: "ae" | "cb" | "ho" | "lhf" | "il" | "opb";
   outputType: "plp" | "product";
+  data?: any[]; // Add data prop to pass to SaveToFeedButton
   onExportCSV?: () => void;
   onExportExcel?: () => void;
   onExportResults?: () => void; // For general results export
@@ -16,6 +17,7 @@ interface ModuleOutputActionsProps {
 const ModuleOutputActions: React.FC<ModuleOutputActionsProps> = ({
   moduleType,
   outputType,
+  data = [], // Default to empty array
   onExportCSV,
   onExportExcel,
   onExportResults,
@@ -46,6 +48,7 @@ const ModuleOutputActions: React.FC<ModuleOutputActionsProps> = ({
         source={moduleType}
         size="sm"
         variant="outline"
+        data={data}
       />
       
       {onPushToCMS && (
