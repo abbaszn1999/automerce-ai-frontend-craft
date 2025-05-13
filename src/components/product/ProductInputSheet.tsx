@@ -21,8 +21,8 @@ interface ProductInputSheetProps {
 interface ColumnMapping {
   product_id: string;
   product_title: string;
-  url: string;
-  image_url: string;
+  product_url: string;
+  product_image_url: string;
   product_description: string;
 }
 
@@ -31,8 +31,8 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
   const [columnMapping, setColumnMapping] = useState<ColumnMapping>({
     product_id: '',
     product_title: '',
-    url: '',
-    image_url: '',
+    product_url: '',
+    product_image_url: '',
     product_description: ''
   });
   const [isReady, setIsReady] = useState<boolean>(false);
@@ -40,11 +40,11 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
   
   // Define required columns with display names
   const requiredColumns = [
-    { key: "product_id", display: "Product ID" },
-    { key: "product_title", display: "Product Title" },
-    { key: "url", display: "URL" },
-    { key: "image_url", display: "Image URL" },
-    { key: "product_description", display: "Product Description" }
+    { key: "product_id", display: "Product ID", required: true },
+    { key: "product_title", display: "Product Title", required: true },
+    { key: "product_url", display: "Product URL", required: true },
+    { key: "product_image_url", display: "Product Image URL", required: true },
+    { key: "product_description", display: "Product Description", required: true }
   ];
   
   // Check if all required columns are mapped
@@ -68,8 +68,8 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
       setColumnMapping({
         product_id: '',
         product_title: '',
-        url: '',
-        image_url: '',
+        product_url: '',
+        product_image_url: '',
         product_description: ''
       });
     }
@@ -153,15 +153,15 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
       {
         'Product ID': 'PROD001',
         'Product Title': 'Example Product 1',
-        'URL': 'https://example.com/product1',
-        'Image URL': 'https://example.com/images/product1.jpg',
+        'Product URL': 'https://example.com/product1',
+        'Product Image URL': 'https://example.com/images/product1.jpg',
         'Product Description': 'This is a sample product description.'
       },
       {
         'Product ID': 'PROD002',
         'Product Title': 'Example Product 2',
-        'URL': 'https://example.com/product2',
-        'Image URL': 'https://example.com/images/product2.jpg',
+        'Product URL': 'https://example.com/product2',
+        'Product Image URL': 'https://example.com/images/product2.jpg',
         'Product Description': 'Another sample product description.'
       }
     ];
@@ -189,7 +189,7 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
             <p>Upload your product data sheet containing the following required columns:</p>
             <ul className="list-disc pl-5 mt-2">
               {requiredColumns.map((col) => (
-                <li key={col.key}>{col.display}</li>
+                <li key={col.key}>{col.display}{col.required ? "*" : ""}</li>
               ))}
             </ul>
           </div>
@@ -215,7 +215,7 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
               {requiredColumns.map((col) => (
                 <div key={col.key} className="flex items-center gap-4">
                   <div className="w-1/3">
-                    <label className="block text-sm font-medium">{col.display}</label>
+                    <label className="block text-sm font-medium">{col.display}{col.required ? "*" : ""}</label>
                   </div>
                   <div className="w-2/3">
                     <Select 
@@ -224,7 +224,7 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
                       disabled={sourceColumns.length === 0}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder={sourceColumns.length > 0 ? "Select column from your file" : "Upload a file first"} />
+                        <SelectValue placeholder={sourceColumns.length > 0 ? "-- Select column from your file --" : "Upload a file first"} />
                       </SelectTrigger>
                       <SelectContent>
                         {sourceColumns.map((sourceCol) => (
@@ -236,6 +236,7 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
                 </div>
               ))}
             </div>
+            <p className="text-xs text-gray-500 mt-2">* Required fields</p>
           </div>
 
           <div className="flex justify-between mt-6">
@@ -277,7 +278,7 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
                 <tbody>
                   {requiredColumns.map((col) => (
                     <tr key={col.key} className="border-t">
-                      <td className="p-2">{col.display}</td>
+                      <td className="p-2">{col.display}{col.required ? "*" : ""}</td>
                       <td className="p-2">{columnMapping[col.key as keyof ColumnMapping] || "-"}</td>
                     </tr>
                   ))}
