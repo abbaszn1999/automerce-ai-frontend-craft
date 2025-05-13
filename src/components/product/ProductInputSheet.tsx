@@ -4,7 +4,7 @@ import FileUpload from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { ArrowRight, Download } from "lucide-react";
+import { ArrowRight, Download, Save, Loader2 } from "lucide-react";
 // Fix the XLSX import to use named exports instead of default export
 import * as XLSX from 'xlsx';
 import { 
@@ -14,9 +14,12 @@ import {
   SelectTrigger,
   SelectValue 
 } from "@/components/ui/select";
+import { useAttributeExtractionService } from '@/hooks/api/useAttributeExtractionService';
 
 interface ProductInputSheetProps {
   onProcessComplete?: (data: any[]) => void;
+  onSaveComplete?: (runId: string) => void;
+  projectId?: string;
 }
 
 interface ColumnMapping {
@@ -27,7 +30,7 @@ interface ColumnMapping {
   product_description: string;
 }
 
-const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete }) => {
+const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete, onSaveComplete, projectId }) => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [columnMapping, setColumnMapping] = useState<ColumnMapping>({
     product_id: '',
@@ -38,6 +41,19 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
   });
   const [isReady, setIsReady] = useState<boolean>(false);
   const [sourceColumns, setSourceColumns] = useState<string[]>([]);
+  const [processedData, setProcessedData] = useState<any[] | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isSaved, setIsSaved] = useState<boolean>(false);
+  const [saveProgress, setSaveProgress] = useState<{processed: number, total: number} | null>(null);
+  const [extractionRunId, setExtractionRunId] = useState<string | null>(null);
+  
+  // Use the attribute extraction service
+  const { 
+    createExtractionRun, 
+    saveProductData, 
+    isLoading: isServiceLoading, 
+    error: serviceError 
+  } = useAttributeExtractionService();
   
   // Define required columns with display names - all columns are required
   const requiredColumns = [
@@ -58,10 +74,22 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
     setIsReady(areAllRequiredColumnsMapped());
   }, [columnMapping]);
 
+  // Reset saving state if file changes
+  useEffect(() => {
+    if (uploadedFile) {
+      setIsSaved(false);
+      setExtractionRunId(null);
+      setSaveProgress(null);
+    }
+  }, [uploadedFile]);
+
   const handleFileChange = (file: File | null) => {
     console.log("File changed:", file?.name);
     setUploadedFile(file);
     setIsReady(false);
+    setProcessedData(null);
+    setIsSaved(false);
+    setExtractionRunId(null);
     
     // Reset columns and mapping when file changes
     if (!file) {
@@ -126,6 +154,8 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
           return processedRow;
         });
 
+        setProcessedData(processedData);
+
         if (onProcessComplete) {
           onProcessComplete(processedData);
         }
@@ -141,6 +171,50 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
     } catch (error) {
       console.error("Error processing file:", error);
       toast.error("Failed to process product data");
+    }
+  };
+
+  const handleSaveToDatabase = async () => {
+    if (!processedData || !uploadedFile || !projectId) {
+      toast.error("Please process your data first");
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveProgress({ processed: 0, total: processedData.length });
+
+    try {
+      // Create an extraction run
+      const extractionRun = await createExtractionRun(
+        projectId,
+        uploadedFile.name,
+        columnMapping
+      );
+
+      setExtractionRunId(extractionRun);
+
+      // Save the product data
+      await saveProductData(
+        extractionRun,
+        projectId,
+        processedData,
+        (processed, total) => {
+          // Update progress
+          setSaveProgress({ processed, total });
+        }
+      );
+
+      toast.success("Data saved to database successfully");
+      setIsSaved(true);
+      
+      if (onSaveComplete) {
+        onSaveComplete(extractionRun);
+      }
+    } catch (error) {
+      console.error("Error saving data to database:", error);
+      toast.error(typeof error === 'string' ? error : "Failed to save data to database");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -285,6 +359,57 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
                   ))}
                 </tbody>
               </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Save to Database Button and Progress */}
+      {processedData && processedData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Save to Database</span>
+              {isSaved && <span className="text-sm text-green-600 font-normal">✓ Saved</span>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-4">
+              Before proceeding to attribute extraction, you must first save the processed data to the database.
+            </p>
+            
+            {saveProgress && (
+              <div className="mb-4">
+                <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-2 bg-blue-600 rounded-full transition-all duration-300" 
+                    style={{ width: `${Math.round((saveProgress.processed / saveProgress.total) * 100)}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1 text-right">
+                  Saved {saveProgress.processed} of {saveProgress.total} records
+                </p>
+              </div>
+            )}
+            
+            <div className="flex justify-center">
+              <Button
+                onClick={handleSaveToDatabase}
+                disabled={isSaving || isSaved || !projectId || !processedData}
+                className="flex items-center gap-2"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save size={16} />
+                    <span>Save Sheet to Database</span>
+                  </>
+                )}
+              </Button>
             </div>
           </CardContent>
         </Card>

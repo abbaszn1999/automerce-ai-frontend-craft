@@ -2,13 +2,18 @@
 import React, { useState } from 'react';
 import ProductInputSheet from '@/components/product/ProductInputSheet';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 
 const ProductInput: React.FC = () => {
   const [processedData, setProcessedData] = useState<any[] | null>(null);
+  const [savedRunId, setSavedRunId] = useState<string | null>(null);
   const navigate = useNavigate();
+  
+  // Normally, this would come from a route param or context
+  // For demo purposes, we're using a hardcoded project ID
+  const projectId = "ae-demo-project-id"; // Replace with actual project ID in a real app
 
   const handleProcessComplete = (data: any[]) => {
     setProcessedData(data);
@@ -17,10 +22,21 @@ const ProductInput: React.FC = () => {
     console.log("Processed data:", data);
   };
 
+  const handleSaveComplete = (runId: string) => {
+    setSavedRunId(runId);
+    toast.success(`Data saved with run ID: ${runId}`);
+    console.log("Data saved with run ID:", runId);
+  };
+
   const handleGoToAttributeExtraction = () => {
-    // In a real application, you would navigate to the attribute extraction page
-    toast.info("Navigating to attribute extraction would happen here");
-    // navigate('/attribute-extraction');
+    if (!savedRunId) {
+      toast.error("Please save the data to the database first");
+      return;
+    }
+    
+    // In a real application, you would navigate to the attribute extraction page with the run ID
+    toast.info(`Navigating to attribute extraction with run ID: ${savedRunId}`);
+    // navigate(`/attribute-extraction/${savedRunId}`);
   };
 
   return (
@@ -44,7 +60,11 @@ const ProductInput: React.FC = () => {
         </p>
       </div>
 
-      <ProductInputSheet onProcessComplete={handleProcessComplete} />
+      <ProductInputSheet 
+        onProcessComplete={handleProcessComplete} 
+        onSaveComplete={handleSaveComplete}
+        projectId={projectId}
+      />
       
       {processedData && processedData.length > 0 && (
         <div className="mt-8">
@@ -73,8 +93,13 @@ const ProductInput: React.FC = () => {
           </div>
           
           <div className="flex justify-end mt-6">
-            <Button onClick={handleGoToAttributeExtraction}>
-              Proceed to Attribute Extraction
+            <Button 
+              onClick={handleGoToAttributeExtraction}
+              disabled={!savedRunId}
+              className="flex items-center gap-2"
+            >
+              <span>Proceed to Attribute Extraction</span>
+              <ArrowRight size={16} />
             </Button>
           </div>
         </div>
