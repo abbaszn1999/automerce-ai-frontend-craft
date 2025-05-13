@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue 
 } from "@/components/ui/select";
+import SaveToFeedButton from '../common/SaveToFeedButton';
 
 interface ProductInputSheetProps {
   onProcessComplete?: (data: any[]) => void;
@@ -37,6 +38,7 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
   });
   const [isReady, setIsReady] = useState<boolean>(false);
   const [sourceColumns, setSourceColumns] = useState<string[]>([]);
+  const [processedData, setProcessedData] = useState<any[] | null>(null);
   
   // Define required columns with display names - all columns are required
   const requiredColumns = [
@@ -61,6 +63,7 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
     console.log("File changed:", file?.name);
     setUploadedFile(file);
     setIsReady(false);
+    setProcessedData(null);
     
     // Reset columns and mapping when file changes
     if (!file) {
@@ -90,11 +93,18 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
 
   const handleProcess = async () => {
     if (!uploadedFile || !isReady) {
-      toast.error("Please upload a file and complete column mapping first");
+      toast({
+        title: "Error",
+        description: "Please upload a file and complete column mapping first",
+        variant: "destructive"
+      });
       return;
     }
 
-    toast.info("Processing product data...");
+    toast({
+      title: "Processing",
+      description: "Processing product data...",
+    });
 
     try {
       const reader = new FileReader();
@@ -125,21 +135,35 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
           return processedRow;
         });
 
+        setProcessedData(processedData);
+        
         if (onProcessComplete) {
           onProcessComplete(processedData);
         }
         
-        toast.success("Product data processed successfully");
+        toast({
+          title: "Success",
+          description: "Product data processed successfully",
+          variant: "default"
+        });
       };
       
       reader.onerror = () => {
-        toast.error("Failed to read file");
+        toast({
+          title: "Error",
+          description: "Failed to read file",
+          variant: "destructive"
+        });
       };
       
       reader.readAsArrayBuffer(uploadedFile);
     } catch (error) {
       console.error("Error processing file:", error);
-      toast.error("Failed to process product data");
+      toast({
+        title: "Error",
+        description: "Failed to process product data",
+        variant: "destructive"
+      });
     }
   };
 
@@ -175,7 +199,10 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
     // Generate xlsx file
     XLSX.writeFile(wb, "product_template.xlsx");
     
-    toast.success("Template downloaded");
+    toast({
+      title: "Success",
+      description: "Template downloaded",
+    });
   };
 
   return (
@@ -287,6 +314,18 @@ const ProductInputSheet: React.FC<ProductInputSheetProps> = ({ onProcessComplete
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {processedData && processedData.length > 0 && (
+        <div className="mt-4">
+          <div className="flex justify-end">
+            <SaveToFeedButton 
+              data={processedData} 
+              source="product" 
+              feedType="product" 
+            />
+          </div>
+        </div>
       )}
     </div>
   );

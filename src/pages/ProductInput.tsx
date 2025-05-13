@@ -12,14 +12,20 @@ const ProductInput: React.FC = () => {
 
   const handleProcessComplete = (data: any[]) => {
     setProcessedData(data);
-    toast.success(`Processed ${data.length} products successfully`);
+    toast({
+      title: "Success",
+      description: `Processed ${data.length} products successfully`
+    });
     // In a real application, you would save this data to context or send it to the server
     console.log("Processed data:", data);
   };
 
   const handleGoToAttributeExtraction = () => {
     // In a real application, you would navigate to the attribute extraction page
-    toast.info("Navigating to attribute extraction would happen here");
+    toast({
+      title: "Info",
+      description: "Navigating to attribute extraction would happen here"
+    });
     // navigate('/attribute-extraction');
   };
 
