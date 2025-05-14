@@ -1,10 +1,14 @@
 
 import { useState, useEffect } from "react";
 import { useWorkspace } from "@/context/WorkspaceContext";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 import { AEConfigType } from "./projectSettings/types";
 import { getDefaultProjectSettings } from "./projectSettings/defaultSettings";
-import { dataService } from "@/services/dataService";
+import { 
+  fetchProjectId, 
+  fetchProjectSettings, 
+  saveProjectSettingsToDb 
+} from "./projectSettings/projectSettingsService";
 
 // Re-export the type for backward compatibility
 export type { AEConfigType } from "./projectSettings/types";
@@ -28,24 +32,24 @@ export const useProjectSettings = (solutionPrefix?: string, projectName?: string
     setIsLoading(true);
     try {
       // First, get the project ID
-      const projectId = await dataService.getProjectId(
+      const projectData = await fetchProjectId(
         currentWorkspace.id, 
         solutionPrefix, 
         projectName
       );
 
-      if (!projectId) {
+      if (!projectData) {
         toast.error("Project not found");
         setIsLoading(false);
         return;
       }
 
       // Then get the project settings
-      const settingsData = await dataService.getProjectSettings(projectId);
+      const settingsData = await fetchProjectSettings(projectData.id);
 
-      if (settingsData) {
+      if (settingsData && settingsData.length > 0) {
         // We have settings
-        setSettings(settingsData as AEConfigType);
+        setSettings(settingsData[0].settings as AEConfigType);
       } else {
         // No settings yet, create default settings
         const defaultSettings = getDefaultProjectSettings();
@@ -70,32 +74,26 @@ export const useProjectSettings = (solutionPrefix?: string, projectName?: string
     setIsSaving(true);
     try {
       // Get the project ID
-      const projectId = await dataService.getProjectId(
+      const projectData = await fetchProjectId(
         currentWorkspace.id, 
         solutionPrefix, 
         projectName
       );
 
-      if (!projectId) {
+      if (!projectData) {
         toast.error("Project not found");
         return false;
       }
 
       // Save the settings
-      const success = await dataService.saveProjectSettings(projectId, updatedSettings);
+      await saveProjectSettingsToDb(projectData.id, updatedSettings);
       
-      if (success) {
-        // Update local state
-        setSettings(updatedSettings);
-        toast.success("Project settings saved successfully");
-        return true;
-      } else {
-        toast.error("Failed to save project settings");
-        return false;
-      }
+      // Update local state
+      setSettings(updatedSettings);
+      
+      return true;
     } catch (error) {
       console.error("Error in saveProjectSettings:", error);
-      toast.error("Failed to save project settings");
       return false;
     } finally {
       setIsSaving(false);

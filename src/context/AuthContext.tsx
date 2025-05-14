@@ -1,17 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { storage } from "../services/storageService";
-
-export interface User {
-  id: string;
-  email: string;
-  name?: string;
-}
-
-interface Session {
-  user: User | null;
-  token?: string;
-}
+import { supabase } from "@/integrations/supabase/client";
+import { Session, User } from "@supabase/supabase-js";
 
 interface AuthContextType {
   session: Session | null;
@@ -29,34 +19,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Helper function to clean up auth state
   const cleanupAuthState = () => {
-    storage.remove("auth.token");
-    storage.remove("auth.user");
+    localStorage.removeItem("supabase.auth.token");
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("supabase.auth.") || key.includes("sb-")) {
+        localStorage.removeItem(key);
+      }
+    });
+    Object.keys(sessionStorage || {}).forEach((key) => {
+      if (key.startsWith("supabase.auth.") || key.includes("sb-")) {
+        sessionStorage.removeItem(key);
+      }
+    });
   };
 
   useEffect(() => {
-    // Check for existing session
-    const storedUser = storage.get<User>("auth.user");
-    const storedToken = storage.get<string>("auth.token");
-    
-    if (storedUser && storedToken) {
-      const currentSession = { user: storedUser, token: storedToken };
+    // Set up auth state listener first
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        setIsLoading(false);
+      }
+    );
+
+    // Then check for existing session
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
-      setUser(storedUser);
-    }
-    
-    setIsLoading(false);
+      setUser(currentSession?.user ?? null);
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
     try {
       setIsLoading(true);
-      
       // Clean up auth state
       cleanupAuthState();
       
-      // Reset context state
-      setSession(null);
-      setUser(null);
+      // Attempt global sign out
+      await supabase.auth.signOut({ scope: 'global' });
       
       // Force page reload for a clean state
       window.location.href = '/auth';

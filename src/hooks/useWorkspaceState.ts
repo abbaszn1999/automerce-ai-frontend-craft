@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspaceApi } from "./useWorkspaceApi";
 import { Workspace, WorkspaceUser } from "@/types/workspace.types";
-import { storage } from "@/services/storageService";
 
 export const useWorkspaceState = () => {
   const { user } = useAuth();
@@ -18,25 +17,22 @@ export const useWorkspaceState = () => {
     try {
       setIsLoading(true);
       
-      // For demonstration, create a default workspace if none exist
-      let userWorkspaces = await workspaceApi.fetchWorkspaces();
-      
-      if (userWorkspaces.length === 0) {
-        const defaultWorkspace = await workspaceApi.createWorkspace(
-          "Default Workspace", 
-          "Your default workspace"
-        );
-        if (defaultWorkspace) {
-          userWorkspaces = [defaultWorkspace];
-        }
+      if (!user) {
+        setWorkspaces([]);
+        setCurrentWorkspace(null);
+        return;
       }
+      
+      console.log("Fetching workspaces for user:", user.id);
+      const userWorkspaces = await workspaceApi.fetchWorkspaces();
+      console.log("Fetched workspaces:", userWorkspaces);
       
       setWorkspaces(userWorkspaces);
       
       // If there are workspaces but no current workspace is selected, set the first one
       if (userWorkspaces.length > 0 && !currentWorkspace) {
         // Check if there's a stored workspace ID in localStorage
-        const storedWorkspaceId = storage.get<string>('currentWorkspaceId');
+        const storedWorkspaceId = localStorage.getItem('currentWorkspaceId');
         
         if (storedWorkspaceId) {
           const storedWorkspace = userWorkspaces.find(ws => ws.id === storedWorkspaceId);
@@ -45,12 +41,12 @@ export const useWorkspaceState = () => {
           } else {
             // If the stored ID doesn't match any workspace, use the first one
             setCurrentWorkspace(userWorkspaces[0]);
-            storage.set('currentWorkspaceId', userWorkspaces[0].id);
+            localStorage.setItem('currentWorkspaceId', userWorkspaces[0].id);
           }
         } else {
           // No stored workspace, use the first one
           setCurrentWorkspace(userWorkspaces[0]);
-          storage.set('currentWorkspaceId', userWorkspaces[0].id);
+          localStorage.setItem('currentWorkspaceId', userWorkspaces[0].id);
         }
       }
       
@@ -63,6 +59,7 @@ export const useWorkspaceState = () => {
 
   const handleCreateWorkspace = async (name: string, description: string): Promise<Workspace | null> => {
     try {
+      console.log("Creating workspace in useWorkspaceState");
       const newWorkspace = await workspaceApi.createWorkspace(name, description);
       
       if (newWorkspace) {
@@ -71,7 +68,7 @@ export const useWorkspaceState = () => {
         setCurrentWorkspace(newWorkspace);
         
         // Store in localStorage
-        storage.set('currentWorkspaceId', newWorkspace.id);
+        localStorage.setItem('currentWorkspaceId', newWorkspace.id);
         
         // Refresh the workspace list to ensure we have the latest data
         fetchWorkspaces();
@@ -117,9 +114,9 @@ export const useWorkspaceState = () => {
         setCurrentWorkspace(newCurrentWorkspace);
         
         if (newCurrentWorkspace) {
-          storage.set('currentWorkspaceId', newCurrentWorkspace.id);
+          localStorage.setItem('currentWorkspaceId', newCurrentWorkspace.id);
         } else {
-          storage.remove('currentWorkspaceId');
+          localStorage.removeItem('currentWorkspaceId');
         }
       }
     }
@@ -138,7 +135,15 @@ export const useWorkspaceState = () => {
 
   // Load workspaces on initial mount or when user changes
   useEffect(() => {
-    fetchWorkspaces();
+    if (user) {
+      console.log("User changed, fetching workspaces for:", user.id);
+      fetchWorkspaces();
+    } else {
+      // Clear workspaces when user is not authenticated
+      setWorkspaces([]);
+      setCurrentWorkspace(null);
+      setIsLoading(false);
+    }
   }, [user]);
 
   return {

@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/utils/utils";
 import { FileText, Rows3, AlertCircle } from "lucide-react";
-import { supabase } from "@/services/apiClient";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
 const FeedList: React.FC = () => {

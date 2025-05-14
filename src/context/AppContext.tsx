@@ -1,8 +1,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useWorkspace } from "./WorkspaceContext";
-import { storage } from "@/services/storageService";
 
 type SolutionType = "ae" | "cb" | "ho" | "lhf" | "il" | "opb";
 type ViewType = "project" | "tool" | "settings";
@@ -129,10 +129,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!currentWorkspace) return;
     
     try {
-      // Get feeds from localStorage instead of Supabase
-      const storedFeeds = storage.get<Feed[]>(`feeds:${currentWorkspace.id}`) || [];
-      if (storedFeeds.length > 0) {
-        setFeedList(storedFeeds);
+      const { data, error } = await supabase
+        .from('feeds')
+        .select('*')
+        .eq('workspace_id', currentWorkspace.id);
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const formattedFeeds = data.map(feed => ({
+          id: feed.id,
+          name: feed.name,
+          type: feed.type as FeedModeType,
+          status: feed.status,
+          lastUpdated: feed.updated_at,
+          updated_at: feed.updated_at,
+          source: 'import'
+        }));
+        
+        setFeedList(formattedFeeds);
       }
     } catch (error: any) {
       console.error("Error fetching workspace feeds:", error);
@@ -180,7 +195,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAeAttributes(prev => prev.filter(attr => attr.id !== id));
   };
   
-  // Feed list methods - updated to use localStorage instead of Supabase
+  // Feed list methods - updated to use Supabase and current workspace
   const addFeedToList = async (name: string, type: FeedModeType, source?: string) => {
     try {
       if (!currentWorkspace) {
@@ -188,32 +203,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return;
       }
       
-      // Create new feed in localStorage
-      const newFeed: Feed = {
-        id: `feed-${Date.now()}`,
-        name,
-        type,
-        status: 'Active',
-        lastUpdated: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        source: source || 'import'
-      };
+      // Create the new feed in Supabase
+      const { data, error } = await supabase
+        .from('feeds')
+        .insert([
+          { 
+            name, 
+            type, 
+            status: 'Active',
+            workspace_id: currentWorkspace.id,
+            configuration: {},
+            column_mapping: {}
+          }
+        ])
+        .select();
+
+      if (error) throw error;
       
-      // Get existing feeds for this workspace
-      const existingFeeds = storage.get<Feed[]>(`feeds:${currentWorkspace.id}`) || [];
-      
-      // Add new feed
-      const updatedFeeds = [...existingFeeds, newFeed];
-      storage.set(`feeds:${currentWorkspace.id}`, updatedFeeds);
-      
-      // Update state
-      setFeedList(prev => [...prev, newFeed]);
-      
-      // Show success message
-      toast.success("Feed added successfully");
-      
-      // Navigate to feed list
-      setSettingsCurrentTab("feed-list");
+      // If successful, update the local state
+      if (data && data[0]) {
+        setFeedList(prev => [...prev, {
+          id: data[0].id,
+          name: data[0].name,
+          type: data[0].type as FeedModeType,
+          status: data[0].status,
+          lastUpdated: data[0].updated_at,
+          updated_at: data[0].updated_at,
+          source: source || 'import'
+        }]);
+        
+        // Show success message
+        toast.success("Feed added successfully");
+        
+        // Navigate to feed list
+        setSettingsCurrentTab("feed-list");
+      }
     } catch (error: any) {
       console.error("Error adding feed:", error);
       toast.error("Failed to add feed: " + (error.message || error));

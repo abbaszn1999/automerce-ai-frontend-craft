@@ -1,20 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppContext } from "@/context/AppContext";
-import FileUpload from "@/components/ui/FileUpload";
-import * as XLSX from "xlsx";
+import { useProjectSettings, AEConfigType } from "@/hooks/useProjectSettings";
+import ToolViewHeader from "../../common/ToolViewHeader";
 import AttributeManager from "./AttributeManager";
-import { useAttributeExtractionService } from "@/hooks/api/useAttributeExtractionService";
-import { useFileProcessor } from "@/hooks/useFileProcessor";
-import { supabase } from "@/services/apiClient";
+import FileUpload from "../../ui/FileUpload";
+import ProgressBar from "../../ui/ProgressBar";
+import LogDisplay from "../../ui/LogDisplay";
+import DataTable from "../../ui/DataTable";
+import { ArrowLeft, ArrowRight, Pause, Play, XCircle, Save } from "lucide-react";
+import { simulateProcessing } from "../../../utils/utils";
+import { toast } from "@/hooks/use-toast";
+import ModuleOutputActions from "../../common/ModuleOutputActions";
+import { 
+  useAttributeExtractionService, 
+  ColumnMapping, 
+  ProductData 
+} from "@/hooks/api/useAttributeExtractionService";
+import { supabase } from "@/integrations/supabase/client";
+import * as XLSX from 'xlsx';
+import { Button } from "@/components/ui/button";
+import { requiredProductColumns } from "@/components/product/constants/productColumns";
 
 const AttributeExtraction: React.FC = () => {
   const { 

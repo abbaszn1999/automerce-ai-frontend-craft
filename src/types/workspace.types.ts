@@ -8,12 +8,10 @@ export interface Workspace {
 }
 
 export interface WorkspaceUser {
-  id?: string; // Made optional to fix errors
   workspace_id: string;
   user_id: string;
   role: string;
   created_at: string;
-  email?: string; // Added to fix error
 }
 
 export interface WorkspaceContextType {
