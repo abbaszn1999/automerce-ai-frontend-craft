@@ -1,20 +1,7 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { storage } from "../services/storageService";
 import { Workspace, WorkspaceUser } from "@/types/workspace.types";
-
-export interface Workspace {
-  id: string;
-  name: string;
-  description?: string;
-  created_at?: string;
-}
-
-export interface WorkspaceUser {
-  id: string;
-  userId: string;
-  workspaceId: string;
-  role: string;
-}
 
 interface WorkspaceContextType {
   workspaces: Workspace[];
@@ -63,7 +50,8 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           id: 'demo-workspace-' + Date.now(),
           name: 'Demo Workspace',
           description: 'A demo workspace for testing',
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          owner_user_id: 'demo-user'
         };
         storedWorkspaces = [demoWorkspace];
         storage.set('workspaces', storedWorkspaces);
@@ -102,7 +90,8 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         id: 'workspace-' + Date.now(),
         name,
         description,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        owner_user_id: 'current-user'
       };
       
       const updatedWorkspaces = [...workspaces, newWorkspace];
@@ -165,10 +154,11 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // In a real implementation, you would send an invitation email
       // For now, we'll simulate adding the user immediately
       const newUser: WorkspaceUser = {
-        id: 'user-' + Date.now(),
-        userId: 'user-id-' + email,
-        workspaceId,
-        role
+        user_id: 'user-id-' + email,
+        workspace_id: workspaceId,
+        role,
+        created_at: new Date().toISOString(),
+        email: email
       };
       
       const currentUsers = storage.get<WorkspaceUser[]>(`workspaceUsers:${workspaceId}`) || [];
@@ -189,7 +179,7 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const removeUserFromWorkspace = async (workspaceId: string, userIdToRemove: string): Promise<boolean> => {
     try {
       const currentUsers = storage.get<WorkspaceUser[]>(`workspaceUsers:${workspaceId}`) || [];
-      const updatedUsers = currentUsers.filter(user => user.userId !== userIdToRemove);
+      const updatedUsers = currentUsers.filter(user => user.user_id !== userIdToRemove);
       storage.set(`workspaceUsers:${workspaceId}`, updatedUsers);
       
       if (workspaceId === currentWorkspace?.id) {

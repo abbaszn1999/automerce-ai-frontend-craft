@@ -1,21 +1,13 @@
 
-import { supabase } from "@/services/apiClient";
+import { storage } from "@/services/storageService";
 import { WorkspaceUser } from "@/types/workspace.types";
 import { toast } from "sonner";
 
 export const useWorkspaceMembersManagement = (userId: string | undefined) => {
   const fetchWorkspaceUsers = async (workspaceId: string): Promise<WorkspaceUser[]> => {
     try {
-      // This will only succeed if the user has access to this workspace due to RLS
-      const { data, error } = await supabase
-        .from('workspace_users')
-        .select('*')
-        .eq('workspace_id', workspaceId);
-      
-      if (error) throw error;
-      
-      return data as WorkspaceUser[];
-      
+      const users = storage.get<WorkspaceUser[]>(`workspaceUsers:${workspaceId}`) || [];
+      return users;
     } catch (error: any) {
       console.error("Error fetching workspace users:", error);
       toast.error("Failed to load workspace members");
@@ -29,45 +21,27 @@ export const useWorkspaceMembersManagement = (userId: string | undefined) => {
     role: string
   ): Promise<boolean> => {
     try {
-      // Get the user ID from the email
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .single();
-      
-      if (userError) {
-        toast.error(`User with email ${email} not found`);
-        return false;
-      }
-      
       // Check if user is already in the workspace
-      const { data: existingUser, error: existingUserError } = await supabase
-        .from('workspace_users')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .eq('user_id', userData.id)
-        .single();
-        
-      if (existingUser) {
+      const existingUsers = storage.get<WorkspaceUser[]>(`workspaceUsers:${workspaceId}`) || [];
+      if (existingUsers.some(user => user.email === email)) {
         toast.error(`User ${email} is already a member of this workspace`);
         return false;
       }
       
       // Add the user to the workspace
-      const { error } = await supabase
-        .from('workspace_users')
-        .insert({
-          workspace_id: workspaceId,
-          user_id: userData.id,
-          role
-        });
+      const newUser: WorkspaceUser = {
+        user_id: `user-${Date.now()}`,
+        workspace_id: workspaceId,
+        email, // Adding email for compatibility
+        role,
+        created_at: new Date().toISOString()
+      };
       
-      if (error) throw error;
+      const updatedUsers = [...existingUsers, newUser];
+      storage.set(`workspaceUsers:${workspaceId}`, updatedUsers);
       
       toast.success(`User ${email} invited to workspace successfully`);
       return true;
-      
     } catch (error: any) {
       console.error("Error inviting user:", error);
       toast.error(`Failed to invite user: ${error.message}`);
@@ -87,17 +61,13 @@ export const useWorkspaceMembersManagement = (userId: string | undefined) => {
       }
       
       // Remove the user from the workspace
-      const { error } = await supabase
-        .from('workspace_users')
-        .delete()
-        .eq('workspace_id', workspaceId)
-        .eq('user_id', userIdToRemove);
+      const existingUsers = storage.get<WorkspaceUser[]>(`workspaceUsers:${workspaceId}`) || [];
+      const updatedUsers = existingUsers.filter(user => user.user_id !== userIdToRemove);
       
-      if (error) throw error;
+      storage.set(`workspaceUsers:${workspaceId}`, updatedUsers);
       
       toast.success("User removed from workspace successfully");
       return true;
-      
     } catch (error: any) {
       console.error("Error removing user:", error);
       toast.error(`Failed to remove user: ${error.message}`);

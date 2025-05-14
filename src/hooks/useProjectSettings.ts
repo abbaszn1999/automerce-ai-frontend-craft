@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useWorkspace } from "@/context/WorkspaceContext";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { AEConfigType } from "./projectSettings/types";
 import { getDefaultProjectSettings } from "./projectSettings/defaultSettings";
 import { dataService } from "@/services/dataService";
