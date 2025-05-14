@@ -1,157 +1,145 @@
 
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import React, { useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from "@/context/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import AutommerceLogo from "@/components/AutommerceLogo";
-
 const Auth = () => {
-  const navigate = useNavigate();
-  const { user, signIn, signUp } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { user, isLoading, signIn, signUp } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // If user is already logged in, redirect to home
-  React.useEffect(() => {
-    if (user) {
-      navigate("/");
-    }
-  }, [user, navigate]);
+  // If user is logged in, redirect to home page
+  if (user) {
+    return <Navigate to="/" />;
+  }
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-
+    setIsSubmitting(true);
+    
     try {
-      await signIn(email, password);
-      toast.success("Logged in successfully");
-      navigate("/");
-    } catch (error: any) {
-      setError(error.message || "Failed to sign in");
-      toast.error(error.message || "Failed to sign in");
+      let success;
+      
+      if (isSignUp) {
+        success = await signUp(email, password, name);
+      } else {
+        success = await signIn(email, password);
+      }
+      
+      if (success) {
+        toast.success(isSignUp ? "Account created successfully!" : "Welcome back!");
+      } else {
+        toast.error(isSignUp ? "Failed to create account" : "Invalid email or password");
+      }
+    } catch (error) {
+      console.error("Auth error:", error);
+      toast.error("Authentication error");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      await signUp(email, password);
-      toast.success("Account created successfully. Please log in.");
-      // After creating account, switch to login tab
-      document.getElementById('login-tab')?.click();
-    } catch (error: any) {
-      setError(error.message || "Failed to create account");
-      toast.error(error.message || "Failed to create account");
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <AutommerceLogo size="lg" />
-          <h2 className="mt-4 text-2xl font-bold text-gray-900">Welcome to Autommerce.ai</h2>
-          <p className="text-gray-600">Sign in to access your account</p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            {isSignUp ? "Create a new account" : "Sign in to your account"}
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            {isSignUp ? "Join Autommerce.ai" : "Access your Autommerce.ai dashboard"}
+          </p>
         </div>
-
-        <Card>
-          <Tabs defaultValue="login">
-            <CardHeader>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger id="login-tab" value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
-              </TabsList>
-            </CardHeader>
-
-            <TabsContent value="login">
-              <form onSubmit={handleSignIn}>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="your.email@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Signing in..." : "Sign in"}
-                  </Button>
-                </CardFooter>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="register">
-              <form onSubmit={handleSignUp}>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email">Email</Label>
-                    <Input
-                      id="register-email"
-                      type="email"
-                      placeholder="your.email@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password">Password</Label>
-                    <Input
-                      id="register-password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creating account..." : "Create account"}
-                  </Button>
-                </CardFooter>
-              </form>
-            </TabsContent>
-          </Tabs>
-
-          {error && (
-            <div className="px-6 py-3 mb-4 text-red-600 bg-red-50 rounded-lg">
-              {error}
+        
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm space-y-4">
+            {isSignUp && (
+              <div>
+                <label htmlFor="name" className="sr-only">Name</label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required={isSignUp}
+                  placeholder="Full Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+            )}
+            
+            <div>
+              <label htmlFor="email" className="sr-only">Email address</label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
-          )}
-        </Card>
+            
+            <div>
+              <label htmlFor="password" className="sr-only">Password</label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete={isSignUp ? "new-password" : "current-password"}
+                required
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center">
+                  <span className="animate-spin w-4 h-4 mr-2 border-2 border-white rounded-full border-t-transparent"></span>
+                  {isSignUp ? "Creating Account..." : "Signing In..."}
+                </span>
+              ) : (
+                <span>{isSignUp ? "Sign up" : "Sign in"}</span>
+              )}
+            </Button>
+          </div>
+        </form>
+        
+        <div className="text-center mt-4">
+          <button
+            type="button"
+            className="text-sm text-primary hover:underline"
+            onClick={() => setIsSignUp(!isSignUp)}
+          >
+            {isSignUp
+              ? "Already have an account? Sign in"
+              : "Don't have an account? Sign up"}
+          </button>
+        </div>
       </div>
     </div>
   );
