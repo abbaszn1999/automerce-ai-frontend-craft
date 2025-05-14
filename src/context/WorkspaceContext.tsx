@@ -1,11 +1,12 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { storage } from "../services/storageService";
+import { Workspace, WorkspaceUser } from "@/types/workspace.types";
 
 export interface Workspace {
   id: string;
   name: string;
   description?: string;
+  created_at?: string;
 }
 
 export interface WorkspaceUser {
@@ -61,11 +62,18 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const demoWorkspace: Workspace = {
           id: 'demo-workspace-' + Date.now(),
           name: 'Demo Workspace',
-          description: 'A demo workspace for testing'
+          description: 'A demo workspace for testing',
+          created_at: new Date().toISOString()
         };
         storedWorkspaces = [demoWorkspace];
         storage.set('workspaces', storedWorkspaces);
       }
+
+      // Ensure all workspaces have a created_at field
+      storedWorkspaces = storedWorkspaces.map(ws => ({
+        ...ws,
+        created_at: ws.created_at || new Date().toISOString()
+      }));
       
       setWorkspaces(storedWorkspaces);
       
@@ -93,7 +101,8 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const newWorkspace: Workspace = {
         id: 'workspace-' + Date.now(),
         name,
-        description
+        description,
+        created_at: new Date().toISOString()
       };
       
       const updatedWorkspaces = [...workspaces, newWorkspace];

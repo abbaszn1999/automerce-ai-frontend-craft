@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/services/apiClient";
 import { Workspace } from "@/types/workspace.types";
 import { toast } from "sonner";
 

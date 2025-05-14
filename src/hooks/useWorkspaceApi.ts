@@ -6,7 +6,13 @@ import { toast } from "sonner";
 // Function to get all workspaces the user has access to
 const fetchWorkspaces = async (): Promise<Workspace[]> => {
   try {
-    return storage.get<Workspace[]>('workspaces') || [];
+    const workspaces = storage.get<Workspace[]>('workspaces') || [];
+    
+    // Ensure all workspaces have a created_at field
+    return workspaces.map(ws => ({
+      ...ws,
+      created_at: ws.created_at || new Date().toISOString()
+    }));
   } catch (error) {
     console.error("Error fetching workspaces:", error);
     toast.error("Failed to load workspaces");
@@ -29,7 +35,8 @@ const createWorkspace = async (name: string, description: string): Promise<Works
       id: `workspace-${Date.now()}`,
       name,
       description,
-      owner_user_id: 'current-user' // In real implementation, use actual user id
+      owner_user_id: 'current-user', // In real implementation, use actual user id
+      created_at: new Date().toISOString()
     };
 
     // Save to storage
@@ -38,7 +45,7 @@ const createWorkspace = async (name: string, description: string): Promise<Works
 
     toast.success(`Workspace "${name}" created successfully`);
     return newWorkspace;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating workspace:", error);
     toast.error(`Failed to create workspace: ${error.message}`);
     return null;
@@ -82,7 +89,13 @@ const deleteWorkspace = async (id: string): Promise<boolean> => {
 // Function to get users in a workspace
 const fetchWorkspaceUsers = async (workspaceId: string): Promise<WorkspaceUser[]> => {
   try {
-    return storage.get<WorkspaceUser[]>(`workspaceUsers:${workspaceId}`) || [];
+    const users = storage.get<WorkspaceUser[]>(`workspaceUsers:${workspaceId}`) || [];
+    
+    // Ensure all users have a created_at field
+    return users.map(user => ({
+      ...user,
+      created_at: user.created_at || new Date().toISOString()
+    }));
   } catch (error) {
     console.error("Error fetching workspace users:", error);
     toast.error("Failed to load workspace members");
@@ -107,11 +120,11 @@ const inviteUserToWorkspace = async (
     // In a real implementation, you'd check if the user exists in your system
     // For now, we'll simulate adding a new user
     const newUser: WorkspaceUser = {
-      id: `user-${Date.now()}`,
-      user_id: `user-${email}`, // In real implementation, use actual user id
-      email, // Adding email for demonstration
+      user_id: `user-${Date.now()}`,
+      email, // Adding email for compatibility
       workspace_id: workspaceId,
-      role
+      role,
+      created_at: new Date().toISOString()
     };
 
     const updatedUsers = [...existingUsers, newUser];

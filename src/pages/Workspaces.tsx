@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import AppLayout from "../components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -110,7 +109,7 @@ const Workspaces: React.FC = () => {
                     )}
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                    <div>Created {formatDate(workspace.created_at)}</div>
+                    <div>Created {formatDate(workspace.created_at || new Date().toISOString())}</div>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button 

@@ -66,3 +66,72 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+
+// Mock Supabase interface for compatibility
+export const supabase = {
+  from: (table: string) => ({
+    select: (columns: string = '*') => ({
+      eq: (column: string, value: any) => ({
+        single: async () => {
+          return { data: null, error: null };
+        },
+        limit: (limit: number) => ({
+          async then(callback: any) {
+            return callback({ data: [], error: null });
+          }
+        }),
+        async then(callback: any) {
+          return callback({ data: [], error: null });
+        }
+      }),
+      order: (column: string, { ascending = true } = {}) => ({
+        async then(callback: any) {
+          return callback({ data: [], error: null });
+        }
+      }),
+      async then(callback: any) {
+        return callback({ data: [], error: null });
+      }
+    }),
+    insert: (data: any) => ({
+      select: () => ({
+        single: async () => {
+          return { data: null, error: null };
+        },
+        async then(callback: any) {
+          return callback({ data: null, error: null });
+        }
+      }),
+      async then(callback: any) {
+        return callback({ data: null, error: null });
+      }
+    }),
+    update: (data: any) => ({
+      eq: (column: string, value: any) => ({
+        async then(callback: any) {
+          return callback({ data: null, error: null });
+        }
+      }),
+      async then(callback: any) {
+        return callback({ data: null, error: null });
+      }
+    }),
+    delete: () => ({
+      eq: (column: string, value: any) => ({
+        async then(callback: any) {
+          return callback({ data: null, error: null });
+        }
+      }),
+      async then(callback: any) {
+        return callback({ data: null, error: null });
+      }
+    })
+  }),
+  auth: {
+    signUp: async () => ({ data: { user: null }, error: null }),
+    signInWithPassword: async () => ({ data: { user: null }, error: null }),
+    signOut: async () => ({ error: null }),
+    getSession: async () => ({ data: { session: null }, error: null }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+  }
+};

@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/services/apiClient";
 import { AEConfigType } from './types';
 import { toast } from "@/hooks/use-toast";
 

@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/services/apiClient";
 import { toast } from "sonner";
 import { useWorkspace } from "./WorkspaceContext";
 
