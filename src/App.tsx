@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import ProductInput from "./pages/ProductInput";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useState, useEffect } from "react";
+import { storage } from "./services/storageService";
 
 const queryClient = new QueryClient();
 
@@ -60,7 +62,7 @@ const WorkspaceChecker = ({ children }: { children: React.ReactNode }) => {
   
   useEffect(() => {
     // Check if there's a current workspace in localStorage or if we need to redirect
-    const workspaceId = localStorage.getItem('currentWorkspaceId');
+    const workspaceId = storage.get<string>('currentWorkspaceId');
     if (workspaceId) {
       setHasWorkspace(true);
     } else {

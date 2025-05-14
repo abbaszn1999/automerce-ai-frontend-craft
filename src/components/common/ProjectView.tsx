@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "../../context/AppContext";
 import { formatDate } from "../../utils/utils";
 import { toast } from "sonner";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { useWorkspace } from "@/context/WorkspaceContext";
-import { supabase } from "@/integrations/supabase/client";
+import { dataService, Project } from "@/services/dataService";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -24,13 +23,6 @@ interface ProjectViewProps {
   solutionDescription: string;
 }
 
-interface Project {
-  id: string;
-  name: string;
-  last_updated?: Date;
-  workspace_id: string;
-}
-
 const ProjectView: React.FC<ProjectViewProps> = ({ 
   solutionPrefix, 
   solutionName,
@@ -44,32 +36,14 @@ const ProjectView: React.FC<ProjectViewProps> = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Fetch projects from the database
+  // Fetch projects 
   const fetchProjects = async () => {
     if (!currentWorkspace) return;
     
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('solution_projects')
-        .select('*')
-        .eq('solution_prefix', solutionPrefix)
-        .eq('workspace_id', currentWorkspace.id)
-        .order('last_updated', { ascending: false });
-      
-      if (error) {
-        console.error("Error fetching projects:", error);
-        toast.error("Failed to load projects");
-        return;
-      }
-      
-      // Convert last_updated string to Date if it exists
-      const projectsWithDates = data.map((project: any) => ({
-        ...project,
-        last_updated: project.last_updated ? new Date(project.last_updated) : undefined
-      }));
-      
-      setProjects(projectsWithDates);
+      const data = await dataService.getProjects(currentWorkspace.id, solutionPrefix);
+      setProjects(data);
     } catch (error) {
       console.error("Error in fetchProjects:", error);
       toast.error("An unexpected error occurred");
@@ -109,32 +83,13 @@ const ProjectView: React.FC<ProjectViewProps> = ({
     
     setIsLoading(true);
     try {
-      const now = new Date().toISOString();
-      
-      const { data, error } = await supabase
-        .from('solution_projects')
-        .insert({
-          name: newProjectName.trim(),
-          solution_prefix: solutionPrefix,
-          workspace_id: currentWorkspace.id,
-          description: "", // Optional description
-          last_updated: now,
-          created_at: now
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.error("Error creating project:", error);
-        toast.error("Failed to create project");
-        return;
-      }
-      
-      // Add the newly created project to the list
-      const newProject = {
-        ...data,
-        last_updated: new Date(data.last_updated)
-      };
+      const newProject = await dataService.createProject({
+        name: newProjectName.trim(),
+        solutionPrefix: solutionPrefix,
+        workspaceId: currentWorkspace.id,
+        description: "",
+        lastUpdated: new Date()
+      });
       
       setProjects(prev => [newProject, ...prev]);
       setNewProjectName("");
@@ -165,17 +120,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('solution_projects')
-        .delete()
-        .eq('id', projectToDelete.id)
-        .eq('workspace_id', currentWorkspace.id);
-      
-      if (error) {
-        console.error("Error deleting project:", error);
-        toast.error("Failed to delete project");
-        return;
-      }
+      await dataService.deleteProject(projectToDelete);
       
       // Remove the project from the list
       const updatedProjects = projects.filter(p => p.id !== projectToDelete.id);
@@ -253,7 +198,7 @@ const ProjectView: React.FC<ProjectViewProps> = ({
                     <div>
                       <div className="font-medium">{project.name}</div>
                       <div className="text-xs text-gray-500">
-                        Last updated: {project.last_updated ? formatDate(project.last_updated) : 'N/A'}
+                        Last updated: {project.lastUpdated ? formatDate(project.lastUpdated) : 'N/A'}
                       </div>
                     </div>
                     <div className="flex gap-2">
