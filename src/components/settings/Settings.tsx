@@ -83,10 +83,7 @@ const Settings: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <FeedList 
-                projectId={selectedFeedId || "default-project"} 
-                onSelectFeed={handleSelectFeed} 
-              />
+              <FeedList />
             </CardContent>
           </Card>
         </TabsContent>

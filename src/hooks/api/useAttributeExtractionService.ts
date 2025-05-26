@@ -1,74 +1,58 @@
+
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from "@/hooks/use-toast";
-import * as XLSX from 'xlsx';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-export type ColumnMapping = {
-  product_id: string;
-  product_title: string;
-  product_url: string;
-  product_image_url: string;
-  product_description: string;
-  [key: string]: string;
-};
-
-export type ProductData = {
-  product_id: string;
-  product_title: string;
-  product_url: string;
-  product_image_url: string;
-  product_description: string;
-  [key: string]: any;
-};
-
-export type ExtractionRun = {
+export interface ExtractionRun {
   id: string;
   project_id: string;
-  file_name: string | null;
-  column_mapping: ColumnMapping | null;
-  status: string;
-  total_products: number | null;
-  processed_products: number | null;
-  created_at: string | null;
-  updated_at: string | null;
-};
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  total_products: number;
+  processed_products: number;
+  created_at: string;
+  completed_at?: string;
+  error_message?: string;
+}
+
+export interface ProductData {
+  id: string;
+  extraction_run_id: string;
+  product_name: string;
+  product_url?: string;
+  image_url?: string;
+  extracted_attributes: Record<string, any>;
+  confidence_score: number;
+  created_at: string;
+}
 
 export const useAttributeExtractionService = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createExtractionRun = async (
-    projectId: string,
-    fileName: string,
-    columnMapping: ColumnMapping
-  ): Promise<string> => {
-    setIsLoading(true);
-    setError(null);
-    
+  const createExtractionRun = async (projectId: string, totalProducts: number): Promise<string> => {
     try {
-      const { data, error: insertError } = await supabase
+      setIsLoading(true);
+      setError(null);
+
+      const { data, error } = await supabase
         .from('ae_extraction_runs')
         .insert({
           project_id: projectId,
-          file_name: fileName,
-          column_mapping: columnMapping,
-          status: 'pending'
+          status: 'pending',
+          total_products: totalProducts,
+          processed_products: 0
         })
         .select()
         .single();
 
-      if (insertError) {
-        throw new Error(`Failed to create extraction run: ${insertError.message}`);
-      }
+      if (error) throw error;
 
+      toast.success('Extraction run created successfully');
       return data.id;
     } catch (err: any) {
-      setError(err.message);
-      toast({
-        title: "Error",
-        description: `Error creating extraction run: ${err.message}`,
-        variant: "destructive",
-      });
+      const errorMessage = err.message || 'Failed to create extraction run';
+      setError(errorMessage);
+      toast.error(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);
@@ -77,191 +61,140 @@ export const useAttributeExtractionService = () => {
 
   const updateExtractionRunStatus = async (
     runId: string, 
-    status: string, 
+    status: ExtractionRun['status'], 
     processedProducts?: number,
-    totalProducts?: number
+    errorMessage?: string
   ) => {
     try {
       const updateData: any = { status };
-      
       if (processedProducts !== undefined) {
         updateData.processed_products = processedProducts;
       }
-      
-      if (totalProducts !== undefined) {
-        updateData.total_products = totalProducts;
+      if (status === 'completed' || status === 'failed') {
+        updateData.completed_at = new Date().toISOString();
       }
-      
-      const { error: updateError } = await supabase
+      if (errorMessage) {
+        updateData.error_message = errorMessage;
+      }
+
+      const { error } = await supabase
         .from('ae_extraction_runs')
         .update(updateData)
         .eq('id', runId);
 
-      if (updateError) {
-        throw new Error(`Failed to update extraction run: ${updateError.message}`);
-      }
+      if (error) throw error;
+
+      toast.success('Extraction run updated successfully');
     } catch (err: any) {
-      console.error('Error updating extraction run status:', err);
-      toast({
-        title: "Error",
-        description: `Error updating extraction run: ${err.message}`,
-        variant: "destructive",
-      });
+      const errorMessage = err.message || 'Failed to update extraction run';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      throw err;
     }
   };
 
-  const saveProductData = async (
-    runId: string,
-    projectId: string,
-    products: ProductData[],
-    onProgress?: (processed: number, total: number) => void
-  ) => {
-    setIsLoading(true);
-    setError(null);
-    
+  const saveProductData = async (productData: Omit<ProductData, 'id' | 'created_at'>[]): Promise<void> => {
     try {
-      // Update run with total products count
-      await updateExtractionRunStatus(runId, 'processing', 0, products.length);
-      
-      // Process in batches of 100 to avoid payload size limitations
-      const batchSize = 100;
-      const totalProducts = products.length;
-      let processedCount = 0;
-      
-      for (let i = 0; i < totalProducts; i += batchSize) {
-        const batch = products.slice(i, i + batchSize);
-        
-        // Transform the data to match our database schema
-        const productsToInsert = batch.map(product => ({
-          run_id: runId,
-          project_id: projectId,
-          product_id: product.product_id,
-          product_title: product.product_title,
-          product_url: product.product_url,
-          product_image_url: product.product_image_url,
-          product_description: product.product_description
-        }));
-        
-        const { error: insertError } = await supabase
-          .from('ae_product_data')
-          .insert(productsToInsert);
+      setIsLoading(true);
+      setError(null);
 
-        if (insertError) {
-          throw new Error(`Failed to save product data (batch ${i}): ${insertError.message}`);
-        }
-        
-        processedCount += batch.length;
-        
-        // Update progress
-        if (onProgress) {
-          onProgress(processedCount, totalProducts);
-        }
-        
-        // Update the processed count in the run
-        await updateExtractionRunStatus(runId, 'processing', processedCount);
-      }
-      
-      // Mark run as complete when all products are processed
-      await updateExtractionRunStatus(runId, 'completed', totalProducts, totalProducts);
-      
-      toast({
-        title: "Success",
-        description: "Product data saved successfully",
-      });
-      return true;
+      const { error } = await supabase
+        .from('ae_product_data')
+        .insert(productData);
+
+      if (error) throw error;
+
+      toast.success('Product data saved successfully');
     } catch (err: any) {
-      setError(err.message);
-      // Mark run as failed
-      await updateExtractionRunStatus(runId, 'failed');
-      toast({
-        title: "Error",
-        description: `Error saving product data: ${err.message}`,
-        variant: "destructive",
-      });
+      const errorMessage = err.message || 'Failed to save product data';
+      setError(errorMessage);
+      toast.error(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const processExcelFile = async (
-    file: File, 
-    columnMapping: ColumnMapping
-  ): Promise<ProductData[]> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
+  const simulateProcessing = async (
+    runId: string,
+    products: any[],
+    onProgress: (progress: number) => void,
+    onLog: (log: string) => void
+  ) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      await updateExtractionRunStatus(runId, 'processing');
+      onLog('Starting attribute extraction...');
+
+      for (let i = 0; i < products.length; i++) {
+        const product = products[i];
+        
+        // Simulate processing delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Mock extracted attributes
+        const extractedAttributes = {
+          brand: `Mock Brand ${i + 1}`,
+          category: 'Electronics',
+          color: ['Black', 'White', 'Silver'][i % 3],
+          material: 'Plastic',
+          features: ['Feature 1', 'Feature 2']
+        };
+
+        // Save product data
+        await saveProductData([{
+          extraction_run_id: runId,
+          product_name: product.name || `Product ${i + 1}`,
+          product_url: product.url,
+          image_url: product.image_url,
+          extracted_attributes: extractedAttributes,
+          confidence_score: 0.85 + (Math.random() * 0.15)
+        }]);
+
+        const progress = ((i + 1) / products.length) * 100;
+        onProgress(progress);
+        onLog(`Processed product ${i + 1}/${products.length}: ${product.name || `Product ${i + 1}`}`);
+
+        // Update run progress
+        await updateExtractionRunStatus(runId, 'processing', i + 1);
+      }
+
+      await updateExtractionRunStatus(runId, 'completed', products.length);
+      onLog('Extraction completed successfully!');
+      toast.success('Attribute extraction completed');
       
-      reader.onload = (e) => {
-        try {
-          const data = e.target?.result;
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          
-          // Convert sheet to JSON
-          const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
-          
-          // Map the columns based on user's mapping
-          const products: ProductData[] = jsonData.map(row => {
-            const product: any = {};
-            
-            // Map each required field
-            for (const [key, sourceColumn] of Object.entries(columnMapping)) {
-              if (!sourceColumn) {
-                throw new Error(`Missing mapping for required field: ${key}`);
-              }
-              product[key] = row[sourceColumn] || '';
-            }
-            
-            return product as ProductData;
-          });
-          
-          // Validate required fields
-          const invalidProducts = products.filter(p => 
-            !p.product_id || 
-            !p.product_title || 
-            !p.product_url || 
-            !p.product_image_url ||
-            !p.product_description
-          );
-          
-          if (invalidProducts.length > 0) {
-            throw new Error(`${invalidProducts.length} products are missing required fields`);
-          }
-          
-          resolve(products);
-        } catch (err: any) {
-          reject(err);
-        }
-      };
-      
-      reader.onerror = (err) => {
-        reject(err);
-      };
-      
-      reader.readAsArrayBuffer(file);
-    });
+    } catch (err: any) {
+      const errorMessage = err.message || 'Processing failed';
+      setError(errorMessage);
+      await updateExtractionRunStatus(runId, 'failed', undefined, errorMessage);
+      onLog(`Error: ${errorMessage}`);
+      toast.error(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getExtractionRuns = async (projectId: string): Promise<ExtractionRun[]> => {
-    setIsLoading(true);
-    setError(null);
-    
     try {
+      setIsLoading(true);
+      setError(null);
+
       const { data, error } = await supabase
         .from('ae_extraction_runs')
         .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        throw new Error(`Failed to fetch extraction runs: ${error.message}`);
-      }
+      if (error) throw error;
 
-      return data as ExtractionRun[];
+      return data || [];
     } catch (err: any) {
-      setError(err.message);
-      toast.error(`Error fetching extraction runs: ${err.message}`);
+      const errorMessage = err.message || 'Failed to fetch extraction runs';
+      setError(errorMessage);
+      toast.error(errorMessage);
       return [];
     } finally {
       setIsLoading(false);
@@ -269,48 +202,47 @@ export const useAttributeExtractionService = () => {
   };
 
   const getExtractionRunById = async (runId: string): Promise<ExtractionRun | null> => {
-    setIsLoading(true);
-    setError(null);
-    
     try {
+      setIsLoading(true);
+      setError(null);
+
       const { data, error } = await supabase
         .from('ae_extraction_runs')
         .select('*')
         .eq('id', runId)
         .single();
 
-      if (error) {
-        throw new Error(`Failed to fetch extraction run: ${error.message}`);
-      }
+      if (error) throw error;
 
-      return data as ExtractionRun;
+      return data;
     } catch (err: any) {
-      setError(err.message);
-      toast.error(`Error fetching extraction run: ${err.message}`);
+      const errorMessage = err.message || 'Failed to fetch extraction run';
+      setError(errorMessage);
+      toast.error(errorMessage);
       return null;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getProductDataByRunId = async (runId: string) => {
-    setIsLoading(true);
-    setError(null);
-    
+  const getProductDataByRunId = async (runId: string): Promise<ProductData[]> => {
     try {
+      setIsLoading(true);
+      setError(null);
+
       const { data, error } = await supabase
         .from('ae_product_data')
         .select('*')
-        .eq('run_id', runId);
+        .eq('extraction_run_id', runId)
+        .order('created_at', { ascending: true });
 
-      if (error) {
-        throw new Error(`Failed to fetch product data: ${error.message}`);
-      }
+      if (error) throw error;
 
-      return data;
+      return data || [];
     } catch (err: any) {
-      setError(err.message);
-      toast.error(`Error fetching product data: ${err.message}`);
+      const errorMessage = err.message || 'Failed to fetch product data';
+      setError(errorMessage);
+      toast.error(errorMessage);
       return [];
     } finally {
       setIsLoading(false);
@@ -321,9 +253,9 @@ export const useAttributeExtractionService = () => {
     isLoading,
     error,
     createExtractionRun,
-    saveProductData,
     updateExtractionRunStatus,
-    processExcelFile,
+    saveProductData,
+    simulateProcessing,
     getExtractionRuns,
     getExtractionRunById,
     getProductDataByRunId
