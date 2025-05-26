@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/hooks/use-toast";
@@ -65,7 +64,11 @@ export const useAttributeExtractionService = () => {
       return data.id;
     } catch (err: any) {
       setError(err.message);
-      toast.error(`Error creating extraction run: ${err.message}`);
+      toast({
+        title: "Error",
+        description: `Error creating extraction run: ${err.message}`,
+        variant: "destructive",
+      });
       throw err;
     } finally {
       setIsLoading(false);
@@ -99,7 +102,11 @@ export const useAttributeExtractionService = () => {
       }
     } catch (err: any) {
       console.error('Error updating extraction run status:', err);
-      toast.error(`Error updating extraction run: ${err.message}`);
+      toast({
+        title: "Error",
+        description: `Error updating extraction run: ${err.message}`,
+        variant: "destructive",
+      });
     }
   };
 
@@ -157,13 +164,20 @@ export const useAttributeExtractionService = () => {
       // Mark run as complete when all products are processed
       await updateExtractionRunStatus(runId, 'completed', totalProducts, totalProducts);
       
-      toast.success('Product data saved successfully');
+      toast({
+        title: "Success",
+        description: "Product data saved successfully",
+      });
       return true;
     } catch (err: any) {
       setError(err.message);
       // Mark run as failed
       await updateExtractionRunStatus(runId, 'failed');
-      toast.error(`Error saving product data: ${err.message}`);
+      toast({
+        title: "Error",
+        description: `Error saving product data: ${err.message}`,
+        variant: "destructive",
+      });
       throw err;
     } finally {
       setIsLoading(false);
