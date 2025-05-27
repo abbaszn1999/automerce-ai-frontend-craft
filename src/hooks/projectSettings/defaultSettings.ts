@@ -24,6 +24,5 @@ export const getDefaultProjectSettings = (): AEConfigType => ({
   attributes: [
     { id: "attr1", name: "Material", values: ["Cotton", "Polyester", "Wool", "Silk"] },
     { id: "attr2", name: "Color", values: ["Red", "Blue", "Green", "Black", "White"] }
-  ],
-  feeds: []
+  ]
 });

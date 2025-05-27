@@ -5,6 +5,7 @@ import {
   ToastActionElement,
   ToastProps
 } from "@/components/ui/toast";
+import { toast as toastPrimitive } from "@radix-ui/react-toast";
 
 // This defines the primary toast hook that the app will use
 export function useToast() {
@@ -40,66 +41,47 @@ export function useToast() {
   };
 }
 
-// Create a standalone toast API without useToast hook
-const toastFunctions = {
+// Create a more user-friendly toast API
+export const toast = {
   success: (message: string) => {
-    // We can't directly use the hook here, but we can dispatch a custom event
-    // that the Toaster component will listen for
-    const event = new CustomEvent("toast", {
-      detail: {
-        title: "Success",
-        description: message,
-        variant: "default",
-        className: "bg-green-50 border-green-200 text-green-800",
-      }
+    const { toast: toastFn } = useToast();
+    toastFn({
+      title: "Success",
+      description: message,
+      variant: "default",
+      className: "bg-green-50 border-green-200 text-green-800",
     });
-    document.dispatchEvent(event);
   },
   error: (message: string) => {
-    const event = new CustomEvent("toast", {
-      detail: {
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      }
+    const { toast: toastFn } = useToast();
+    toastFn({
+      title: "Error",
+      description: message,
+      variant: "destructive",
     });
-    document.dispatchEvent(event);
   },
   warning: (message: string) => {
-    const event = new CustomEvent("toast", {
-      detail: {
-        title: "Warning",
-        description: message,
-        variant: "default",
-        className: "bg-yellow-50 border-yellow-200 text-yellow-800",
-      }
+    const { toast: toastFn } = useToast();
+    toastFn({
+      title: "Warning",
+      description: message,
+      variant: "default",
+      className: "bg-yellow-50 border-yellow-200 text-yellow-800",
     });
-    document.dispatchEvent(event);
   },
   info: (message: string) => {
-    const event = new CustomEvent("toast", {
-      detail: {
-        title: "Info",
-        description: message,
-        variant: "default",
-        className: "bg-blue-50 border-blue-200 text-blue-800",
-      }
+    const { toast: toastFn } = useToast();
+    toastFn({
+      title: "Info",
+      description: message,
+      variant: "default",
+      className: "bg-blue-50 border-blue-200 text-blue-800",
     });
-    document.dispatchEvent(event);
   },
   default: (message: string) => {
-    const event = new CustomEvent("toast", {
-      detail: {
-        description: message,
-      }
+    const { toast: toastFn } = useToast();
+    toastFn({
+      description: message,
     });
-    document.dispatchEvent(event);
   },
 };
-
-export const toast = toastFunctions;
-
-// Define a type for the toast event
-export interface ToastEvent {
-  detail: ToastProps;
-}

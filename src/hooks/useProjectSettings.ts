@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useWorkspace } from "@/context/WorkspaceContext";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { AEConfigType } from "./projectSettings/types";
 import { getDefaultProjectSettings } from "./projectSettings/defaultSettings";
 import { 
@@ -10,10 +10,10 @@ import {
   saveProjectSettingsToDb 
 } from "./projectSettings/projectSettingsService";
 
-// Re-export the type for backward compatibility
+// Re-export the types for backward compatibility
 export type { AEConfigType } from "./projectSettings/types";
 
-export const useProjectSettings = (solutionPrefix?: string, projectName?: string | null) => {
+export const useProjectSettings = (solutionPrefix: string, projectName: string | null) => {
   const { currentWorkspace } = useWorkspace();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
@@ -21,13 +21,13 @@ export const useProjectSettings = (solutionPrefix?: string, projectName?: string
 
   // Load project settings when the component mounts or when projectName changes
   useEffect(() => {
-    if (currentWorkspace && projectName && solutionPrefix) {
+    if (currentWorkspace && projectName) {
       loadProjectSettings();
     }
   }, [currentWorkspace, projectName, solutionPrefix]);
 
   const loadProjectSettings = async () => {
-    if (!currentWorkspace || !projectName || !solutionPrefix) return;
+    if (!currentWorkspace || !projectName) return;
 
     setIsLoading(true);
     try {
@@ -53,8 +53,6 @@ export const useProjectSettings = (solutionPrefix?: string, projectName?: string
       } else {
         // No settings yet, create default settings
         const defaultSettings = getDefaultProjectSettings();
-        // Ensure feeds array exists
-        defaultSettings.feeds = [];
         setSettings(defaultSettings);
       }
     } catch (error) {
@@ -66,7 +64,7 @@ export const useProjectSettings = (solutionPrefix?: string, projectName?: string
   };
 
   const saveProjectSettings = async (updatedSettings: AEConfigType) => {
-    if (!currentWorkspace || !projectName || !solutionPrefix) {
+    if (!currentWorkspace || !projectName) {
       toast.error("No project selected");
       return false;
     }

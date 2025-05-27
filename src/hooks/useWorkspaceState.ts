@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspaceApi } from "./useWorkspaceApi";
 import { Workspace, WorkspaceUser } from "@/types/workspace.types";
@@ -11,18 +11,17 @@ export const useWorkspaceState = () => {
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [workspaceUsers, setWorkspaceUsers] = useState<WorkspaceUser[]>([]);
-  const [isFetching, setIsFetching] = useState(false);
 
-  // Debounced fetch to prevent rapid successive calls
-  const fetchWorkspaces = useCallback(async () => {
-    if (!user || isFetching) {
-      console.log("Skipping fetch - no user or already fetching");
-      return;
-    }
-    
+  // Fetch workspaces for the current user
+  const fetchWorkspaces = async () => {
     try {
-      setIsFetching(true);
       setIsLoading(true);
+      
+      if (!user) {
+        setWorkspaces([]);
+        setCurrentWorkspace(null);
+        return;
+      }
       
       console.log("Fetching workspaces for user:", user.id);
       const userWorkspaces = await workspaceApi.fetchWorkspaces();
@@ -55,9 +54,8 @@ export const useWorkspaceState = () => {
       console.error("Error in fetchWorkspaces:", error);
     } finally {
       setIsLoading(false);
-      setIsFetching(false);
     }
-  }, [user, workspaceApi, currentWorkspace, isFetching]);
+  };
 
   const handleCreateWorkspace = async (name: string, description: string): Promise<Workspace | null> => {
     try {
@@ -135,29 +133,18 @@ export const useWorkspaceState = () => {
     return await workspaceApi.removeUserFromWorkspace(workspaceId, userIdToRemove);
   };
 
-  // Load workspaces on initial mount or when user changes - with debouncing
+  // Load workspaces on initial mount or when user changes
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    if (user && !isFetching) {
-      console.log("User changed, scheduling workspace fetch for:", user.id);
-      // Debounce the fetch to prevent rapid successive calls
-      timeoutId = setTimeout(() => {
-        fetchWorkspaces();
-      }, 100);
-    } else if (!user) {
+    if (user) {
+      console.log("User changed, fetching workspaces for:", user.id);
+      fetchWorkspaces();
+    } else {
       // Clear workspaces when user is not authenticated
       setWorkspaces([]);
       setCurrentWorkspace(null);
       setIsLoading(false);
     }
-
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [user, fetchWorkspaces]);
+  }, [user]);
 
   return {
     workspaces,

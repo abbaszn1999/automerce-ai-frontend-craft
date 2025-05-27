@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -110,7 +111,7 @@ const FeedConfiguration: React.FC = () => {
                 label={`Upload your ${selectedFeedMode === "plp" ? "PLP" : "Product"} feed file`}
                 requiredColumns={targetColumns}
                 downloadTemplateLink="#"
-                showFeedButton={true}
+                showFeedListOption={false}
               />
               
               <div className="relative">

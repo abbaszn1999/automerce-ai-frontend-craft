@@ -1,71 +1,26 @@
+
 import React, { useState } from 'react';
 import ProductInputSheet from '@/components/product/ProductInputSheet';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
-import { requiredProductColumns } from '@/components/product/constants/productColumns';
 
 const ProductInput: React.FC = () => {
   const [processedData, setProcessedData] = useState<any[] | null>(null);
-  const [savedRunId, setSavedRunId] = useState<string | null>(null);
-  const [columnMapping, setColumnMapping] = useState<any | null>(null);
   const navigate = useNavigate();
-  
-  // Normally, this would come from a route param or context
-  // For demo purposes, we're using a hardcoded project ID
-  const projectId = "ae-demo-project-id"; // Replace with actual project ID in a real app
 
-  // Define required columns with display names - all are required
-  const requiredColumns = [
-    { key: "product_id", display: "Product ID", required: true },
-    { key: "product_title", display: "Product Title", required: true },
-    { key: "product_url", display: "Product URL", required: true },
-    { key: "product_image_url", display: "Product Image URL", required: true },
-    { key: "product_description", display: "Product Description", required: true }
-  ];
-
-  const handleProcessComplete = (data: any[], mapping: any) => {
+  const handleProcessComplete = (data: any[]) => {
     setProcessedData(data);
-    setColumnMapping(mapping);
     toast.success(`Processed ${data.length} products successfully`);
     // In a real application, you would save this data to context or send it to the server
     console.log("Processed data:", data);
-    console.log("Column mapping:", mapping);
-  };
-
-  const handleSaveComplete = (runId: string) => {
-    setSavedRunId(runId);
-    toast.success(`Data saved with run ID: ${runId}`);
-    console.log("Data saved with run ID:", runId);
   };
 
   const handleGoToAttributeExtraction = () => {
-    if (!savedRunId) {
-      toast.error("Please save the data to the database first");
-      return;
-    }
-    
-    // In a real application, you would navigate to the attribute extraction page with the run ID
-    toast.info(`Navigating to attribute extraction with run ID: ${savedRunId}`);
-    // navigate(`/attribute-extraction/${savedRunId}`);
-  };
-
-  // Generate mapped data for preview display (using required field names)
-  const getMappedDataForDisplay = () => {
-    if (!processedData || !columnMapping) return [];
-    
-    return processedData.map(row => {
-      const mappedRow: Record<string, any> = {};
-      
-      // Map each required column to the corresponding source column
-      requiredProductColumns.forEach(col => {
-        const sourceColumn = columnMapping[col.key];
-        mappedRow[col.key] = sourceColumn && row[sourceColumn] ? row[sourceColumn] : '';
-      });
-      
-      return mappedRow;
-    });
+    // In a real application, you would navigate to the attribute extraction page
+    toast.info("Navigating to attribute extraction would happen here");
+    // navigate('/attribute-extraction');
   };
 
   return (
@@ -89,11 +44,7 @@ const ProductInput: React.FC = () => {
         </p>
       </div>
 
-      <ProductInputSheet 
-        onProcessComplete={handleProcessComplete} 
-        onSaveComplete={handleSaveComplete}
-        projectId={projectId}
-      />
+      <ProductInputSheet onProcessComplete={handleProcessComplete} />
       
       {processedData && processedData.length > 0 && (
         <div className="mt-8">
@@ -102,18 +53,18 @@ const ProductInput: React.FC = () => {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-gray-100">
-                  {requiredColumns.map((col, index) => (
+                  {Object.keys(processedData[0]).map((header, index) => (
                     <th key={index} className="border p-2 text-left">
-                      {col.display}
+                      {header.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {getMappedDataForDisplay().map((row, rowIndex) => (
+                {processedData.map((row, rowIndex) => (
                   <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    {requiredColumns.map((col, colIndex) => (
-                      <td key={colIndex} className="border p-2">{String(row[col.key] || '')}</td>
+                    {Object.values(row).map((cell: any, cellIndex) => (
+                      <td key={cellIndex} className="border p-2">{String(cell)}</td>
                     ))}
                   </tr>
                 ))}
@@ -122,13 +73,8 @@ const ProductInput: React.FC = () => {
           </div>
           
           <div className="flex justify-end mt-6">
-            <Button 
-              onClick={handleGoToAttributeExtraction}
-              disabled={!savedRunId}
-              className="flex items-center gap-2"
-            >
-              <span>Proceed to Attribute Extraction</span>
-              <ArrowRight size={16} />
+            <Button onClick={handleGoToAttributeExtraction}>
+              Proceed to Attribute Extraction
             </Button>
           </div>
         </div>
